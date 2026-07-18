@@ -3,13 +3,13 @@
     "private": "true",
     "version": "0.1.0",
     "description": "HyperCord - Vencord tabanli, en cok plugin'e sahip Discord client mod",
-    "homepage": "https://github.com/hypercord/hypercord#readme",
+    "homepage": "https://github.com/Henox77/hypercord#readme",
     "bugs": {
-        "url": "https://github.com/hypercord/hypercord/issues"
+        "url": "https://github.com/Henox77/hypercord/issues"
     },
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/hypercord/hypercord.git"
+        "url": "git+https://github.com/Henox77/hypercord.git"
     },
     "license": "GPL-3.0-or-later",
     "author": "HyperCord Team",
