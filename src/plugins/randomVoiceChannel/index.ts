@@ -7,7 +7,8 @@
 import { ApplicationCommandInputType, sendBotMessage } from "@api/Commands";
 import { Devs } from "@utils/constants";
 import definePlugin from "@utils/types";
-import { ChannelStore, findByPropsLazy, GuildChannelStore, SelectedGuildStore } from "@webpack/common";
+import { findByPropsLazy } from "@webpack";
+import { ChannelStore, GuildChannelStore, SelectedGuildStore } from "@webpack/common";
 
 const VoiceActions = findByPropsLazy("selectVoiceChannel", "selectChannel");
 
