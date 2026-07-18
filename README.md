@@ -1,7 +1,6 @@
 <div align="center">
 
-<!-- TODO(logo): Logonu buraya ekle. docs/logo.png dosyasını ekleyip aşağıdaki satırın başındaki "<!--" ve sonundaki "-->" işaretlerini kaldır. -->
-<!-- <img src="./docs/logo.png" alt="HyperCord" width="200" /> -->
+<img src="./docs/logo.png" alt="HyperCord" width="200" />
 
 # HyperCord
 
@@ -15,8 +14,7 @@
 
 Vencord tabanlı, **Equicord'dan daha fazla plugin** içermeyi ve piyasada adını duyurmayı hedefleyen bir Discord client mod'u.
 
-<!-- TODO(banner): İstersen buraya tanıtım görseli/banner ekleyebilirsin -->
-<!-- ![](./docs/banner.png) -->
+![](./docs/banner.png)
 
 ## Features
 
