@@ -1,9 +1,8 @@
 # docs/
 
-Bu klasör, ana `README.md` içinde referans verilen görseller içindir.
+Ana `README.md` içinde referans verilen görseller:
 
-Eklemen gerekenler:
 - `logo.png` — proje logosu (README'nin en üstünde gösterilir)
-- `banner.png` — istersen ekleyebileceğin bir tanıtım banner'ı
+- `banner.png` — tanıtım banner'ı
 
-Dosyaları buraya ekledikten sonra `README.md` içindeki ilgili `<!-- ... -->` yorum satırlarını kaldırmayı unutma.
+Değiştirmek istersen bu dosyaların üzerine aynı isimle yenisini koyman yeterli, README otomatik günceller.
