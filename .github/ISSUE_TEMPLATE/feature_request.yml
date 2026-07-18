@@ -1,5 +1,5 @@
 name: Feature Request
-description: Have an idea for a new feature? Request it here! No plugin requests, go to our Discord server for that
+description: Have an idea for a new feature? Request it here! No plugin requests, go to Discussions for that
 labels: [enhancement]
 title: "[Feature] <title>"
 
@@ -8,8 +8,9 @@ body:
       attributes:
           value: |
             This form is not for any of the following:
-            - Plugin requests — Go to our [Discord server](https://discord.gg/D9uwnFnqmd) for that
-            - Feature requests for plugins — Go to our [Discord server](https://discord.gg/D9uwnFnqmd) for that
+            - Plugin requests — Go to our [Discussions](https://github.com/Henox77/hypercord/discussions) for that
+            - Feature requests for plugins — Go to our [Discussions](https://github.com/Henox77/hypercord/discussions) for that
+            <!-- TODO(discord): Discord sunucun hazır olunca yukarıdaki linkleri invite linkinle değiştirebilirsin -->
 
     - type: textarea
       id: feature-description
@@ -40,6 +41,6 @@ body:
           label: Request Agreement
           options:
             - label: I've searched existing issues and this hasn't been suggested before
-            - label: This is a **core modification feature**, not a plugin request (those go in Discord)
+            - label: This is a **core modification feature**, not a plugin request (those go in Discussions)
             - label: This feature would benefit most users, not just a specific use case
             - label: I am willing to work on this myself
