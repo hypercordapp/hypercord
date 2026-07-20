@@ -35,6 +35,8 @@
         "testTsc": "tsc --noEmit"
     },
     "dependencies": {
+        "@ffmpeg/ffmpeg": "^0.12.10",
+        "@ffmpeg/util": "^0.12.1",
         "@intrnl/xxhash64": "^0.1.2",
         "@vap/core": "0.0.12",
         "@vap/shiki": "0.10.5",

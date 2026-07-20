@@ -16,24 +16,32 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+import * as $AudioPlayer from "./AudioPlayer";
 import * as $Badges from "./Badges";
 import * as $ChatButtons from "./ChatButtons";
 import * as $Commands from "./Commands";
 import * as $ContextMenu from "./ContextMenu";
 import * as $DataStore from "./DataStore";
+import * as $GifPickerContextMenu from "./GifPickerContextMenu";
+import * as $HeaderBar from "./HeaderBar";
 import * as $MemberListDecorators from "./MemberListDecorators";
 import * as $MessageAccessories from "./MessageAccessories";
 import * as $MessageDecorations from "./MessageDecorations";
 import * as $MessageEventsAPI from "./MessageEvents";
 import * as $MessagePopover from "./MessagePopover";
 import * as $MessageUpdater from "./MessageUpdater";
+import * as $NicknameIcons from "./NicknameIcons";
 import * as $Notices from "./Notices";
 import * as $Notifications from "./Notifications";
 export * as PluginManager from "./PluginManager";
+import * as $ProfileCollections from "./ProfileCollections";
+import * as $ProfileSections from "./ProfileSections";
 import * as $ServerList from "./ServerList";
 import * as $Settings from "./Settings";
 import * as $Styles from "./Styles";
+import * as $SurfaceClasses from "./SurfaceClasses";
 import * as $Themes from "./Themes";
+import * as $UserArea from "./UserArea";
 import * as $UserSettings from "./UserSettings";
 
 /**
@@ -129,3 +137,45 @@ export const UserSettings = $UserSettings;
  * Don't use this
  */
 export const Themes = $Themes;
+
+/**
+ * An API allowing plugins to add semantic data attributes and limited props
+ * to stable Discord layout surfaces without patching them directly
+ */
+export const SurfaceClasses = $SurfaceClasses;
+
+/**
+ * An API allowing you to add buttons to the header bar or channel toolbar
+ */
+export const HeaderBar = $HeaderBar;
+
+/**
+ * An API allowing you to add icons to the nickname, in profiles
+ */
+export const NicknameIcons = $NicknameIcons;
+
+/**
+ * An API allowing you to play internal Discord audio files or external audio URLs/URIs
+ */
+export const AudioPlayer = $AudioPlayer;
+
+/**
+ * An API allowing you to add buttons to the user area panel
+ */
+export const UserArea = $UserArea;
+
+/**
+ * An API allowing you to add other collections where discord's game collection is
+ */
+export const ProfileCollections = $ProfileCollections;
+
+/**
+ * An API allowing you to add sections near the 'Member Since' area of user profile panels
+ */
+export const ProfileSections = $ProfileSections;
+
+/**
+ * An API allowing plugins to add items to the GIF picker right-click context menu
+ * without conflicting with each other
+ */
+export const GifPickerContextMenu = $GifPickerContextMenu;
