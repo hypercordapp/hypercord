@@ -5,13 +5,11 @@
  */
 
 import SettingsPlugin from "@plugins/_core/settings";
-import { gitHash } from "@shared/vencordUserAgent";
+import { gitHashShort } from "@shared/vencordUserAgent";
 import { React } from "@webpack/common";
 import { JSX } from "react";
 
 import { ChromiumIcon, ClientIcon, DevBannerIcon, DiscordIcon, ElectronIcon, EquicordIcon, names, settings } from ".";
-
-const gitHashShort = gitHash.slice(0, 7);
 
 interface ClientInfo {
     name: string;
