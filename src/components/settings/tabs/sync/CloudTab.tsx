@@ -73,10 +73,10 @@ function CloudSetupSection() {
             <SectionHeading text="Cloud Integrations" />
 
             <Paragraph size="md" className={Margins.bottom20}>
-                Vencord comes with a cloud integration that adds goodies like settings sync across devices.
-                It <Link href="https://vencord.dev/cloud/privacy">respects your privacy</Link>, and
-                the <Link href="https://github.com/Vencord/Backend">source code</Link> is AGPL 3.0 licensed so you
-                can host it yourself.
+                HyperCord comes with a cloud integration that adds goodies like settings sync across devices.
+                It currently runs on Vencord's own cloud backend (<Link href="https://vencord.dev/cloud/privacy">their privacy policy</Link>),
+                and the <Link href="https://github.com/Vencord/Backend">source code</Link> is AGPL 3.0 licensed so you
+                can host your own instead and point the Backend URL below at it.
             </Paragraph>
             <FormSwitch
                 key="backend"

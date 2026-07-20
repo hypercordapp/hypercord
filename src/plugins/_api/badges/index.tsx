@@ -35,8 +35,8 @@ import { ContextMenuApi, Forms, Menu, Modal, openModal, Toasts, UserStore } from
 const CONTRIBUTOR_BADGE = "https://cdn.discordapp.com/emojis/1092089799109775453.png?size=64";
 
 const ContributorBadge: ProfileBadge = {
-    id: "vencord_contributor_badge",
-    description: "Vencord Contributor",
+    id: "hypercord_contributor_badge",
+    description: "HyperCord Contributor",
     iconSrc: CONTRIBUTOR_BADGE,
     position: BadgePosition.START,
     shouldShow: ({ userId }) => shouldShowContributorBadge(userId),
@@ -45,13 +45,10 @@ const ContributorBadge: ProfileBadge = {
 
 let DonorBadges = {} as Record<string, Array<Record<"tooltip" | "badge", string>>>;
 
-async function loadBadges(noCache = false) {
-    const init = {} as RequestInit;
-    if (noCache)
-        init.cache = "no-cache";
-
-    DonorBadges = await fetch("https://badges.vencord.dev/badges.json", init)
-        .then(r => r.json());
+// HyperCord doesn't have a donor/badge API of its own yet, so there is
+// nothing to fetch. Once one exists, point this at it instead of Vencord's.
+async function loadBadges(_noCache = false) {
+    DonorBadges = {};
 }
 
 let intervalId: any;
@@ -198,7 +195,7 @@ export default definePlugin({
                 openModal(props => (
                     <ErrorBoundary noop onError={() => {
                         props.onClose();
-                        VencordNative.native.openExternal("https://github.com/sponsors/Vendicated");
+                        VencordNative.native.openExternal("https://hypercord.pro/donate");
                     }}>
                         <Modal
                             {...props}
@@ -213,7 +210,7 @@ export default definePlugin({
                                 >
                                     <Flex justifyContent="center" alignItems="center" gap="0.5em">
                                         <Heart />
-                                        Vencord Donor
+                                        HyperCord Donor
                                     </Flex>
                                 </Forms.FormTitle>
                             }
@@ -235,10 +232,10 @@ export default definePlugin({
                                 </Flex>
                                 <div style={{ padding: "1em" }}>
                                     <Forms.FormText>
-                                        This Badge is a special perk for Vencord Donors
+                                        This Badge is a special perk for HyperCord Donors
                                     </Forms.FormText>
                                     <Forms.FormText className={Margins.top20}>
-                                        Please consider supporting the development of Vencord by becoming a donor. It would mean a lot!!
+                                        Please consider supporting the development of HyperCord by becoming a donor. It would mean a lot!!
                                     </Forms.FormText>
                                 </div>
                             </div>
