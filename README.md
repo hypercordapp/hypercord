@@ -53,6 +53,10 @@ pnpm uninject
 
 _yakında_
 
+## Support
+
+HyperCord'un henüz kendi bağış/sponsorluk altyapısı yok. Bu repodaki **Sponsor** butonu ya da [hypercord.pro/donate](https://hypercord.pro/donate) şu an için projeyi desteklemenin yollarını (yıldız bırakmak, katkıda bulunmak, issue açmak) listeliyor.
+
 ## Contributing
 
 Katkı sağlamak istersen [CONTRIBUTING.md](./CONTRIBUTING.md) dosyasına göz at.
