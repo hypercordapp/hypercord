@@ -112,6 +112,16 @@ export function _getBadges(args: BadgeUserArgs) {
         );
     }
 
+    const customBadges = BadgeAPIPlugin.getCustomBadges(args.userId);
+    if (customBadges) {
+        badges.unshift(
+            ...customBadges.map(badge => ({
+                ...args,
+                ...badge,
+            }))
+        );
+    }
+
     return badges;
 }
 

@@ -51,6 +51,24 @@ async function loadBadges(_noCache = false) {
     DonorBadges = {};
 }
 
+// General-purpose custom badges: anyone can add themselves to docs/badges.json
+// (see docs/README.md) and it shows up for every HyperCord client. Distinct from
+// DonorBadges above, which is reserved for real donors and gates isDonor().
+let CustomBadges = {} as Record<string, Array<Record<"tooltip" | "badge", string>>>;
+
+const CUSTOM_BADGES_URL = "https://raw.githubusercontent.com/hypercordapp/hypercord/main/docs/badges.json";
+
+async function loadCustomBadges(noCache = false) {
+    try {
+        const init = {} as RequestInit;
+        if (noCache) init.cache = "no-cache";
+
+        CustomBadges = await fetch(CUSTOM_BADGES_URL, init).then(r => r.json());
+    } catch (e) {
+        new Logger("BadgeAPI").error("Failed to fetch custom badges", e);
+    }
+}
+
 let intervalId: any;
 
 export function BadgeContextMenu({ badge }: { badge: Omit<ProfileBadge, "id"> & BadgeUserArgs; }) {
@@ -124,7 +142,7 @@ export default definePlugin({
 
     toolboxActions: {
         async "Refetch Badges"() {
-            await loadBadges(true);
+            await Promise.all([loadBadges(true), loadCustomBadges(true)]);
             Toasts.show({
                 id: Toasts.genId(),
                 message: "Successfully refetched badges!",
@@ -136,10 +154,13 @@ export default definePlugin({
     userProfileBadge: ContributorBadge,
 
     async start() {
-        await loadBadges();
+        await Promise.all([loadBadges(), loadCustomBadges()]);
 
         clearInterval(intervalId);
-        intervalId = setInterval(loadBadges, 1000 * 60 * 30); // 30 minutes
+        intervalId = setInterval(() => {
+            loadBadges();
+            loadCustomBadges();
+        }, 1000 * 60 * 30); // 30 minutes
     },
 
     async stop() {
@@ -178,7 +199,7 @@ export default definePlugin({
 
     getDonorBadges(userId: string) {
         return DonorBadges[userId]?.map((badge, idx) => ({
-            id: `vencord_donor_badge_${idx}`,
+            id: `hypercord_donor_badge_${idx}`,
             iconSrc: badge.badge,
             description: badge.tooltip,
             position: BadgePosition.START,
@@ -247,6 +268,24 @@ export default definePlugin({
                         </Modal>
                     </ErrorBoundary>
                 ));
+            },
+        } satisfies ProfileBadge));
+    },
+
+    getCustomBadges(userId: string) {
+        return CustomBadges[userId]?.map((badge, idx) => ({
+            id: `hypercord_custom_badge_${idx}`,
+            iconSrc: badge.badge,
+            description: badge.tooltip,
+            position: BadgePosition.START,
+            props: {
+                style: {
+                    borderRadius: "50%",
+                    transform: "scale(0.9)" // The image is a bit too big compared to default badges
+                }
+            },
+            onContextMenu(event, badge) {
+                ContextMenuApi.openContextMenu(event, () => <BadgeContextMenu badge={badge} />);
             },
         } satisfies ProfileBadge));
     }
