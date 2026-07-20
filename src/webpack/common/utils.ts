@@ -186,6 +186,17 @@ export const ChannelActionCreators = findByPropsLazy("openPrivateChannel");
 
 export const IconUtils: t.IconUtils = findByPropsLazy("getGuildBannerURL", "getUserAvatarURL");
 
+export const ColorUtils = mapMangledModuleLazy("Invalid hex color format", {
+    rgbToHex: filters.byCode(".toString(16).slice(1)"),
+    hexToRgba: filters.byCode("`rgba(${"),
+    hexToRgb: filters.byCode(".rgb();return"),
+    rgbToHsl: filters.byCode("saturation:", "lightness:"),
+    mixColors: filters.byCode(".substring(1,3),16)"),
+    hexWithAlpha: filters.byCode("Invalid hex color format"),
+    getDominantColor: filters.byCode("hex:", "hsv:"),
+    generatePalette: filters.byCode("360/("),
+});
+
 export const ExpressionPickerStore: t.ExpressionPickerStore = mapMangledModuleLazy("expression-picker-last-active-view", {
     openExpressionPicker: filters.byCode(/setState\({activeView:(?:(?!null)\i),activeViewType:/),
     closeExpressionPicker: filters.byCode("setState({activeView:null"),
