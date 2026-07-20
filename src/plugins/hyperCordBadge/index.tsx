@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { addProfileBadge, BadgeUserArgs, removeProfileBadge } from "@api/Badges";
+import { addProfileBadge, BadgeUserArgs, ProfileBadge, removeProfileBadge } from "@api/Badges";
 import { definePluginSettings } from "@api/Settings";
 import { Devs } from "@utils/constants";
 import definePlugin, { OptionType } from "@utils/types";
@@ -27,7 +27,8 @@ function parseTaggedUsers(): Map<string, string> {
     return map;
 }
 
-const badge = {
+const badge: ProfileBadge = {
+    id: "HyperCordBadge",
     key: "HyperCordBadge",
     description: "HyperCord custom badge",
     component: ({ userId }: BadgeUserArgs) => {
@@ -41,7 +42,7 @@ const badge = {
 export default definePlugin({
     name: "HyperCordBadge",
     description: "Adds locally-visible custom profile badges for users you tag yourself (only you see them)",
-    tags: ["Experimental", "Appearance"],
+    tags: ["Appearance"],
     authors: [Devs.HyperCordTeam],
     settings,
 

@@ -22,7 +22,7 @@ const CSS = `
 export default definePlugin({
     name: "DisableAnimations",
     description: "Disables (almost) all CSS animations and transitions across the client for a snappier feel",
-    tags: ["Appearance", "Performance"],
+    tags: ["Appearance"],
     authors: [Devs.HyperCordTeam],
 
     start() {

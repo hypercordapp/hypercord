@@ -28,7 +28,7 @@ const log: LogEntry[] = [];
 export default definePlugin({
     name: "VoiceActivityLog",
     description: "Keeps a local log of voice channel joins/leaves you witness. View it with /vclog",
-    tags: ["VoiceChat", "Utility"],
+    tags: ["Voice", "Utility"],
     authors: [Devs.HyperCordTeam],
 
     flux: {

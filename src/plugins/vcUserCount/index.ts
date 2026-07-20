@@ -12,7 +12,7 @@ import { SelectedChannelStore, UserStore, VoiceStateStore } from "@webpack/commo
 export default definePlugin({
     name: "VcUserCount",
     description: "Adds a /vcusers command to list who's currently in your voice channel",
-    tags: ["VoiceChat", "Commands"],
+    tags: ["Voice", "Commands"],
     authors: [Devs.HyperCordTeam],
 
     commands: [

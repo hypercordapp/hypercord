@@ -25,8 +25,8 @@ export default definePlugin({
                 { name: "max", description: "Maximum value (default 100)", type: ApplicationCommandOptionType.INTEGER, required: false },
             ],
             execute: (args, ctx) => {
-                let min = findOption(args, "min", 1);
-                let max = findOption(args, "max", 100);
+                let min = findOption<number>(args, "min", 1);
+                let max = findOption<number>(args, "max", 100);
                 if (min > max) [min, max] = [max, min];
 
                 const result = min + Math.floor(Math.random() * (max - min + 1));
