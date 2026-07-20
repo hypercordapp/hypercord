@@ -257,6 +257,27 @@ export function migratePluginSetting(pluginName: string, oldSetting: string, new
     SettingsStore.markAsChanged();
 }
 
+/**
+ * Migrates an old standalone plugin that was merged into another plugin as one or more settings.
+ * If the old plugin was enabled, enables newName and turns on each of settingNames on it.
+ */
+export function migratePluginToSettings(deleteOldSettings: boolean, newName: string, oldName: string, ...settingNames: string[]) {
+    const { plugins } = SettingsStore.plain;
+    const newPlugin = plugins[newName];
+    const oldPlugin = plugins[oldName];
+
+    if (newPlugin && oldPlugin?.enabled) {
+        for (const settingName of settingNames) {
+            logger.info(`Migrating plugin to setting from old name ${oldName} to ${newName} as ${settingName}`);
+            newPlugin[settingName] = true;
+        }
+
+        newPlugin.enabled = true;
+        if (deleteOldSettings) delete plugins[oldName];
+        SettingsStore.markAsChanged();
+    }
+}
+
 export function definePluginSettings<
     Def extends SettingsDefinition,
     Checks extends SettingsChecks<Def>,
