@@ -44,6 +44,7 @@
         "gifenc": "github:mattdesl/gifenc#64842fca317b112a8590f8fef2bf3825da8f6fe3",
         "gifuct-js": "^2.1.2",
         "jsqr": "1.4.0",
+        "md5": "^2.3.0",
         "monaco-editor": "^0.55.1",
         "nanoid": "^5.1.16",
         "virtual-merge": "^1.0.1"
@@ -52,6 +53,7 @@
         "@stylistic/eslint-plugin": "^5.10.0",
         "@types/chrome": "^0.2.0",
         "@types/lodash": "^4.17.24",
+        "@types/md5": "^2.3.5",
         "@types/node": "^26.0.1",
         "@types/react": "19.1.0",
         "@types/react-dom": "19.1.0",

@@ -185,6 +185,8 @@ export const InviteActions = findByPropsLazy("resolveInvite");
 export const ChannelActionCreators = findByPropsLazy("openPrivateChannel");
 
 export const VoiceActions = findByPropsLazy("toggleSelfMute");
+export const GuildActions = findByPropsLazy("setServerMute", "setServerDeaf");
+export const ChannelActions = findByPropsLazy("selectChannel", "selectVoiceChannel");
 
 export const useDrag = findByCodeLazy("useDrag::spec.begin was deprecated");
 // you cant make a better finder i love that they remove display names sm
