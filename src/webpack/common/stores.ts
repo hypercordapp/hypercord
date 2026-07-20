@@ -35,6 +35,7 @@ export let PermissionStore: t.PermissionStore;
 export let GuildChannelStore: t.GuildChannelStore;
 export let ReadStateStore: t.ReadStateStore;
 export let PresenceStore: t.PresenceStore;
+export let QuestStore: t.QuestStore;
 export let AccessibilityStore: t.AccessibilityStore;
 export let PendingReplyStore: t.PendingReplyStore;
 
@@ -109,6 +110,7 @@ waitForStore("NotificationSettingsStore", m => NotificationSettingsStore = m);
 waitForStore("SpellcheckStore", m => SpellCheckStore = m);
 waitForStore("PermissionStore", m => PermissionStore = m);
 waitForStore("PresenceStore", m => PresenceStore = m);
+waitForStore("QuestStore", m => QuestStore = m);
 waitForStore("ReadStateStore", m => ReadStateStore = m);
 waitForStore("GuildChannelStore", m => GuildChannelStore = m);
 waitForStore("GuildRoleStore", m => GuildRoleStore = m);
