@@ -42,6 +42,7 @@
         "@vap/shiki": "0.10.5",
         "fflate": "^0.8.3",
         "gifenc": "github:mattdesl/gifenc#64842fca317b112a8590f8fef2bf3825da8f6fe3",
+        "gifuct-js": "^2.1.2",
         "monaco-editor": "^0.55.1",
         "nanoid": "^5.1.16",
         "virtual-merge": "^1.0.1"
