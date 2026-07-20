@@ -26,6 +26,7 @@ export const BADGE_CATALOG: CatalogCategory[] = [
             { key: "staff", label: "Discord Staff", iconSrc: emojiUrl("1362105228719034679") },
             { key: "partner", label: "Partner", iconSrc: emojiUrl("1362105185094336622") },
             { key: "hypesquad", label: "HypeSquad Events", iconSrc: emojiUrl("1362105087006212456") },
+            { key: "active_developer", label: "Active Developer", iconSrc: emojiUrl("1362104965065212074") },
         ]
     },
     {
@@ -61,6 +62,7 @@ export const BADGE_CATALOG: CatalogCategory[] = [
         title: "Nitro",
         badges: [
             { key: "nitro", label: "Nitro", iconSrc: emojiUrl("1362115714185691186", true) },
+            { key: "nitro_classic", label: "Nitro Classic", iconSrc: emojiUrl("1528737728894734548") },
             { key: "nitro_bronze", label: "Nitro — Bronze", iconSrc: emojiUrl("1365454925357645994") },
             { key: "nitro_silver", label: "Nitro — Silver", iconSrc: emojiUrl("1365454972962996254") },
             { key: "nitro_gold", label: "Nitro — Gold", iconSrc: emojiUrl("1365454994337435739") },
