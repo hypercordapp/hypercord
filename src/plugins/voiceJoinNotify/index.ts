@@ -27,7 +27,7 @@ const settings = definePluginSettings({
 export default definePlugin({
     name: "VoiceJoinNotify",
     description: "Shows a desktop notification when someone joins (or leaves) the voice channel you're currently in",
-    tags: ["VoiceChat", "Notifications"],
+    tags: ["Voice", "Notifications"],
     authors: [Devs.HyperCordTeam],
     settings,
 

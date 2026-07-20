@@ -48,7 +48,7 @@ function getSigil(userId: string, length: number): string {
 export default definePlugin({
     name: "Signature",
     description: "Automatically signs your outgoing messages with a unique emoji sigil derived from your user ID",
-    tags: ["Experimental", "Fun", "Chat"],
+    tags: ["Fun", "Chat"],
     authors: [Devs.HyperCordTeam],
     settings,
 
