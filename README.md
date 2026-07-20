@@ -35,7 +35,7 @@ Vencord tabanlı, **Equicord'dan daha fazla plugin** içermeyi ve piyasada adın
 
 ### Kurulum / Kaldırma
 
-En kolay yol — [Releases](https://github.com/hypercordapp/hypercord/releases/latest) sayfasından işletim sistemine uygun installer'ı indir:
+En kolay yol — [Releases](https://github.com/hypercordapp/HyperCordInstaller/releases/latest) sayfasından işletim sistemine uygun installer'ı indir:
 
 -   **Windows (GUI):** `HyperCordInstaller.exe` — indir, çalıştır, Discord'unu seç, kur
 -   **Windows / Linux / macOS (CLI):** `HyperCordInstallerCli.exe`, `HyperCordInstallerCli-linux`, `HyperCordInstallerCli-macos`
@@ -124,7 +124,7 @@ A Discord client mod based on Vencord, aiming to include **more plugins than Equ
 
 ### Installing / Uninstalling
 
-Easiest way — grab the installer for your OS from [Releases](https://github.com/hypercordapp/hypercord/releases/latest):
+Easiest way — grab the installer for your OS from [Releases](https://github.com/hypercordapp/HyperCordInstaller/releases/latest):
 
 -   **Windows (GUI):** `HyperCordInstaller.exe` — download, run, pick your Discord install, done
 -   **Windows / Linux / macOS (CLI):** `HyperCordInstallerCli.exe`, `HyperCordInstallerCli-linux`, `HyperCordInstallerCli-macos`
