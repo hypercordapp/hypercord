@@ -113,10 +113,6 @@ function buildFakeUser(real: any) {
         if (color !== undefined) overrides.accentColor = color;
     }
 
-    // Placeholder hash so Discord thinks a banner exists and renders the banner
-    // slot at all; getBannerHook below swaps in the real custom URL afterwards.
-    if (settings.store.fakeBannerUrl) overrides.banner = "hypercord-fake-banner";
-
     cachedRealUser = real;
     cachedFakeUser = Object.keys(overrides).length ? virtualMerge(real, overrides) : real;
     return cachedFakeUser;
@@ -225,19 +221,24 @@ export default definePlugin({
 
     userProfileBadge: fakeBadgeEntry,
 
+    // Same proven approach as the USRBG plugin (which already ships custom banners
+    // for users without Nitro): hook getPreviewBanner's call site rather than the
+    // avatar/banner URL builders, since those aren't reliably invoked when there's
+    // no real banner hash to begin with.
     patches: [
         {
-            find: "getUserAvatarURL:",
+            find: ':"SHOULD_LOAD");',
             replacement: {
-                match: /(getUserBannerURL:)(\i),/,
-                replace: "$1$self.getBannerHook($2),"
+                match: /\i(?:\?)?.getPreviewBanner\(\i,\i,\i\)(?=.{0,100}"COMPLETE")/,
+                replace: "$self.getBannerHook(arguments[0])||$&"
             }
         }
     ],
 
-    getBannerHook: (original: any) => (data: { id: string; banner: string; canAnimate?: boolean; size: number; }) => {
-        if (isOwnId(data.id) && settings.store.fakeBannerUrl) return settings.store.fakeBannerUrl;
-        return original(data);
+    getBannerHook({ displayProfile }: any) {
+        if (displayProfile?.userId && isOwnId(displayProfile.userId) && settings.store.fakeBannerUrl) {
+            return settings.store.fakeBannerUrl;
+        }
     },
 
     toolboxActions: {
