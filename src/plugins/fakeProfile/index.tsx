@@ -10,7 +10,7 @@ import { BadgePosition, BadgeUserArgs, ProfileBadge } from "@api/Badges";
 import { definePluginSettings } from "@api/Settings";
 import { Devs } from "@utils/constants";
 import definePlugin, { OptionType } from "@utils/types";
-import { FluxDispatcher, Forms, UserStore } from "@webpack/common";
+import { FluxDispatcher, Forms, UserProfileStore, UserStore } from "@webpack/common";
 import virtualMerge from "virtual-merge";
 
 import { BADGES_BY_KEY } from "./badgeCatalog";
@@ -41,6 +41,26 @@ export const settings = definePluginSettings({
     fakeCreatedAt: {
         type: OptionType.STRING,
         description: "Override the account creation date on your own profile popout, format YYYY-MM-DD (leave empty to disable)",
+        default: ""
+    },
+    fakeBannerUrl: {
+        type: OptionType.STRING,
+        description: "Override your own profile banner with an image URL, shown on your own profile popout (leave empty to disable)",
+        default: ""
+    },
+    fakeAccentColor: {
+        type: OptionType.STRING,
+        description: "Override your own profile accent color, hex like #5865F2 (leave empty to disable)",
+        default: ""
+    },
+    fakeThemeColorPrimary: {
+        type: OptionType.STRING,
+        description: "Primary color of your own profile's two-tone theme gradient, hex like #5865F2 (leave empty to disable)",
+        default: ""
+    },
+    fakeThemeColorSecondary: {
+        type: OptionType.STRING,
+        description: "Secondary color of your own profile's two-tone theme gradient, hex like #EB459E (requires the primary color above to also be set)",
         default: ""
     },
     selectedBadges: {
@@ -75,13 +95,27 @@ let originalGetCurrentUser: typeof UserStore.getCurrentUser | undefined;
 let cachedRealUser: unknown;
 let cachedFakeUser: unknown;
 
+function parseHexColor(hex: string): number | undefined {
+    const match = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
+    return match ? parseInt(match[1], 16) : undefined;
+}
+
 function buildFakeUser(real: any) {
     if (!real) return real;
     if (real === cachedRealUser) return cachedFakeUser;
 
-    const overrides: Record<string, string> = {};
+    const overrides: Record<string, unknown> = {};
     if (settings.store.fakeUsername) overrides.username = settings.store.fakeUsername;
     if (settings.store.fakeGlobalName) overrides.globalName = settings.store.fakeGlobalName;
+
+    if (settings.store.fakeAccentColor) {
+        const color = parseHexColor(settings.store.fakeAccentColor);
+        if (color !== undefined) overrides.accentColor = color;
+    }
+
+    // Placeholder hash so Discord thinks a banner exists and renders the banner
+    // slot at all; getBannerHook below swaps in the real custom URL afterwards.
+    if (settings.store.fakeBannerUrl) overrides.banner = "hypercord-fake-banner";
 
     cachedRealUser = real;
     cachedFakeUser = Object.keys(overrides).length ? virtualMerge(real, overrides) : real;
@@ -108,6 +142,39 @@ function unpatchUserStore() {
     if (originalGetCurrentUser) UserStore.getCurrentUser = originalGetCurrentUser;
     originalGetUser = originalGetCurrentUser = undefined;
     cachedRealUser = cachedFakeUser = undefined;
+}
+
+let originalGetUserProfile: typeof UserProfileStore.getUserProfile | undefined;
+
+function patchUserProfileStore() {
+    if (originalGetUserProfile) return;
+
+    originalGetUserProfile = UserProfileStore.getUserProfile.bind(UserProfileStore);
+
+    UserProfileStore.getUserProfile = ((id: string) => {
+        const profile = originalGetUserProfile!(id);
+        if (!profile || !isOwnId(id)) return profile;
+
+        const { fakeAccentColor, fakeThemeColorPrimary, fakeThemeColorSecondary } = settings.store;
+
+        if (fakeAccentColor) {
+            const color = parseHexColor(fakeAccentColor);
+            if (color !== undefined) profile.accentColor = color;
+        }
+
+        if (fakeThemeColorPrimary) {
+            const primary = parseHexColor(fakeThemeColorPrimary);
+            const secondary = parseHexColor(fakeThemeColorSecondary) ?? primary;
+            if (primary !== undefined && secondary !== undefined) profile.themeColors = [primary, secondary];
+        }
+
+        return profile;
+    }) as typeof UserProfileStore.getUserProfile;
+}
+
+function unpatchUserProfileStore() {
+    if (originalGetUserProfile) UserProfileStore.getUserProfile = originalGetUserProfile;
+    originalGetUserProfile = undefined;
 }
 
 // Discord's own internal "preview" override store for the profile popout.
@@ -139,24 +206,39 @@ function SettingsAboutComponent() {
     return (
         <Forms.FormText>
             Everything this plugin changes (username, display name, Nitro badge, account
-            creation date, custom badges) is <strong>only visible to you</strong>, in your
-            own HyperCord client. It does not change what other users see on your real
-            Discord profile — that data lives on Discord's servers and can't be spoofed
-            client-side. Use the "Reapply Fake Profile" toolbox action after changing
-            settings while the plugin is already running.
+            creation date, banner, accent color, profile theme gradient, custom badges) is{" "}
+            <strong>only visible to you</strong>, in your own HyperCord client. It does not
+            change what other users see on your real Discord profile — that data lives on
+            Discord's servers and can't be spoofed client-side. Use the "Reapply Fake Profile"
+            toolbox action after changing settings while the plugin is already running.
         </Forms.FormText>
     );
 }
 
 export default definePlugin({
     name: "FakeProfile",
-    description: "Locally fake your username, display name, badges, Nitro tier and account creation date on your own profile — visible only to you",
+    description: "Locally fake your username, display name, badges, Nitro tier, banner, accent color, profile theme gradient and account creation date on your own profile — visible only to you",
     tags: ["Fun", "Appearance"],
     authors: [Devs.HyperCordTeam],
     settings,
     settingsAboutComponent: SettingsAboutComponent,
 
     userProfileBadge: fakeBadgeEntry,
+
+    patches: [
+        {
+            find: "getUserAvatarURL:",
+            replacement: {
+                match: /(getUserBannerURL:)(\i),/,
+                replace: "$1$self.getBannerHook($2),"
+            }
+        }
+    ],
+
+    getBannerHook: (original: any) => (data: { id: string; banner: string; canAnimate?: boolean; size: number; }) => {
+        if (isOwnId(data.id) && settings.store.fakeBannerUrl) return settings.store.fakeBannerUrl;
+        return original(data);
+    },
 
     toolboxActions: {
         "Reapply Fake Profile"() {
@@ -166,11 +248,13 @@ export default definePlugin({
 
     start() {
         patchUserStore();
+        patchUserProfileStore();
         applyPremiumOverride();
     },
 
     stop() {
         clearPremiumOverride();
         unpatchUserStore();
+        unpatchUserProfileStore();
     }
 });
