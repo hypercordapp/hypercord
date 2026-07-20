@@ -184,6 +184,12 @@ export const UserProfileActions = findByPropsLazy("openUserProfileModal", "close
 export const InviteActions = findByPropsLazy("resolveInvite");
 export const ChannelActionCreators = findByPropsLazy("openPrivateChannel");
 
+export const VoiceActions = findByPropsLazy("toggleSelfMute");
+
+export const useDrag = findByCodeLazy("useDrag::spec.begin was deprecated");
+// you cant make a better finder i love that they remove display names sm
+export const useDrop = findByCodeLazy(".disconnectDropTarget()", ".dropTargetOptions=");
+
 export const IconUtils: t.IconUtils = findByPropsLazy("getGuildBannerURL", "getUserAvatarURL");
 
 export const ColorUtils = mapMangledModuleLazy("Invalid hex color format", {
@@ -196,6 +202,12 @@ export const ColorUtils = mapMangledModuleLazy("Invalid hex color format", {
     getDominantColor: filters.byCode("hex:", "hsv:"),
     generatePalette: filters.byCode("360/("),
 });
+
+export const ReadStateUtils = mapMangledModuleLazy('type:"ENABLE_AUTOMATIC_ACK",', {
+    ackChannel: filters.byCode(".isForumLikeChannel(")
+});
+
+export const CloudUploader = findLazy(m => m.prototype?.trackUploadFinished) as typeof t.CloudUpload;
 
 export const ExpressionPickerStore: t.ExpressionPickerStore = mapMangledModuleLazy("expression-picker-last-active-view", {
     openExpressionPicker: filters.byCode(/setState\({activeView:(?:(?!null)\i),activeViewType:/),
