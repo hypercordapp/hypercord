@@ -19,7 +19,7 @@
 import { User } from "@vencord/discord-types";
 import { GuildMemberStore, IconUtils } from "@webpack/common";
 
-import { DevsById } from "./constants";
+import { DevsById, EquicordDevsById } from "./constants";
 
 /**
  * Calls .join(" ") on the arguments
@@ -80,6 +80,11 @@ export function identity<T>(value: T): T {
 
 export const isPluginDev = (id: string) => Object.hasOwn(DevsById, id);
 export const shouldShowContributorBadge = (id: string) => isPluginDev(id) && DevsById[id].badge !== false;
+
+export const isEquicordPluginDev = (id: string) => Object.hasOwn(EquicordDevsById, id);
+export const shouldShowEquicordContributorBadge = (id: string) => isEquicordPluginDev(id) && EquicordDevsById[id].badge !== false;
+
+export const isAnyPluginDev = (id: string) => Object.hasOwn(DevsById, id) || Object.hasOwn(EquicordDevsById, id);
 
 export function pluralise(amount: number, singular: string, plural = singular + "s") {
     return amount === 1 ? `${amount} ${singular}` : `${amount} ${plural}`;
