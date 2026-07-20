@@ -4,6 +4,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+import "./styles.css";
+
 import { BadgePosition, BadgeUserArgs, ProfileBadge } from "@api/Badges";
 import { definePluginSettings } from "@api/Settings";
 import { Devs } from "@utils/constants";
@@ -11,7 +13,10 @@ import definePlugin, { OptionType } from "@utils/types";
 import { FluxDispatcher, Forms, UserStore } from "@webpack/common";
 import virtualMerge from "virtual-merge";
 
-const settings = definePluginSettings({
+import { BADGES_BY_KEY } from "./badgeCatalog";
+import { BadgePicker } from "./BadgePicker";
+
+export const settings = definePluginSettings({
     fakeUsername: {
         type: OptionType.STRING,
         description: "Override your own username across your own client (leave empty to disable)",
@@ -38,27 +43,22 @@ const settings = definePluginSettings({
         description: "Override the account creation date on your own profile popout, format YYYY-MM-DD (leave empty to disable)",
         default: ""
     },
-    fakeBadges: {
-        type: OptionType.STRING,
-        description: "Custom badges on your own profile. One per line, format: iconUrl|tooltip text",
-        default: "",
-        multiline: true
+    selectedBadges: {
+        type: OptionType.COMPONENT,
+        default: [] as string[],
+        component: BadgePicker
     }
 });
 
-function parseFakeBadges(): ProfileBadge[] {
-    return settings.store.fakeBadges
-        .split("\n")
-        .map(line => line.trim())
+function getFakeBadges(): ProfileBadge[] {
+    return settings.store.selectedBadges
+        .map(key => BADGES_BY_KEY[key])
         .filter(Boolean)
-        .map((line, i) => {
-            const [icon, ...rest] = line.split("|");
-            return {
-                id: `hypercord-fake-badge-${i}`,
-                iconSrc: icon.trim(),
-                description: rest.join("|").trim() || "Custom Badge"
-            } satisfies ProfileBadge;
-        });
+        .map((badge, i) => ({
+            id: `hypercord-fake-badge-${i}`,
+            iconSrc: badge.iconSrc,
+            description: badge.label
+        } satisfies ProfileBadge));
 }
 
 const isOwnId = (userId: string) => userId === UserStore.getCurrentUser()?.id;
@@ -66,8 +66,8 @@ const isOwnId = (userId: string) => userId === UserStore.getCurrentUser()?.id;
 const fakeBadgeEntry: ProfileBadge = {
     id: "hypercord-fake-badges",
     position: BadgePosition.START,
-    shouldShow: ({ userId }: BadgeUserArgs) => isOwnId(userId) && settings.store.fakeBadges.trim().length > 0,
-    getBadges: () => parseFakeBadges()
+    shouldShow: ({ userId }: BadgeUserArgs) => isOwnId(userId) && settings.store.selectedBadges.length > 0,
+    getBadges: () => getFakeBadges()
 };
 
 let originalGetUser: typeof UserStore.getUser | undefined;
