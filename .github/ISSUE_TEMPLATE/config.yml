@@ -2,11 +2,11 @@ blank_issues_enabled: false
 # TODO(discord): Discord sunucun hazır olunca aşağıdaki linkleri invite linkinle değiştirebilirsin
 contact_links:
   - name: 💬 Community Discussions
-    url: https://github.com/Henox77/hypercord/discussions
+    url: https://github.com/hypercordapp/hypercord/discussions
     about: For plugin requests, support questions, and general help
   - name: 🔌 Plugin Requests
-    url: https://github.com/Henox77/hypercord/discussions
+    url: https://github.com/hypercordapp/hypercord/discussions
     about: Want a new plugin? Request it in Discussions, not here
   - name: ❓ Support & Questions
-    url: https://github.com/Henox77/hypercord/discussions
+    url: https://github.com/hypercordapp/hypercord/discussions
     about: Need help? Ask in Discussions for faster responses

@@ -17,7 +17,7 @@ DON'T
 Repetitive violations of these guidelines might get your access to the repository restricted.
 
 If you feel like a user is violating these guidelines or feel treated unfairly, please refrain from vigilantism
-and instead report the issue to a maintainer via a [GitHub issue](https://github.com/Henox77/hypercord/issues).
+and instead report the issue to a maintainer via a [GitHub issue](https://github.com/hypercordapp/hypercord/issues).
 
 <!-- TODO(discord): Discord sunucun hazır olunca burayı "join our official Discord community and open a modmail ticket" şeklinde güncelleyebilirsin -->
 
