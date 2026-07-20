@@ -58,7 +58,7 @@ jobs:
               with:
                   tag_name: devbuild
                   name: DevBuild ${{ env.release_tag }}
-                  prerelease: false
+                  prerelease: true
                   draft: false
                   files: dist/*
               env:

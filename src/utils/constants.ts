@@ -651,9 +651,8 @@ export const Devs = /* #__PURE__*/ Object.freeze({
         id: 383365021415243776n
     },
     HyperCordTeam: {
-        name: "HyperCord Team",
-        id: 0n,
-        badge: false
+        name: "ryancherkii",
+        id: 1462496241693753558n
     }
 } satisfies Record<string, Dev>);
 
