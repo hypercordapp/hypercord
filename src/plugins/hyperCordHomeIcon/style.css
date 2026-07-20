@@ -1,0 +1,10 @@
+[data-list-item-id="guildsnav___home"] svg {
+    display: none;
+}
+
+[data-list-item-id="guildsnav___home"] {
+    background-image: url("https://raw.githubusercontent.com/hypercordapp/hypercord/main/docs/hcanim.png");
+    background-size: cover;
+    background-position: center;
+    border-radius: 50%;
+}
