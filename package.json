@@ -45,6 +45,7 @@
         "gifuct-js": "^2.1.2",
         "jsqr": "1.4.0",
         "md5": "^2.3.0",
+        "@song-spotlight/api": "^2.2.0",
         "monaco-editor": "^0.55.1",
         "nanoid": "^5.1.16",
         "virtual-merge": "^1.0.1"

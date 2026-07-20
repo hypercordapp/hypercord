@@ -20,6 +20,9 @@ importers:
       '@intrnl/xxhash64':
         specifier: ^0.1.2
         version: 0.1.2
+      '@song-spotlight/api':
+        specifier: ^2.2.0
+        version: 2.2.0(typescript@6.0.3)
       '@vap/core':
         specifier: 0.0.12
         version: 0.0.12
@@ -548,6 +551,11 @@ packages:
   '@sindresorhus/merge-streams@4.0.0':
     resolution: {integrity: sha512-tlqY9xq5ukxTUZBmoOp+m61cqwQD5pHJtFY3Mn8CA8ps6yghLH/Hw8UPdqg4OLmFW3IFlcXnQNmo/dh8HzXYIQ==}
     engines: {node: '>=18'}
+
+  '@song-spotlight/api@2.2.0':
+    resolution: {integrity: sha512-zKH9X+G1uRYmEHFgluExPEFJWtA87PG8C39Xng0XG7Oh42ycOHjZtqtyEbfGM+hs+QEVos4wOoySeBAggnK7Iw==}
+    peerDependencies:
+      typescript: ^5
 
   '@stylistic/eslint-plugin@5.10.0':
     resolution: {integrity: sha512-nPK52ZHvot8Ju/0A4ucSX1dcPV2/1clx0kLcH5wDmrE4naKso7TUC/voUyU1O9OTKTrR6MYip6LP0ogEMQ9jPQ==}
@@ -2661,6 +2669,9 @@ packages:
   zod@3.25.76:
     resolution: {integrity: sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==}
 
+  zod@4.4.3:
+    resolution: {integrity: sha512-ytENFjIJFl2UwYglde2jchW2Hwm4GJFLDiSXWdTrJQBIN9Fcyp7n4DhxJEiWNAJMV1/BqWfW/kkg71UDcHJyTQ==}
+
 snapshots:
 
   '@babel/code-frame@7.29.7':
@@ -2895,6 +2906,12 @@ snapshots:
   '@rtsao/scc@1.1.0': {}
 
   '@sindresorhus/merge-streams@4.0.0': {}
+
+  '@song-spotlight/api@2.2.0(typescript@6.0.3)':
+    dependencies:
+      typescript: 6.0.3
+    optionalDependencies:
+      zod: 4.4.3
 
   '@stylistic/eslint-plugin@5.10.0(eslint@10.6.0)':
     dependencies:
@@ -5450,3 +5467,6 @@ snapshots:
       q: 1.5.1
 
   zod@3.25.76: {}
+
+  zod@4.4.3:
+    optional: true
