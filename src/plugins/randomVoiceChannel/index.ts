@@ -15,7 +15,7 @@ const VoiceActions = findByPropsLazy("selectVoiceChannel", "selectChannel");
 export default definePlugin({
     name: "RandomVoiceChannel",
     description: "Adds a /randomvc command that joins a random voice channel in the current server",
-    tags: ["VoiceChat", "Commands"],
+    tags: ["Voice", "Commands"],
     authors: [Devs.HyperCordTeam],
 
     commands: [

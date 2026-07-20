@@ -25,7 +25,7 @@ const CSS = `
 export default definePlugin({
     name: "OledBlack",
     description: "Forces pure black (#000000) backgrounds for a true OLED dark theme",
-    tags: ["Appearance", "Themes"],
+    tags: ["Appearance"],
     authors: [Devs.HyperCordTeam],
 
     start() {

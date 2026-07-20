@@ -15,7 +15,7 @@ import { settings } from "./settings";
 export default definePlugin({
     name: "Encryptcord",
     description: "Encrypts your outgoing messages with a shared passphrase using AES-GCM. Only people with the same passphrase and this plugin can read them.",
-    tags: ["Experimental", "Privacy", "Chat"],
+    tags: ["Privacy", "Chat"],
     authors: [Devs.HyperCordTeam],
     settings,
 

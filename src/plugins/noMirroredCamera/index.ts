@@ -20,7 +20,7 @@ const CSS = `
 export default definePlugin({
     name: "NoMirroredCamera",
     description: "Attempts to disable the mirrored preview of your own camera in voice calls (best-effort, CSS-only, cannot conflict with Discord's own rendering)",
-    tags: ["VoiceChat", "Appearance"],
+    tags: ["Voice", "Appearance"],
     authors: [Devs.HyperCordTeam],
 
     start() {

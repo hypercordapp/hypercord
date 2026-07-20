@@ -33,7 +33,7 @@ function formatDuration(ms: number): string {
 export default definePlugin({
     name: "VcTimer",
     description: "Tracks how long you've been connected to your current voice channel. Check with /vctime",
-    tags: ["VoiceChat", "Commands"],
+    tags: ["Voice", "Commands"],
     authors: [Devs.HyperCordTeam],
 
     flux: {
