@@ -12,7 +12,7 @@ body:
               Some plugins may sometimes break, but we have automatic tracking for that. So please **do not report broken plugins**, it is useless.
               However, if a plugin works fine, but has a bug in its functionality, then you can report that here.
 
-              If you are experiencing any of the following issues, go to our [Discussions](https://github.com/Henox77/hypercord/discussions) for support:
+              If you are experiencing any of the following issues, go to our [Discussions](https://github.com/hypercordapp/hypercord/discussions) for support:
               <!-- TODO(discord): Discord sunucun hazır olunca yukarıdaki linki invite linkinle değiştirebilirsin -->
               - HyperCord doesn't work or crashes
               - A plugin doesn't work anymore

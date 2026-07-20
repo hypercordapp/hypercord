@@ -8,8 +8,8 @@ body:
       attributes:
           value: |
             This form is not for any of the following:
-            - Plugin requests — Go to our [Discussions](https://github.com/Henox77/hypercord/discussions) for that
-            - Feature requests for plugins — Go to our [Discussions](https://github.com/Henox77/hypercord/discussions) for that
+            - Plugin requests — Go to our [Discussions](https://github.com/hypercordapp/hypercord/discussions) for that
+            - Feature requests for plugins — Go to our [Discussions](https://github.com/hypercordapp/hypercord/discussions) for that
             <!-- TODO(discord): Discord sunucun hazır olunca yukarıdaki linkleri invite linkinle değiştirebilirsin -->
 
     - type: textarea
