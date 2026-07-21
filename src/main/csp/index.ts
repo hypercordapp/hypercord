@@ -61,6 +61,8 @@ export const CspPolicies: PolicyMap = {
     "*.archive.org": ConnectSrc,
     "translate-pa.googleapis.com": ConnectSrc, // Google Translate API
     "*.vencord.dev": ImageSrc, // VenCloud (api.vencord.dev) and Badges (badges.vencord.dev)
+    "api.hypercord.pro": ConnectSrc, // HyperCord's own donor badge / profile-override backend
+    "cloud.hypercord.pro": ConnectSrc, // HyperCord's own settings-sync cloud
     "manti.vendicated.dev": ImageSrc, // ReviewDB API
     "decor.fieryflames.dev": ConnectSrc, // Decor API
     "ugc.decor.fieryflames.dev": ImageSrc, // Decor CDN
