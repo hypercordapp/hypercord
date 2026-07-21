@@ -14,6 +14,7 @@ import definePlugin, { OptionType } from "@utils/types";
 import { FluxDispatcher, Forms, Toasts, UserProfileStore, UserStore } from "@webpack/common";
 import virtualMerge from "virtual-merge";
 
+import { getBadgeAuthHeader,hasBadgeAuth } from "./badgeAuth";
 import { BADGES_BY_KEY } from "./badgeCatalog";
 import { BadgePicker } from "./BadgePicker";
 
@@ -21,9 +22,9 @@ const logger = new Logger("FakeProfile");
 const SELF_PROFILES_BASE = "https://api.hypercord.pro/self/profiles";
 
 // Pushes your selected badges/banner to HyperCord's own backend so every
-// HyperCord user viewing your profile sees them too, not just you. Best
-// effort/trust-based (no identity verification beyond your own client
-// reporting your own ID) - see hypercord-badge-api's /self routes.
+// HyperCord user viewing your profile sees them too, not just you. Requires
+// proof (via badgeAuth's OAuth-verified secret) that you actually are the
+// Discord account being synced - see hypercord-badge-api's /self routes.
 //
 // One atomic PUT of the full list, not "delete everything then re-add one by
 // one" - the old approach raced when two syncs overlapped (a Discord reload
@@ -34,6 +35,15 @@ export async function syncBadgesToBackend() {
     const userId = UserStore.getCurrentUser()?.id;
     if (!userId) return;
 
+    // Don't force an OAuth prompt just to sync an empty list for someone who's
+    // never used this feature - only authorize if there's actually something
+    // to push, or we already know they're authorized (e.g. clearing a
+    // previous selection).
+    if (settings.store.selectedBadges.length === 0 && !await hasBadgeAuth()) return;
+
+    const auth = await getBadgeAuthHeader();
+    if (!auth) return;
+
     const badges = settings.store.selectedBadges
         .map(key => BADGES_BY_KEY[key])
         .filter(Boolean)
@@ -42,7 +52,7 @@ export async function syncBadgesToBackend() {
     try {
         await fetch(`${SELF_PROFILES_BASE}/${userId}/badges`, {
             method: "PUT",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", Authorization: auth },
             body: JSON.stringify({ badges })
         });
     } catch (e) {
@@ -54,10 +64,15 @@ export async function syncBannerToBackend(silent = false) {
     const userId = UserStore.getCurrentUser()?.id;
     if (!userId) return;
 
+    if (!settings.store.fakeBannerUrl && !await hasBadgeAuth()) return;
+
+    const auth = await getBadgeAuthHeader();
+    if (!auth) return;
+
     try {
         const res = await fetch(`${SELF_PROFILES_BASE}/${userId}/banner`, {
             method: "PUT",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", Authorization: auth },
             body: JSON.stringify({ url: settings.store.fakeBannerUrl || null })
         });
 
@@ -275,8 +290,11 @@ function SettingsAboutComponent() {
             client-side for other people.{" "}
             <strong>Your selected badges and banner are different: they're synced to
                 HyperCord's own backend and shown to every HyperCord user viewing your
-                profile</strong>, not just you. Use the "Reapply Fake Profile" toolbox action
-            after changing settings while the plugin is already running to force a resync.
+                profile</strong>, not just you. The first time you pick a badge or set a
+            banner, you'll get a one-time in-app Discord authorization prompt (identify
+            scope only) proving the account is really yours. Use the "Reapply Fake
+            Profile" toolbox action after changing settings while the plugin is already
+            running to force a resync.
         </Forms.FormText>
     );
 }
