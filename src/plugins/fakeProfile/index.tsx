@@ -46,7 +46,7 @@ export async function syncBadgesToBackend() {
     }
 }
 
-export async function syncBannerToBackend() {
+export async function syncBannerToBackend(silent = false) {
     const userId = UserStore.getCurrentUser()?.id;
     if (!userId) return;
 
@@ -57,7 +57,13 @@ export async function syncBannerToBackend() {
             body: JSON.stringify({ url: settings.store.fakeBannerUrl || null })
         });
 
-        if (res.status === 409) {
+        // 409 here just means "an admin banner is already set and your fakeBannerUrl
+        // conflicts with it" - a persistent state, not a one-off error. Since this
+        // same sync also runs silently on every reconnect (Discord reload/reconnect
+        // fires CONNECTION_OPEN), toasting every time would spam the exact same
+        // message on every refresh. Only surface it for the explicit "Reapply Fake
+        // Profile" action below, where the user is actively asking for feedback.
+        if (res.status === 409 && !silent) {
             Toasts.show({
                 id: Toasts.genId(),
                 message: "Can't sync your banner - HyperCord staff already set one for you.",
@@ -71,7 +77,7 @@ export async function syncBannerToBackend() {
 
 function syncOnConnect() {
     syncBadgesToBackend();
-    syncBannerToBackend();
+    syncBannerToBackend(true);
 }
 
 export const settings = definePluginSettings({
