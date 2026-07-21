@@ -6,15 +6,15 @@
 
 import "./styles.css";
 
-import { BadgePosition, BadgeUserArgs, ProfileBadge } from "@api/Badges";
 import { definePluginSettings } from "@api/Settings";
+import BadgeAPIPlugin from "@plugins/_api/badges";
 import { Devs } from "@utils/constants";
 import { Logger } from "@utils/Logger";
 import definePlugin, { OptionType } from "@utils/types";
 import { FluxDispatcher, Forms, Toasts, UserProfileStore, UserStore } from "@webpack/common";
 import virtualMerge from "virtual-merge";
 
-import { getBadgeAuthHeader,hasBadgeAuth } from "./badgeAuth";
+import { getBadgeAuthHeader, hasBadgeAuth } from "./badgeAuth";
 import { BADGES_BY_KEY } from "./badgeCatalog";
 import { BadgePicker } from "./BadgePicker";
 
@@ -55,6 +55,14 @@ export async function syncBadgesToBackend() {
             headers: { "Content-Type": "application/json", Authorization: auth },
             body: JSON.stringify({ badges })
         });
+        // Force an immediate cache refresh instead of waiting for BadgeAPI's
+        // periodic poll - this is also what makes it safe to *not* have a
+        // separate local-only preview of your own selection: without this,
+        // FakeProfile used to register its own userProfileBadge for instant
+        // feedback, but that meant your own profile rendered the badge twice
+        // (once from that local echo, once from the synced version everyone
+        // else sees) as soon as the backend sync actually landed.
+        await BadgeAPIPlugin.refetchBadges();
     } catch (e) {
         logger.error("Failed to sync badges to HyperCord", e);
     }
@@ -88,6 +96,8 @@ export async function syncBannerToBackend(silent = false) {
                 message: "Can't sync your banner - HyperCord staff already set one for you.",
                 type: Toasts.Type.FAILURE
             });
+        } else if (res.ok) {
+            await BadgeAPIPlugin.refetchBadges();
         }
     } catch (e) {
         logger.error("Failed to sync banner to HyperCord", e);
@@ -153,25 +163,7 @@ export const settings = definePluginSettings({
     }
 });
 
-function getFakeBadges(): ProfileBadge[] {
-    return settings.store.selectedBadges
-        .map(key => BADGES_BY_KEY[key])
-        .filter(Boolean)
-        .map((badge, i) => ({
-            id: `hypercord-fake-badge-${i}`,
-            iconSrc: badge.iconSrc,
-            description: badge.label
-        } satisfies ProfileBadge));
-}
-
 const isOwnId = (userId: string) => userId === UserStore.getCurrentUser()?.id;
-
-const fakeBadgeEntry: ProfileBadge = {
-    id: "hypercord-fake-badges",
-    position: BadgePosition.START,
-    shouldShow: ({ userId }: BadgeUserArgs) => isOwnId(userId) && settings.store.selectedBadges.length > 0,
-    getBadges: () => getFakeBadges()
-};
 
 let originalGetUser: typeof UserStore.getUser | undefined;
 let originalGetCurrentUser: typeof UserStore.getCurrentUser | undefined;
@@ -306,8 +298,6 @@ export default definePlugin({
     authors: [Devs.HyperCordTeam],
     settings,
     settingsAboutComponent: SettingsAboutComponent,
-
-    userProfileBadge: fakeBadgeEntry,
 
     // Same proven approach as the USRBG plugin (which already ships custom banners
     // for users without Nitro): hook getPreviewBanner's call site rather than the
