@@ -51,6 +51,17 @@ if (IS_REPORTER) {
     require("./debug/runReporter");
 }
 
+// Early HyperCord builds inherited Vencord's cloud.url default before we stood up
+// our own backend. That default only applies to fresh settings, so anyone who had
+// cloud integrations configured before the switch is stuck pointing at Vencord's
+// backend with a secret that backend has never seen. Force them onto our own.
+function migrateCloudUrl() {
+    if (Settings.cloud.url === "https://api.vencord.dev/") {
+        Settings.cloud.url = "https://cloud.hypercord.pro/";
+        Settings.cloud.authenticated = false;
+    }
+}
+
 async function syncSettings() {
     // pre-check for local shared settings
     if (
@@ -147,6 +158,7 @@ async function init() {
     await onceReady;
     startAllPlugins(StartAt.WebpackReady);
 
+    migrateCloudUrl();
     syncSettings();
 
     if (!IS_WEB && !IS_UPDATER_DISABLED) {
