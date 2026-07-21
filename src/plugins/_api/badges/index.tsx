@@ -82,6 +82,13 @@ async function loadCustomBadges(noCache = false) {
     }
 }
 
+// Callable from other plugins (e.g. FakeProfile, right after it pushes a
+// change to its own badges/banner) to force an immediate refresh instead of
+// waiting for the next periodic poll.
+async function refetchBadges() {
+    await Promise.all([loadBadges(true), loadCustomBadges(true)]);
+}
+
 let intervalId: any;
 
 export function BadgeContextMenu({ badge }: { badge: Omit<ProfileBadge, "id"> & BadgeUserArgs; }) {
@@ -163,9 +170,11 @@ export default definePlugin({
         return ProfileOverrides;
     },
 
+    refetchBadges,
+
     toolboxActions: {
         async "Refetch Badges"() {
-            await Promise.all([loadBadges(true), loadCustomBadges(true)]);
+            await refetchBadges();
             Toasts.show({
                 id: Toasts.genId(),
                 message: "Successfully refetched badges!",
