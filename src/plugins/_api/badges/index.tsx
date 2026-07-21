@@ -45,10 +45,17 @@ const ContributorBadge: ProfileBadge = {
 
 let DonorBadges = {} as Record<string, Array<Record<"tooltip" | "badge", string>>>;
 
-// HyperCord doesn't have a donor/badge API of its own yet, so there is
-// nothing to fetch. Once one exists, point this at it instead of Vencord's.
-async function loadBadges(_noCache = false) {
-    DonorBadges = {};
+const DONOR_BADGES_URL = "https://api.hypercord.pro/donors";
+
+async function loadBadges(noCache = false) {
+    try {
+        const init = {} as RequestInit;
+        if (noCache) init.cache = "no-cache";
+
+        DonorBadges = await fetch(DONOR_BADGES_URL, init).then(r => r.json());
+    } catch (e) {
+        new Logger("BadgeAPI").error("Failed to fetch donor badges", e);
+    }
 }
 
 // General-purpose custom badges: anyone can add themselves to docs/badges.json
