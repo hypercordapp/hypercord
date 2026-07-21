@@ -39,7 +39,7 @@ import { MacOSVibrancySettings } from "./MacVibrancySettings";
 import { NotificationSection } from "./NotificationSettings";
 import { WindowsMaterialSettings } from "./WindowsMaterialSettings";
 
-const HC_MASCOT_IMAGE = "https://raw.githubusercontent.com/hypercordapp/hypercord/main/docs/hcanim.png";
+const HC_MASCOT_IMAGE = "https://raw.githubusercontent.com/hypercordapp/hypercord/main/docs/logo.png";
 const VENNIE_DONATOR_IMAGE = HC_MASCOT_IMAGE;
 const COZY_CONTRIB_IMAGE = "https://cdn.discordapp.com/emojis/1026533070955872337.png";
 const DONOR_BACKGROUND_IMAGE = "https://media.discordapp.net/stickers/1311070116305436712.png?size=2048";
