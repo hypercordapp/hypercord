@@ -235,12 +235,6 @@ export default definePlugin({
             iconSrc: badge.badge,
             description: badge.tooltip,
             position: BadgePosition.START,
-            props: {
-                style: {
-                    borderRadius: "50%",
-                    transform: "scale(0.9)" // The image is a bit too big compared to default badges
-                }
-            },
             onContextMenu(event, badge) {
                 ContextMenuApi.openContextMenu(event, () => <BadgeContextMenu badge={badge} />);
             },
@@ -314,12 +308,6 @@ export default definePlugin({
             iconSrc: badge.badge,
             description: badge.tooltip,
             position: BadgePosition.START,
-            props: {
-                style: {
-                    borderRadius: "50%",
-                    transform: "scale(0.9)" // The image is a bit too big compared to default badges
-                }
-            },
             onContextMenu(event, badge) {
                 ContextMenuApi.openContextMenu(event, () => <BadgeContextMenu badge={badge} />);
             },
