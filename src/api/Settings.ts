@@ -123,7 +123,7 @@ const DefaultSettings: Settings = {
 
     cloud: {
         authenticated: false,
-        url: "https://api.vencord.dev/",
+        url: "https://cloud.hypercord.pro/",
         settingsSync: false,
         settingsSyncVersion: 0
     }
