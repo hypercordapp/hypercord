@@ -77,7 +77,7 @@ export const ShapeTool: ToolDefinition = {
                 break;
             case "arrow":
                 line(this.draggingFrom.x, this.draggingFrom.y, Mouse.x, Mouse.y, canvas);
-                // draw arrowhead (thanks copilot :3)
+                // draw arrowhead
                 const angle = Math.atan2(Mouse.y - this.draggingFrom.y, Mouse.x - this.draggingFrom.x);
                 const arrowLength = 10;
                 canvas.beginPath();
