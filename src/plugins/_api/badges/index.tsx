@@ -20,17 +20,14 @@ import "./fixDiscordBadgePadding.css";
 
 import { _getBadges, BadgePosition, BadgeUserArgs, ProfileBadge } from "@api/Badges";
 import ErrorBoundary from "@components/ErrorBoundary";
-import { Flex } from "@components/Flex";
-import { Heart } from "@components/Heart";
-import DonateButton from "@components/settings/DonateButton";
 import { openContributorModal } from "@components/settings/tabs";
+import { openSettingsPage } from "@plugins/commandPalette/commands/openSettings";
 import { Devs } from "@utils/constants";
 import { copyWithToast } from "@utils/discord";
 import { Logger } from "@utils/Logger";
-import { Margins } from "@utils/margins";
 import { shouldShowContributorBadge } from "@utils/misc";
 import definePlugin from "@utils/types";
-import { ContextMenuApi, Forms, Menu, Modal, openModal, Toasts, UserStore } from "@webpack/common";
+import { ContextMenuApi, Menu, Toasts, UserStore } from "@webpack/common";
 
 const CONTRIBUTOR_BADGE = "https://raw.githubusercontent.com/hypercordapp/hypercord/main/docs/hcanim.png";
 
@@ -147,10 +144,17 @@ export default definePlugin({
             ]
         },
         {
+            // Puts our badges before Discord's own real ones (real getBadges()
+            // is `return[...this._userProfile.badges??[],...this._guildMemberProfile?.badges??[]]`)
+            // so they read left-to-right as [platform indicator (separate
+            // component, not part of this array)] -> [our HyperCord badges]
+            // -> [Discord's own badges]. Verified against Discord's actual
+            // live bundle before changing this, since a wrong anchor here
+            // would silently drop every badge for everyone.
             find: "getLegacyUsername(){",
             replacement: {
-                match: /getBadges\(\)\{.{0,100}?return\[/,
-                replace: "$&...$self.getBadges(this),"
+                match: /getBadges\(\)\{return\[(.+?)\]\}getLegacyUsername/,
+                replace: "getBadges(){return[...$self.getBadges(this),$1]}getLegacyUsername"
             }
         },
         // Admin-set banner overrides (from HyperCord's own backend), shown to every
@@ -249,61 +253,7 @@ export default definePlugin({
                 ContextMenuApi.openContextMenu(event, () => <BadgeContextMenu badge={badge} />);
             },
             onClick() {
-                openModal(props => (
-                    <ErrorBoundary noop onError={() => {
-                        props.onClose();
-                        VencordNative.native.openExternal("https://hypercord.pro/donate");
-                    }}>
-                        <Modal
-                            {...props}
-                            title={
-                                <Forms.FormTitle
-                                    tag="h2"
-                                    style={{
-                                        width: "100%",
-                                        textAlign: "center",
-                                        margin: 0
-                                    }}
-                                >
-                                    <Flex justifyContent="center" alignItems="center" gap="0.5em">
-                                        <Heart />
-                                        HyperCord Donor
-                                    </Flex>
-                                </Forms.FormTitle>
-                            }
-                        >
-                            <div>
-                                <Flex>
-                                    <img
-                                        role="presentation"
-                                        src="https://cdn.discordapp.com/emojis/1026533070955872337.png"
-                                        alt=""
-                                        style={{ margin: "auto" }}
-                                    />
-                                    <img
-                                        role="presentation"
-                                        src="https://cdn.discordapp.com/emojis/1026533090627174460.png"
-                                        alt=""
-                                        style={{ margin: "auto" }}
-                                    />
-                                </Flex>
-                                <div style={{ padding: "1em" }}>
-                                    <Forms.FormText>
-                                        This Badge is a special perk for HyperCord Donors
-                                    </Forms.FormText>
-                                    <Forms.FormText className={Margins.top20}>
-                                        Please consider supporting the development of HyperCord by becoming a donor. It would mean a lot!!
-                                    </Forms.FormText>
-                                </div>
-                            </div>
-                            <div>
-                                <Flex justifyContent="center" style={{ width: "100%" }}>
-                                    <DonateButton />
-                                </Flex>
-                            </div>
-                        </Modal>
-                    </ErrorBoundary>
-                ));
+                openSettingsPage("equicord_plugins", "Plugins");
             },
         } satisfies ProfileBadge));
     },
