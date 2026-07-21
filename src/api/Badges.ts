@@ -102,22 +102,25 @@ export function _getBadges(args: BadgeUserArgs) {
         }
     }
 
-    // Community-added badges (docs/badges.json) come first, so curated donor
-    // badges from HyperCord's own admin-managed backend take visual priority.
-    const customBadges = BadgeAPIPlugin.getCustomBadges(args.userId);
-    if (customBadges) {
-        badges.unshift(
-            ...customBadges.map(badge => ({
+    // Appended, not unshifted: these are HyperCord additions layered on top of
+    // Vencord's own badge Set above, and this whole array gets spliced in
+    // right before Discord's *own* real badges (Nitro, Staff, HypeSquad...)
+    // by the patch in _api/badges - unshifting here would put fake badges
+    // ahead of real ones within our own group too, on top of that.
+    const donorBadges = BadgeAPIPlugin.getDonorBadges(args.userId);
+    if (donorBadges) {
+        badges.push(
+            ...donorBadges.map(badge => ({
                 ...args,
                 ...badge,
             }))
         );
     }
 
-    const donorBadges = BadgeAPIPlugin.getDonorBadges(args.userId);
-    if (donorBadges) {
-        badges.unshift(
-            ...donorBadges.map(badge => ({
+    const customBadges = BadgeAPIPlugin.getCustomBadges(args.userId);
+    if (customBadges) {
+        badges.push(
+            ...customBadges.map(badge => ({
                 ...args,
                 ...badge,
             }))
