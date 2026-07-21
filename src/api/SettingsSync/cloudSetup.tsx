@@ -20,7 +20,7 @@ export async function checkCloudUrlCsp() {
     if (IS_WEB) return true;
 
     const { host } = getCloudUrl();
-    if (host === "api.vencord.dev") return true;
+    if (host === "api.vencord.dev" || host === "cloud.hypercord.pro") return true;
 
     if (await VencordNative.csp.isDomainAllowed(Settings.cloud.url, ["connect-src"])) {
         return true;
