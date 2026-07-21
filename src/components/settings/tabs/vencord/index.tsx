@@ -143,6 +143,7 @@ function VencordSettings() {
                         subtitle="Thank you for donating!"
                         description="Thank you for supporting HyperCord's development!"
                         cardImage={VENNIE_DONATOR_IMAGE}
+                        imageClassName="hc-donate-card-image"
                         backgroundImage={DONOR_BACKGROUND_IMAGE}
                         backgroundColor="#ED87A9"
                     >
@@ -154,6 +155,7 @@ function VencordSettings() {
                         title="Support the Project"
                         description="Please consider supporting the development of HyperCord by donating!"
                         cardImage={donateImage}
+                        imageClassName="hc-donate-card-image"
                         backgroundImage={DONOR_BACKGROUND_IMAGE}
                         backgroundColor="#c3a3ce"
                     >

@@ -43,18 +43,24 @@ const ContributorBadge: ProfileBadge = {
     onClick: (_, { userId }) => openContributorModal(UserStore.getUser(userId))
 };
 
-let DonorBadges = {} as Record<string, Array<Record<"tooltip" | "badge", string>>>;
+interface ProfileOverride {
+    badges: Array<Record<"tooltip" | "badge", string>>;
+    banner: string | null;
+    decoration: string | null;
+}
 
-const DONOR_BADGES_URL = "https://api.hypercord.pro/donors";
+let ProfileOverrides = {} as Record<string, ProfileOverride>;
+
+const PROFILES_URL = "https://api.hypercord.pro/profiles";
 
 async function loadBadges(noCache = false) {
     try {
         const init = {} as RequestInit;
         if (noCache) init.cache = "no-cache";
 
-        DonorBadges = await fetch(DONOR_BADGES_URL, init).then(r => r.json());
+        ProfileOverrides = await fetch(PROFILES_URL, init).then(r => r.json());
     } catch (e) {
-        new Logger("BadgeAPI").error("Failed to fetch donor badges", e);
+        new Logger("BadgeAPI").error("Failed to fetch profile overrides", e);
     }
 }
 
@@ -139,12 +145,22 @@ export default definePlugin({
                 match: /getBadges\(\)\{.{0,100}?return\[/,
                 replace: "$&...$self.getBadges(this),"
             }
+        },
+        // Admin-set banner overrides (from HyperCord's own backend), shown to every
+        // HyperCord user viewing that profile. Same hook point as the USRBG/FakeProfile
+        // plugins, just keyed by whoever's profile is being viewed instead of only self.
+        {
+            find: ':"SHOULD_LOAD");',
+            replacement: {
+                match: /\i(?:\?)?.getPreviewBanner\(\i,\i,\i\)(?=.{0,100}"COMPLETE")/,
+                replace: "$self.getBannerOverride(arguments[0])||$&"
+            }
         }
     ],
 
     // for access from the console or other plugins
     get DonorBadges() {
-        return DonorBadges;
+        return ProfileOverrides;
     },
 
     toolboxActions: {
@@ -205,7 +221,7 @@ export default definePlugin({
     },
 
     getDonorBadges(userId: string) {
-        return DonorBadges[userId]?.map((badge, idx) => ({
+        return ProfileOverrides[userId]?.badges?.map((badge, idx) => ({
             id: `hypercord_donor_badge_${idx}`,
             iconSrc: badge.badge,
             description: badge.tooltip,
@@ -277,6 +293,10 @@ export default definePlugin({
                 ));
             },
         } satisfies ProfileBadge));
+    },
+
+    getBannerOverride({ displayProfile }: any) {
+        return displayProfile?.userId ? ProfileOverrides[displayProfile.userId]?.banner || undefined : undefined;
     },
 
     getCustomBadges(userId: string) {
