@@ -6,6 +6,7 @@
 
 import "./styles.css";
 
+import { openSettingsPage } from "@plugins/commandPalette/commands/openSettings";
 import badges from "@plugins/_api/badges";
 import { Devs, EquicordDevs } from "@utils/constants";
 import { isEquicordPluginDev, isPluginDev } from "@utils/misc";
@@ -34,12 +35,18 @@ const discordBadges: readonly [number, string, string][] = Object.freeze([
     [18, "Moderator Programs Alumni", "fee1624003e2fee35cb398e125dc479b"]
 ]);
 
+// Clicking a badge in chat jumps to the plugin's own settings page (the
+// plugin that's responsible for showing that badge) instead of doing nothing.
+function openBadgePluginSettings() {
+    openSettingsPage("equicord_plugins", "Plugins");
+}
+
 function CheckBadge({ badge, author }: { badge: string; author: User; }): JSX.Element | null {
 
     switch (badge) {
         case "EquicordDonor":
             return (
-                <span style={{ order: settings.store.EquicordDonorPosition }}>
+                <span style={{ order: settings.store.EquicordDonorPosition, cursor: "pointer" }} onClick={openBadgePluginSettings}>
                     {badges.getEquicordDonorBadges(author.id)?.map(badge => (
                         <RoleIconComponent
                             key={author.id}
@@ -53,7 +60,7 @@ function CheckBadge({ badge, author }: { badge: string; author: User; }): JSX.El
             );
         case "EquicordContributer":
             return isEquicordPluginDev(author.id) ? (
-                <span style={{ order: settings.store.EquicordContributorPosition }}>
+                <span style={{ order: settings.store.EquicordContributorPosition, cursor: "pointer" }} onClick={openBadgePluginSettings}>
                     <RoleIconComponent
                         className={roleIcon}
                         name="Equicord Contributor"
@@ -64,7 +71,7 @@ function CheckBadge({ badge, author }: { badge: string; author: User; }): JSX.El
             ) : null;
         case "VencordDonor":
             return (
-                <span style={{ order: settings.store.VencordDonorPosition }}>
+                <span style={{ order: settings.store.VencordDonorPosition, cursor: "pointer" }} onClick={openBadgePluginSettings}>
                     {badges.getDonorBadges(author.id)?.map(badge => (
                         <RoleIconComponent
                             key={author.id}
@@ -78,12 +85,12 @@ function CheckBadge({ badge, author }: { badge: string; author: User; }): JSX.El
             );
         case "VencordContributer":
             return isPluginDev(author.id) ? (
-                <span style={{ order: settings.store.VencordContributorPosition }}>
+                <span style={{ order: settings.store.VencordContributorPosition, cursor: "pointer" }} onClick={openBadgePluginSettings}>
                     <RoleIconComponent
                         className={roleIcon}
-                        name="Vencord Contributor"
+                        name="HyperCord Contributor"
                         size={20}
-                        src={"https://cdn.discordapp.com/emojis/1092089799109775453.png"}
+                        src={"https://raw.githubusercontent.com/hypercordapp/hypercord/main/docs/hcanim.png"}
                     />
                 </span>
             ) : null;
