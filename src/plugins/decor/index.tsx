@@ -29,6 +29,10 @@ export default definePlugin({
     description: "Create and use your own custom avatar decorations, or pick your favorite from the presets.",
     tags: ["Appearance", "Customisation"],
     authors: [Devs.FieryFlames],
+    // Free avatar decorations for every HyperCord user, no Nitro required - on
+    // by default, but still toggleable (unlike `required`) for anyone who'd
+    // rather not have decorations show at all.
+    enabledByDefault: true,
     patches: [
         // Patch MediaResolver to return correct URL for Decor avatar decorations
         {
