@@ -36,25 +36,25 @@ const settings = definePluginSettings({
     },
     showVencordDonor: {
         type: OptionType.BOOLEAN,
-        description: "Enable to show Vencord donor badges in chat.",
+        description: "Enable to show HyperCord donor badges in chat.",
         hidden: true,
         default: true
     },
     VencordDonorPosition: {
         type: OptionType.NUMBER,
-        description: "The position of the Vencord Donor badges.",
+        description: "The position of the HyperCord Donor badges.",
         hidden: true,
         default: 4
     },
     showVencordContributor: {
         type: OptionType.BOOLEAN,
-        description: "Enable to show Vencord contributor badges in chat.",
+        description: "Enable to show HyperCord contributor badges in chat.",
         hidden: true,
         default: true
     },
     VencordContributorPosition: {
         type: OptionType.NUMBER,
-        description: "The position of the Vencord Contributor badge.",
+        description: "The position of the HyperCord Contributor badge.",
         hidden: true,
         default: 5
     },
@@ -95,8 +95,8 @@ const BadgeSettings = () => {
     const [images, setImages] = useState([
         { src: "https://badge.equicord.org/donor.webp", shown: settings.store.showEquicordDonor, title: "Equicord donor badges", key: "EquicordDonor", position: settings.store.EquicordDonorPosition },
         { src: "https://equicord.org/assets/favicon.png", shown: settings.store.showEquicordContributor, title: "Equicord contributor badge", key: "EquicordContributer", position: settings.store.EquicordContributorPosition },
-        { src: "https://cdn.discordapp.com/emojis/1026533070955872337.png", shown: settings.store.showVencordDonor, title: "Vencord donor badges", key: "VencordDonor", position: settings.store.VencordDonorPosition },
-        { src: "https://cdn.discordapp.com/emojis/1092089799109775453.png", shown: settings.store.showVencordContributor, title: "Vencord contributor badge", key: "VencordContributer", position: settings.store.VencordContributorPosition },
+        { src: "https://cdn.discordapp.com/emojis/1026533070955872337.png", shown: settings.store.showVencordDonor, title: "HyperCord donor badges", key: "VencordDonor", position: settings.store.VencordDonorPosition },
+        { src: "https://raw.githubusercontent.com/hypercordapp/hypercord/main/docs/hcanim.png", shown: settings.store.showVencordContributor, title: "HyperCord contributor badge", key: "VencordContributer", position: settings.store.VencordContributorPosition },
         { src: "https://cdn.discordapp.com/badge-icons/bf01d1073931f921909045f3a39fd264.png", shown: settings.store.showDiscordProfile, title: "Discord profile badges (HypeSquad, Discord Staff, Early Supporter, etc.)", key: "DiscordProfile", position: settings.store.DiscordProfilePosition },
         { src: "https://cdn.discordapp.com/badge-icons/2ba85e8026a8614b640c2837bcdfe21b.png", shown: settings.store.showDiscordNitro, title: "Nitro badge", key: "DiscordNitro", position: settings.store.DiscordNitroPosition }
     ]);
