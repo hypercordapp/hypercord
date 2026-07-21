@@ -82,6 +82,13 @@ export function removeProfileBadge(badge: ProfileBadge) {
  */
 export function _getBadges(args: BadgeUserArgs) {
     const badges = [] as ProfileBadge[];
+    // Held back and pushed right next to donor/custom below instead of mixed
+    // into the generic Set order - otherwise other plugins that also use
+    // BadgePosition.START (e.g. platformIndicators) can end up unshifted in
+    // between it and our own donor/custom badges depending on plugin start
+    // order, which reads as "random" instead of grouped together.
+    let contributorBadge: ProfileBadge | undefined;
+
     for (const badge of Badges) {
         if (badge.shouldShow && !badge.shouldShow(args)) {
             continue;
@@ -95,12 +102,19 @@ export function _getBadges(args: BadgeUserArgs) {
             }))
             : [{ ...args, ...badge }];
 
+        if (badge.id === "hypercord_contributor_badge") {
+            contributorBadge = b[0];
+            continue;
+        }
+
         if (badge.position === BadgePosition.START) {
             badges.unshift(...b);
         } else {
             badges.push(...b);
         }
     }
+
+    if (contributorBadge) badges.push(contributorBadge);
 
     // Appended, not unshifted: these are HyperCord additions layered on top of
     // Vencord's own badge Set above, and this whole array gets spliced in

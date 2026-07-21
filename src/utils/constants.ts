@@ -653,7 +653,13 @@ export const Devs = /* #__PURE__*/ Object.freeze({
     },
     HyperCordTeam: {
         name: "ryancherkii",
-        id: 1462496241693753558n
+        id: 1462496241693753558n,
+        // The Contributor credit badge would sit right in front of this
+        // account's own donor badges (Nitro/Booster/etc) and read as a
+        // confusing second "HyperCord" badge next to the real HyperCord
+        // special badge - kept off here specifically per request, dev credit
+        // elsewhere (author lists, contributor modal) is untouched.
+        badge: false
     }
 } satisfies Record<string, Dev>);
 
