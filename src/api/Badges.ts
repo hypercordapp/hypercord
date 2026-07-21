@@ -102,20 +102,22 @@ export function _getBadges(args: BadgeUserArgs) {
         }
     }
 
-    const donorBadges = BadgeAPIPlugin.getDonorBadges(args.userId);
-    if (donorBadges) {
+    // Community-added badges (docs/badges.json) come first, so curated donor
+    // badges from HyperCord's own admin-managed backend take visual priority.
+    const customBadges = BadgeAPIPlugin.getCustomBadges(args.userId);
+    if (customBadges) {
         badges.unshift(
-            ...donorBadges.map(badge => ({
+            ...customBadges.map(badge => ({
                 ...args,
                 ...badge,
             }))
         );
     }
 
-    const customBadges = BadgeAPIPlugin.getCustomBadges(args.userId);
-    if (customBadges) {
+    const donorBadges = BadgeAPIPlugin.getDonorBadges(args.userId);
+    if (donorBadges) {
         badges.unshift(
-            ...customBadges.map(badge => ({
+            ...donorBadges.map(badge => ({
                 ...args,
                 ...badge,
             }))
