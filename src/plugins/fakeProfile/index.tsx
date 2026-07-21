@@ -24,23 +24,27 @@ const SELF_PROFILES_BASE = "https://api.hypercord.pro/self/profiles";
 // HyperCord user viewing your profile sees them too, not just you. Best
 // effort/trust-based (no identity verification beyond your own client
 // reporting your own ID) - see hypercord-badge-api's /self routes.
+//
+// One atomic PUT of the full list, not "delete everything then re-add one by
+// one" - the old approach raced when two syncs overlapped (a Discord reload
+// fires this once immediately on plugin start and again on the reconnect's
+// CONNECTION_OPEN, close enough together to interleave) and produced
+// duplicate badges.
 export async function syncBadgesToBackend() {
     const userId = UserStore.getCurrentUser()?.id;
     if (!userId) return;
 
+    const badges = settings.store.selectedBadges
+        .map(key => BADGES_BY_KEY[key])
+        .filter(Boolean)
+        .map(badge => ({ badge: badge.iconSrc, tooltip: badge.label }));
+
     try {
-        await fetch(`${SELF_PROFILES_BASE}/${userId}/badges`, { method: "DELETE" });
-
-        for (const key of settings.store.selectedBadges) {
-            const badge = BADGES_BY_KEY[key];
-            if (!badge) continue;
-
-            await fetch(`${SELF_PROFILES_BASE}/${userId}/badges`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ badge: badge.iconSrc, tooltip: badge.label })
-            });
-        }
+        await fetch(`${SELF_PROFILES_BASE}/${userId}/badges`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ badges })
+        });
     } catch (e) {
         logger.error("Failed to sync badges to HyperCord", e);
     }

@@ -13,6 +13,8 @@ export interface CatalogBadge {
 export interface CatalogCategory {
     title: string;
     badges: CatalogBadge[];
+    /** Real Discord only ever grants one badge from this category at a time - picking one deselects the rest */
+    exclusive?: boolean;
 }
 
 function emojiUrl(id: string, animated = false) {
@@ -46,6 +48,7 @@ export const BADGE_CATALOG: CatalogCategory[] = [
     },
     {
         title: "HypeSquad Houses",
+        exclusive: true,
         badges: [
             { key: "house_bravery", label: "HypeSquad Bravery", iconSrc: emojiUrl("1362105004089147784") },
             { key: "house_brilliance", label: "HypeSquad Brilliance", iconSrc: emojiUrl("1362105019066748968") },
@@ -60,8 +63,8 @@ export const BADGE_CATALOG: CatalogCategory[] = [
     },
     {
         title: "Nitro",
+        exclusive: true,
         badges: [
-            { key: "nitro", label: "Nitro", iconSrc: emojiUrl("1362115714185691186", true) },
             { key: "nitro_classic", label: "Nitro Classic", iconSrc: emojiUrl("1528737728894734548") },
             { key: "nitro_bronze", label: "Nitro — Bronze", iconSrc: emojiUrl("1365454925357645994") },
             { key: "nitro_silver", label: "Nitro — Silver", iconSrc: emojiUrl("1365454972962996254") },
@@ -75,6 +78,7 @@ export const BADGE_CATALOG: CatalogCategory[] = [
     },
     {
         title: "Server Boost",
+        exclusive: true,
         badges: [
             { key: "boost_1", label: "Server Booster — 1 Month", iconSrc: emojiUrl("1387742464202379324") },
             { key: "boost_2", label: "Server Booster — 2 Months", iconSrc: emojiUrl("1387742437723602975") },

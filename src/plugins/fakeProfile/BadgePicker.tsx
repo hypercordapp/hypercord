@@ -8,15 +8,26 @@ import { classNameFactory } from "@utils/css";
 import { Checkbox, Forms, Text } from "@webpack/common";
 
 import { settings, syncBadgesToBackend } from ".";
-import { BADGE_CATALOG } from "./badgeCatalog";
+import { BADGE_CATALOG, CatalogCategory } from "./badgeCatalog";
 
 const cl = classNameFactory("vc-fakeprofile-");
 
-function toggle(key: string, checked: boolean) {
+function toggle(category: CatalogCategory, key: string, checked: boolean) {
     const current = settings.store.selectedBadges;
-    settings.store.selectedBadges = checked
-        ? [...current, key]
-        : current.filter(k => k !== key);
+
+    if (!checked) {
+        settings.store.selectedBadges = current.filter(k => k !== key);
+    } else if (category.exclusive) {
+        // Real Discord only ever shows one badge from these categories at a time
+        // (one Nitro tier, one boost-months tile, one HypeSquad house) - picking
+        // a new one here should replace whichever other one from the same
+        // category was selected, not just add another checkbox on top of it.
+        const categoryKeys = new Set(category.badges.map(b => b.key));
+        settings.store.selectedBadges = [...current.filter(k => !categoryKeys.has(k)), key];
+    } else {
+        settings.store.selectedBadges = [...current, key];
+    }
+
     syncBadgesToBackend();
 }
 
@@ -40,7 +51,7 @@ export function BadgePicker() {
                             <Checkbox
                                 key={badge.key}
                                 value={selected.has(badge.key)}
-                                onChange={(_, checked) => toggle(badge.key, checked)}
+                                onChange={(_, checked) => toggle(category, badge.key, checked)}
                                 size={18}
                             >
                                 <span className={cl("badge-label")}>
