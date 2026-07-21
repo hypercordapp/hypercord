@@ -3,8 +3,19 @@
 }
 
 [data-list-item-id="guildsnav___home"] {
-    background-image: url("https://raw.githubusercontent.com/hypercordapp/hypercord/main/docs/hcanim.png");
+    background-image: url("https://raw.githubusercontent.com/hypercordapp/hypercord/main/docs/hcanim.png") !important;
     background-size: cover;
     background-position: center;
     border-radius: 50%;
+}
+
+/* Discord paints its selected/hover pill state as an opaque background-color
+   on inner wrapper divs, which covers the icon above. Strip it everywhere
+   inside so the image stays visible no matter the selection state. */
+[data-list-item-id="guildsnav___home"] *,
+[data-list-item-id="guildsnav___home"]:hover,
+[data-list-item-id="guildsnav___home"][aria-selected="true"] {
+    background-color: transparent !important;
+    background-image: none !important;
+    box-shadow: none !important;
 }
