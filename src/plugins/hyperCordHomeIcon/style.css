@@ -2,20 +2,26 @@
     display: none;
 }
 
+/* Discord paints selected/hover states as opaque backgrounds (and dark
+   overlays via ::before/::after pseudo-elements) on this item and its
+   children, which cover the icon above. Strip all of it, including
+   pseudo-elements and filters, so nothing but the image ever shows. */
+[data-list-item-id="guildsnav___home"],
+[data-list-item-id="guildsnav___home"] *,
+[data-list-item-id="guildsnav___home"]::before,
+[data-list-item-id="guildsnav___home"]::after,
+[data-list-item-id="guildsnav___home"] *::before,
+[data-list-item-id="guildsnav___home"] *::after {
+    background-color: transparent !important;
+    background-image: none !important;
+    box-shadow: none !important;
+    filter: none !important;
+    opacity: 1 !important;
+}
+
 [data-list-item-id="guildsnav___home"] {
     background-image: url("https://raw.githubusercontent.com/hypercordapp/hypercord/main/docs/hcanim.png") !important;
     background-size: cover;
     background-position: center;
     border-radius: 50%;
-}
-
-/* Discord paints its selected/hover pill state as an opaque background-color
-   on inner wrapper divs, which covers the icon above. Strip it everywhere
-   inside so the image stays visible no matter the selection state. */
-[data-list-item-id="guildsnav___home"] *,
-[data-list-item-id="guildsnav___home"]:hover,
-[data-list-item-id="guildsnav___home"][aria-selected="true"] {
-    background-color: transparent !important;
-    background-image: none !important;
-    box-shadow: none !important;
 }
