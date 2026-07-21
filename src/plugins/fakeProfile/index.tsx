@@ -9,12 +9,70 @@ import "./styles.css";
 import { BadgePosition, BadgeUserArgs, ProfileBadge } from "@api/Badges";
 import { definePluginSettings } from "@api/Settings";
 import { Devs } from "@utils/constants";
+import { Logger } from "@utils/Logger";
 import definePlugin, { OptionType } from "@utils/types";
-import { FluxDispatcher, Forms, UserProfileStore, UserStore } from "@webpack/common";
+import { FluxDispatcher, Forms, Toasts, UserProfileStore, UserStore } from "@webpack/common";
 import virtualMerge from "virtual-merge";
 
 import { BADGES_BY_KEY } from "./badgeCatalog";
 import { BadgePicker } from "./BadgePicker";
+
+const logger = new Logger("FakeProfile");
+const SELF_PROFILES_BASE = "https://api.hypercord.pro/self/profiles";
+
+// Pushes your selected badges/banner to HyperCord's own backend so every
+// HyperCord user viewing your profile sees them too, not just you. Best
+// effort/trust-based (no identity verification beyond your own client
+// reporting your own ID) - see hypercord-badge-api's /self routes.
+export async function syncBadgesToBackend() {
+    const userId = UserStore.getCurrentUser()?.id;
+    if (!userId) return;
+
+    try {
+        await fetch(`${SELF_PROFILES_BASE}/${userId}/badges`, { method: "DELETE" });
+
+        for (const key of settings.store.selectedBadges) {
+            const badge = BADGES_BY_KEY[key];
+            if (!badge) continue;
+
+            await fetch(`${SELF_PROFILES_BASE}/${userId}/badges`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ badge: badge.iconSrc, tooltip: badge.label })
+            });
+        }
+    } catch (e) {
+        logger.error("Failed to sync badges to HyperCord", e);
+    }
+}
+
+export async function syncBannerToBackend() {
+    const userId = UserStore.getCurrentUser()?.id;
+    if (!userId) return;
+
+    try {
+        const res = await fetch(`${SELF_PROFILES_BASE}/${userId}/banner`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ url: settings.store.fakeBannerUrl || null })
+        });
+
+        if (res.status === 409) {
+            Toasts.show({
+                id: Toasts.genId(),
+                message: "Can't sync your banner - HyperCord staff already set one for you.",
+                type: Toasts.Type.FAILURE
+            });
+        }
+    } catch (e) {
+        logger.error("Failed to sync banner to HyperCord", e);
+    }
+}
+
+function syncOnConnect() {
+    syncBadgesToBackend();
+    syncBannerToBackend();
+}
 
 export const settings = definePluginSettings({
     fakeUsername: {
@@ -201,19 +259,21 @@ function clearPremiumOverride() {
 function SettingsAboutComponent() {
     return (
         <Forms.FormText>
-            Everything this plugin changes (username, display name, Nitro badge, account
-            creation date, banner, accent color, profile theme gradient, custom badges) is{" "}
-            <strong>only visible to you</strong>, in your own HyperCord client. It does not
-            change what other users see on your real Discord profile — that data lives on
-            Discord's servers and can't be spoofed client-side. Use the "Reapply Fake Profile"
-            toolbox action after changing settings while the plugin is already running.
+            Username, display name, Nitro badge, account creation date, accent color and
+            profile theme gradient are <strong>only visible to you</strong>, in your own
+            HyperCord client — that data lives on Discord's servers and can't be spoofed
+            client-side for other people.{" "}
+            <strong>Your selected badges and banner are different: they're synced to
+                HyperCord's own backend and shown to every HyperCord user viewing your
+                profile</strong>, not just you. Use the "Reapply Fake Profile" toolbox action
+            after changing settings while the plugin is already running to force a resync.
         </Forms.FormText>
     );
 }
 
 export default definePlugin({
     name: "FakeProfile",
-    description: "Locally fake your username, display name, badges, Nitro tier, banner, accent color, profile theme gradient and account creation date on your own profile — visible only to you",
+    description: "Locally fake your username, display name, Nitro tier, accent color and profile theme gradient on your own profile (visible only to you) — badges and banner sync to HyperCord's backend and show for every HyperCord user viewing your profile",
     tags: ["Fun", "Appearance"],
     authors: [Devs.HyperCordTeam],
     settings,
@@ -242,8 +302,14 @@ export default definePlugin({
     },
 
     toolboxActions: {
-        "Reapply Fake Profile"() {
+        async "Reapply Fake Profile"() {
             applyPremiumOverride();
+            await Promise.all([syncBadgesToBackend(), syncBannerToBackend()]);
+            Toasts.show({
+                id: Toasts.genId(),
+                message: "Synced badges and banner to HyperCord!",
+                type: Toasts.Type.SUCCESS
+            });
         }
     },
 
@@ -251,9 +317,13 @@ export default definePlugin({
         patchUserStore();
         patchUserProfileStore();
         applyPremiumOverride();
+
+        syncOnConnect();
+        FluxDispatcher.subscribe("CONNECTION_OPEN", syncOnConnect);
     },
 
     stop() {
+        FluxDispatcher.unsubscribe("CONNECTION_OPEN", syncOnConnect);
         clearPremiumOverride();
         unpatchUserStore();
         unpatchUserProfileStore();

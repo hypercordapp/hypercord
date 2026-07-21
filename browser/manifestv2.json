@@ -14,7 +14,9 @@
         "webRequest",
         "webRequestBlocking",
         "*://*.discord.com/*",
-        "https://raw.githubusercontent.com/*"
+        "https://raw.githubusercontent.com/*",
+        "https://api.hypercord.pro/*",
+        "https://cloud.hypercord.pro/*"
     ],
 
     "content_scripts": [
