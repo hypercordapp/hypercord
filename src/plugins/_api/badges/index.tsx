@@ -183,7 +183,7 @@ export default definePlugin({
         intervalId = setInterval(() => {
             loadBadges();
             loadCustomBadges();
-        }, 1000 * 60 * 30); // 30 minutes
+        }, 1000 * 60 * 3); // was 30 minutes - too slow to notice someone else's newly self-added badge
     },
 
     async stop() {
