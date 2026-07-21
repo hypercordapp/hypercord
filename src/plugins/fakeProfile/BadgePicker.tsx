@@ -7,7 +7,7 @@
 import { classNameFactory } from "@utils/css";
 import { Checkbox, Forms, Text } from "@webpack/common";
 
-import { settings } from ".";
+import { settings, syncBadgesToBackend } from ".";
 import { BADGE_CATALOG } from "./badgeCatalog";
 
 const cl = classNameFactory("vc-fakeprofile-");
@@ -17,6 +17,7 @@ function toggle(key: string, checked: boolean) {
     settings.store.selectedBadges = checked
         ? [...current, key]
         : current.filter(k => k !== key);
+    syncBadgesToBackend();
 }
 
 export function BadgePicker() {
@@ -26,7 +27,7 @@ export function BadgePicker() {
         <div>
             <Forms.FormTitle tag="h3">Badges</Forms.FormTitle>
             <Forms.FormText className={cl("hint")}>
-                Pick any badges to show on your own profile. Only visible to you.
+                Pick any badges to show on your profile. Synced to HyperCord's backend and shown to every HyperCord user viewing your profile.
             </Forms.FormText>
 
             {BADGE_CATALOG.map(category => (
