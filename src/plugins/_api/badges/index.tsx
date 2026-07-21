@@ -235,6 +235,16 @@ export default definePlugin({
             iconSrc: badge.badge,
             description: badge.tooltip,
             position: BadgePosition.START,
+            // Custom badge images come from arbitrary external URLs at
+            // arbitrary native resolutions/aspect ratios, unlike Discord's own
+            // pre-cropped badge assets. Discord's own badge CSS class already
+            // constrains the <img> box (real badges of very different native
+            // sizes all render identically), so we don't need to (and
+            // shouldn't guess/hardcode) a pixel size here - just fix how a
+            // non-square image fills that box instead of stretching to it.
+            props: {
+                style: { objectFit: "cover" }
+            },
             onContextMenu(event, badge) {
                 ContextMenuApi.openContextMenu(event, () => <BadgeContextMenu badge={badge} />);
             },
@@ -308,6 +318,16 @@ export default definePlugin({
             iconSrc: badge.badge,
             description: badge.tooltip,
             position: BadgePosition.START,
+            // Custom badge images come from arbitrary external URLs at
+            // arbitrary native resolutions/aspect ratios, unlike Discord's own
+            // pre-cropped badge assets. Discord's own badge CSS class already
+            // constrains the <img> box (real badges of very different native
+            // sizes all render identically), so we don't need to (and
+            // shouldn't guess/hardcode) a pixel size here - just fix how a
+            // non-square image fills that box instead of stretching to it.
+            props: {
+                style: { objectFit: "cover" }
+            },
             onContextMenu(event, badge) {
                 ContextMenuApi.openContextMenu(event, () => <BadgeContextMenu badge={badge} />);
             },
