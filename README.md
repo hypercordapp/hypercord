@@ -9,8 +9,7 @@
 ![](https://img.shields.io/github/package-json/v/hypercordapp/hypercord?style=for-the-badge&logo=github&logoColor=d3869b&label=&color=1d2021&labelColor=282828)
 ![](https://img.shields.io/github/license/hypercordapp/hypercord?style=for-the-badge&color=1d2021&labelColor=282828)
 
-<!-- TODO(discord): Discord sunucun hazır olduğunda invite linkini ekleyip bu satırı aç -->
-<!-- [![](https://img.shields.io/discord/YOUR_SERVER_ID?style=for-the-badge&label=Discord&color=5865F2&labelColor=282828)](https://discord.gg/YOUR_INVITE) -->
+[![](https://img.shields.io/discord/1529218860522274996?style=for-the-badge&label=Discord&color=5865F2&labelColor=282828)](https://discord.gg/hERUNb9k5b)
 
 **[Türkçe](#türkçe) · [English](#english)**
 
@@ -60,9 +59,7 @@ pnpm uninject
 
 ### Destek/Topluluk Sunucumuza Katıl
 
-<!-- TODO(discord): Discord sunucun hazır olduğunda invite linkini buraya ekle -->
-
-_yakında_
+**[discord.gg/hERUNb9k5b](https://discord.gg/hERUNb9k5b)**
 
 ### Destek Ol
 
@@ -149,9 +146,7 @@ pnpm uninject
 
 ### Join our Support/Community Server
 
-<!-- TODO(discord): add the invite link once your Discord server is ready -->
-
-_coming soon_
+**[discord.gg/hERUNb9k5b](https://discord.gg/hERUNb9k5b)**
 
 ### Support
 
