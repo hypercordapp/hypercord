@@ -88,6 +88,29 @@ async function refetchBadges() {
 
 let intervalId: any;
 
+// FakeProfile's Nitro/Boost catalog entries (badgeCatalog.ts) are cosmetic
+// clones of Discord's real premium-tenure and guild-booster-tenure badges, so
+// a genuine Nitro/Booster who also picks a fake tier would otherwise end up
+// with two Nitro- or Boost-shaped badges stacked side by side - the giveaway
+// that one of them isn't real. These patterns let a real Nitro/Boost user's
+// fake pick take over that slot instead of merely appending to it.
+// Matched against our own badge.label text (FakeProfile always prefixes its
+// catalog labels this way), not Discord's, so it's stable regardless of the
+// viewer's locale.
+const FAKE_NITRO_BADGE = /^nitro\b/i;
+const FAKE_BOOST_BADGE = /^server\s*booster\b/i;
+// Real Discord badge ids/descriptions for these aren't publicly documented,
+// but consistently contain these substrings across every known tenure badge.
+const REAL_NITRO_BADGE = /premium/i;
+const REAL_BOOST_BADGE = /boost/i;
+
+function realBadgeKind(badge: { id: string; description?: string; }): "nitro" | "boost" | null {
+    const haystack = `${badge.id} ${badge.description ?? ""}`;
+    if (REAL_NITRO_BADGE.test(haystack)) return "nitro";
+    if (REAL_BOOST_BADGE.test(haystack)) return "boost";
+    return null;
+}
+
 export function BadgeContextMenu({ badge }: { badge: Omit<ProfileBadge, "id"> & BadgeUserArgs; }) {
     return (
         <Menu.Menu
@@ -154,7 +177,7 @@ export default definePlugin({
             find: "getLegacyUsername(){",
             replacement: {
                 match: /getBadges\(\)\{return\[(.+?)\]\}getLegacyUsername/,
-                replace: "getBadges(){return[...$self.getBadges(this),$1]}getLegacyUsername"
+                replace: "getBadges(){return $self.mergeBadges($self.getBadges(this),[$1])}getLegacyUsername"
             }
         },
         // Admin-set banner overrides (from HyperCord's own backend), shown to every
@@ -212,6 +235,23 @@ export default definePlugin({
             new Logger("BadgeAPI#getBadges").error(e);
             return [];
         }
+    },
+
+    // Hides Discord's own real Nitro/Boost badge whenever our own badge set
+    // already contains a FakeProfile Nitro/Boost pick, so the fake one reads
+    // as the single real badge in that slot instead of doubling up with it.
+    mergeBadges(fakeBadges: ProfileBadge[], realBadges: Array<{ id: string; description?: string; }>) {
+        const hasFakeNitro = fakeBadges.some(b => FAKE_NITRO_BADGE.test(b.description ?? ""));
+        const hasFakeBoost = fakeBadges.some(b => FAKE_BOOST_BADGE.test(b.description ?? ""));
+
+        if (!hasFakeNitro && !hasFakeBoost) return [...fakeBadges, ...realBadges];
+
+        const filteredReal = realBadges.filter(badge => {
+            const kind = realBadgeKind(badge);
+            return !((kind === "nitro" && hasFakeNitro) || (kind === "boost" && hasFakeBoost));
+        });
+
+        return [...fakeBadges, ...filteredReal];
     },
 
     renderBadgeComponent: ErrorBoundary.wrap((badge: ProfileBadge & BadgeUserArgs) => {
