@@ -14,7 +14,7 @@ import { findByPropsLazy, findStoreLazy } from "@webpack";
 import { Menu, React, VoiceStateStore } from "@webpack/common";
 
 type TFollowedUserInfo = {
-    lastChannelId: string;
+    lastChannelId: string | null;
     userId: string;
 } | null;
 
@@ -61,11 +61,23 @@ const UserContextMenuPatch: NavContextMenuPatchCallback = (children, { channel, 
                     return;
                 }
 
+                // Start tracking from wherever they currently are, not just
+                // their next move, and jump there immediately if we can -
+                // otherwise "follow" only kicks in once they change channels
+                // again, which reads as broken if they're already in voice.
+                const currentChannelId = VoiceStateStore.getVoiceStateForUser(user.id)?.channelId ?? null;
                 followedUserInfo = {
-                    lastChannelId: UserStore.getCurrentUser().id,
+                    lastChannelId: currentChannelId,
                     userId: user.id
                 };
                 setChecked(true);
+
+                if (
+                    currentChannelId
+                    && (!settings.store.onlyWhenInVoice || VoiceStateStore.getVoiceStateForUser(UserStore.getCurrentUser().id))
+                ) {
+                    voiceChannelAction.selectVoiceChannel(currentChannelId);
+                }
             }}
         ></Menu.MenuCheckboxItem>
     );
@@ -93,19 +105,20 @@ export default definePlugin({
             ) return;
 
             voiceStates.forEach(voiceState => {
-                if (
-                    voiceState.userId === followedUserInfo!.userId
-                    && voiceState.channelId
-                    && voiceState.channelId !== followedUserInfo!.lastChannelId
-                ) {
+                if (voiceState.userId !== followedUserInfo!.userId) return;
+
+                if (voiceState.channelId && voiceState.channelId !== followedUserInfo!.lastChannelId) {
                     followedUserInfo!.lastChannelId = voiceState.channelId;
                     voiceChannelAction.selectVoiceChannel(followedUserInfo!.lastChannelId);
-                } else if (
-                    voiceState.userId === followedUserInfo!.userId
-                    && !voiceState.channelId
-                    && settings.store.leaveWhenUserLeaves
-                ) {
-                    voiceChannelAction.selectVoiceChannel(null);
+                } else if (!voiceState.channelId) {
+                    // Reset instead of leaving stale - otherwise rejoining the exact
+                    // same channel they just left wouldn't look like a change and we'd
+                    // silently fail to follow them back in.
+                    followedUserInfo!.lastChannelId = null;
+
+                    if (settings.store.leaveWhenUserLeaves) {
+                        voiceChannelAction.selectVoiceChannel(null);
+                    }
                 }
             });
         }
