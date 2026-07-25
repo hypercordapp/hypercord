@@ -40,29 +40,46 @@ const settings = definePluginSettings({
 let originalSetSelfMute: ((mute: boolean) => void) | undefined;
 let originalSetSelfDeaf: ((deaf: boolean) => void) | undefined;
 
-function patchConnection() {
-    if (!VoiceConnection?.prototype || originalSetSelfMute) return;
+// Resolving VoiceConnection (a lazy webpack find) can throw - either because
+// Vencord's find() reports a hard failure in dev builds when nothing matches,
+// or because some unrelated module's exports throw on property access while
+// the filter scans through everything currently loaded. Either way, this must
+// never take plugin start() down with it - a filter that stops matching
+// should just mean "no fake mute/deafen this time", not a crash.
+function patchConnection(): boolean {
+    try {
+        if (!VoiceConnection?.prototype || originalSetSelfMute) return false;
 
-    originalSetSelfMute = VoiceConnection.prototype.setSelfMute;
-    originalSetSelfDeaf = VoiceConnection.prototype.setSelfDeaf;
+        originalSetSelfMute = VoiceConnection.prototype.setSelfMute;
+        originalSetSelfDeaf = VoiceConnection.prototype.setSelfDeaf;
 
-    VoiceConnection.prototype.setSelfMute = function (this: unknown, mute: boolean) {
-        // Only the "go silent" direction is faked - unmuting always goes through for real,
-        // so turning the setting off mid-call can't leave you stuck silently muted.
-        if (mute && settings.store.fakeMute) return;
-        return originalSetSelfMute!.call(this, mute);
-    };
+        VoiceConnection.prototype.setSelfMute = function (this: unknown, mute: boolean) {
+            // Only the "go silent" direction is faked - unmuting always goes through for real,
+            // so turning the setting off mid-call can't leave you stuck silently muted.
+            if (mute && settings.store.fakeMute) return;
+            return originalSetSelfMute!.call(this, mute);
+        };
 
-    VoiceConnection.prototype.setSelfDeaf = function (this: unknown, deaf: boolean) {
-        if (deaf && settings.store.fakeDeafen) return;
-        return originalSetSelfDeaf!.call(this, deaf);
-    };
+        VoiceConnection.prototype.setSelfDeaf = function (this: unknown, deaf: boolean) {
+            if (deaf && settings.store.fakeDeafen) return;
+            return originalSetSelfDeaf!.call(this, deaf);
+        };
+
+        return true;
+    } catch (e) {
+        logger.error("Failed to patch the voice connection class", e);
+        return false;
+    }
 }
 
 function unpatchConnection() {
-    if (VoiceConnection?.prototype && originalSetSelfMute) {
-        VoiceConnection.prototype.setSelfMute = originalSetSelfMute;
-        VoiceConnection.prototype.setSelfDeaf = originalSetSelfDeaf;
+    try {
+        if (VoiceConnection?.prototype && originalSetSelfMute) {
+            VoiceConnection.prototype.setSelfMute = originalSetSelfMute;
+            VoiceConnection.prototype.setSelfDeaf = originalSetSelfDeaf;
+        }
+    } catch (e) {
+        logger.error("Failed to unpatch the voice connection class", e);
     }
     originalSetSelfMute = originalSetSelfDeaf = undefined;
 }
@@ -84,9 +101,8 @@ export default definePlugin({
     ),
 
     start() {
-        patchConnection();
-        if (!VoiceConnection) {
-            logger.warn("Could not locate the voice connection class - Fake Mute/Deafen will behave like the real thing until this is fixed.");
+        if (!patchConnection()) {
+            logger.warn("Could not locate or patch the voice connection class - Fake Mute/Deafen will behave like the real thing until this is fixed.");
         }
     },
 
