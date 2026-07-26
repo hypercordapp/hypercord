@@ -226,46 +226,42 @@ export default definePlugin({
         }
     },
 
-    // Order: our own (HyperCord) badges first, then Discord's real Nitro/Boost
-    // (if any), then every other real badge (Staff, Partner, HypeSquad, Bug
-    // Hunter...). Also hides a real Nitro/Boost badge whenever our own badge
-    // set already contains a matching FakeProfile pick, so the fake one reads
-    // as the single real badge in that slot instead of doubling up with it.
+    // Order: our own (HyperCord) badges first, then every real badge exactly
+    // as Discord itself ordered them - we don't touch that array's order or
+    // try to pick a specific entry out of it.
     //
-    // Locating the real Nitro/Boost badges inside the real array can't rely on
-    // matching their id/description text - that's undocumented and, in an
-    // earlier version of this, turned out to just never match anything, so
-    // the reorder silently did nothing. Instead this uses the profile's own
-    // verified premiumType/premiumGuildSince fields to know whether they
-    // exist at all, combined with how Discord actually builds that array
-    // (`[...this._userProfile.badges, ...this._guildMemberProfile?.badges]`):
-    // the real Nitro badge (if any) is always the last entry contributed by
-    // _userProfile.badges, and the real Boost badge (if any) is always the
-    // last entry overall, since _guildMemberProfile only ever contributes
-    // that one boost badge on top.
+    // Two earlier versions of this tried to locate the real Nitro/Boost badge
+    // inside the real array - first by matching its id/description text
+    // (never matched anything), then by assuming it always sits at a fixed
+    // position (last overall / last from _userProfile.badges). That position
+    // assumption is exactly as unverified as the text match was, and Discord's
+    // real badges array can contain other entries appended after Nitro (Quest
+    // Completed, Active Developer, etc. depending on client version), so
+    // "pop the last one and call it Nitro" can grab the wrong entry - which
+    // both fails to hide the real duplicate AND visibly misorders whatever it
+    // grabbed instead. We don't have a reliable way to identify Discord's
+    // entry from here.
+    //
+    // What we *do* have reliably is the profile's own verified premiumType/
+    // premiumGuildSince fields. So instead of hiding Discord's real badge, we
+    // drop our *own* cosmetic pick when a real one already exists for that
+    // category - the real badge then renders once, in whatever position
+    // Discord's own (untouched) array puts it.
     mergeBadges(
         profile: { premiumType?: number; premiumGuildSince?: unknown; },
         fakeBadges: ProfileBadge[],
         realBadges: Array<{ id: string; description?: string; }>
     ) {
-        const hasFakeNitro = fakeBadges.some(b => FAKE_NITRO_BADGE.test(b.description ?? ""));
-        const hasFakeBoost = fakeBadges.some(b => FAKE_BOOST_BADGE.test(b.description ?? ""));
-
         const hasRealNitro = (profile.premiumType ?? 0) > 0;
         const hasRealBoost = profile.premiumGuildSince != null;
 
-        const otherReal = [...realBadges];
-        let boostBadge, nitroBadge;
+        const dedupedFakeBadges = fakeBadges.filter(b => {
+            if (hasRealNitro && FAKE_NITRO_BADGE.test(b.description ?? "")) return false;
+            if (hasRealBoost && FAKE_BOOST_BADGE.test(b.description ?? "")) return false;
+            return true;
+        });
 
-        if (hasRealBoost) boostBadge = otherReal.pop();
-        if (hasRealNitro) nitroBadge = otherReal.pop();
-
-        const nitroOrBoost = [
-            ...(nitroBadge && !hasFakeNitro ? [nitroBadge] : []),
-            ...(boostBadge && !hasFakeBoost ? [boostBadge] : [])
-        ];
-
-        return [...fakeBadges, ...nitroOrBoost, ...otherReal];
+        return [...dedupedFakeBadges, ...realBadges];
     },
 
     renderBadgeComponent: ErrorBoundary.wrap((badge: ProfileBadge & BadgeUserArgs) => {
