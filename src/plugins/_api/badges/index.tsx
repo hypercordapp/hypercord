@@ -101,14 +101,16 @@ let intervalId: any;
 const FAKE_NITRO_BADGE = /^nitro\b/i;
 const FAKE_BOOST_BADGE = /^server\s*booster\b/i;
 
-// Discord's own real Nitro/Boost badge tooltips - unlike their id, which is
-// opaque/undocumented and never matched anything when tried before, the
-// visible tooltip text does actually say "Nitro" / mention boosting. Used
-// only to *classify* a real badge for sort order below, never to splice one
-// out of the array by position - that's what broke both dedup and ordering
-// last time (see mergeBadges).
-const REAL_NITRO_BADGE = /nitro/i;
-const REAL_BOOST_BADGE = /boost/i;
+// Discord's own real Nitro/Boost badges - verified against a live real badge
+// object (via a genuine Nitro+Boost account), not guessed: e.g.
+// { id: "premium_tenure_3_month_v2", description: "12.03.26 tarihinden beri abone" }
+// and { id: "guild_booster_lvl3", description: "12 Mar 2026 tarihinden beri
+// sunucu takviyesi yapıyor" }. description is server-localized to the
+// viewer's Discord language and never contains the words "nitro"/"boost" in
+// any locale - matching against it (as an earlier version of this did) can
+// never work. id is the stable, English, un-localized field.
+const REAL_NITRO_BADGE = /^premium/i;
+const REAL_BOOST_BADGE = /^guild_booster/i;
 
 const enum BadgeWeight {
     /** HyperCord's own: Contributor, Donor, Custom, and any FakeProfile pick that isn't a Nitro/Boost tier */
@@ -261,28 +263,37 @@ export default definePlugin({
         fakeBadges: ProfileBadge[],
         realBadges: Array<{ id: string; description?: string; }>
     ) {
+        // Our own catalog labels (FakeProfile always prefixes them this way) -
+        // stable regardless of the viewer's locale since we author them.
         const hasFakeNitro = fakeBadges.some(b => FAKE_NITRO_BADGE.test(b.description ?? ""));
         const hasFakeBoost = fakeBadges.some(b => FAKE_BOOST_BADGE.test(b.description ?? ""));
 
         // A picked fake tier wins over Discord's real badge for the same
         // category - picking a tier is a deliberate choice to show that tier
         // specifically, so it replaces the real one instead of the two
-        // stacking side by side.
+        // stacking side by side. Real badges are matched by id (see
+        // REAL_NITRO_BADGE/REAL_BOOST_BADGE above for why, not description).
         const dedupedRealBadges = realBadges.filter(b => {
-            if (hasFakeNitro && REAL_NITRO_BADGE.test(b.description ?? "")) return false;
-            if (hasFakeBoost && REAL_BOOST_BADGE.test(b.description ?? "")) return false;
+            if (hasFakeNitro && REAL_NITRO_BADGE.test(b.id)) return false;
+            if (hasFakeBoost && REAL_BOOST_BADGE.test(b.id)) return false;
             return true;
         });
 
-        const weigh = (badge: { description?: string; }, nitroPattern: RegExp, boostPattern: RegExp, defaultWeight: BadgeWeight) => {
-            if (nitroPattern.test(badge.description ?? "")) return BadgeWeight.Nitro;
-            if (boostPattern.test(badge.description ?? "")) return BadgeWeight.Boost;
-            return defaultWeight;
+        const weighFake = (badge: { description?: string; }) => {
+            if (FAKE_NITRO_BADGE.test(badge.description ?? "")) return BadgeWeight.Nitro;
+            if (FAKE_BOOST_BADGE.test(badge.description ?? "")) return BadgeWeight.Boost;
+            return BadgeWeight.Custom;
+        };
+
+        const weighReal = (badge: { id: string; }) => {
+            if (REAL_NITRO_BADGE.test(badge.id)) return BadgeWeight.Nitro;
+            if (REAL_BOOST_BADGE.test(badge.id)) return BadgeWeight.Boost;
+            return BadgeWeight.Other;
         };
 
         const weighted = [
-            ...fakeBadges.map(badge => ({ badge, weight: weigh(badge, FAKE_NITRO_BADGE, FAKE_BOOST_BADGE, BadgeWeight.Custom) })),
-            ...dedupedRealBadges.map(badge => ({ badge, weight: weigh(badge, REAL_NITRO_BADGE, REAL_BOOST_BADGE, BadgeWeight.Other) }))
+            ...fakeBadges.map(badge => ({ badge, weight: weighFake(badge) })),
+            ...dedupedRealBadges.map(badge => ({ badge, weight: weighReal(badge) }))
         ];
 
         return weighted.sort((a, b) => a.weight - b.weight).map(w => w.badge);
