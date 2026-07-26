@@ -15,7 +15,7 @@ import { FluxDispatcher, Forms, Toasts, UserProfileStore, UserStore } from "@web
 import virtualMerge from "virtual-merge";
 
 import { getBadgeAuthHeader, hasBadgeAuth } from "./badgeAuth";
-import { BADGES_BY_KEY } from "./badgeCatalog";
+import { BADGES_BY_KEY, sortByDisplayOrder } from "./badgeCatalog";
 import { BadgePicker } from "./BadgePicker";
 
 const logger = new Logger("FakeProfile");
@@ -44,7 +44,10 @@ export async function syncBadgesToBackend() {
     const auth = await getBadgeAuthHeader();
     if (!auth) return;
 
-    const badges = settings.store.selectedBadges
+    // Sorted to match real Discord's badge order, not whatever order they
+    // happened to get picked in the UI - otherwise e.g. picking Nitro before
+    // HypeSquad would show Nitro first, which real Discord never does.
+    const badges = sortByDisplayOrder(settings.store.selectedBadges)
         .map(key => BADGES_BY_KEY[key])
         .filter(Boolean)
         .map(badge => ({ badge: badge.iconSrc, tooltip: badge.label }));
