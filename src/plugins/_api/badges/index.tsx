@@ -92,8 +92,9 @@ let intervalId: any;
 // clones of Discord's real premium-tenure and guild-booster-tenure badges, so
 // a genuine Nitro/Booster who also picks a fake tier would otherwise end up
 // with two Nitro- or Boost-shaped badges stacked side by side - the giveaway
-// that one of them isn't real. These patterns let a real Nitro/Boost user's
-// fake pick take over that slot instead of merely appending to it.
+// that one of them isn't real. Picking a tier is an explicit choice, so the
+// fake pick wins: it takes over that slot and Discord's real badge for the
+// same category is dropped, instead of showing both.
 // Matched against our own badge.label text (FakeProfile always prefixes its
 // catalog labels this way), not Discord's, so it's stable regardless of the
 // viewer's locale.
@@ -184,7 +185,7 @@ export default definePlugin({
             find: "getLegacyUsername(){",
             replacement: {
                 match: /getBadges\(\)\{return\[(.+?)\]\}getLegacyUsername/,
-                replace: "getBadges(){return $self.mergeBadges(this,$self.getBadges(this),[$1])}getLegacyUsername"
+                replace: "getBadges(){return $self.mergeBadges($self.getBadges(this),[$1])}getLegacyUsername"
             }
         },
         // Admin-set banner overrides (from HyperCord's own backend), shown to every
@@ -257,20 +258,19 @@ export default definePlugin({
     // `.sort()` is stable (guaranteed since ES2019), so badges within the same
     // weight keep their relative order.
     mergeBadges(
-        profile: { premiumType?: number; premiumGuildSince?: unknown; },
         fakeBadges: ProfileBadge[],
         realBadges: Array<{ id: string; description?: string; }>
     ) {
-        const hasRealNitro = (profile.premiumType ?? 0) > 0;
-        const hasRealBoost = profile.premiumGuildSince != null;
+        const hasFakeNitro = fakeBadges.some(b => FAKE_NITRO_BADGE.test(b.description ?? ""));
+        const hasFakeBoost = fakeBadges.some(b => FAKE_BOOST_BADGE.test(b.description ?? ""));
 
-        // A real Nitro/Boost badge always wins over our own cosmetic pick for
-        // the same category - otherwise a genuine Nitro/Booster who also
-        // picked a matching FakeProfile badge would show two Nitro- or
-        // Boost-shaped badges side by side.
-        const dedupedFakeBadges = fakeBadges.filter(b => {
-            if (hasRealNitro && FAKE_NITRO_BADGE.test(b.description ?? "")) return false;
-            if (hasRealBoost && FAKE_BOOST_BADGE.test(b.description ?? "")) return false;
+        // A picked fake tier wins over Discord's real badge for the same
+        // category - picking a tier is a deliberate choice to show that tier
+        // specifically, so it replaces the real one instead of the two
+        // stacking side by side.
+        const dedupedRealBadges = realBadges.filter(b => {
+            if (hasFakeNitro && REAL_NITRO_BADGE.test(b.description ?? "")) return false;
+            if (hasFakeBoost && REAL_BOOST_BADGE.test(b.description ?? "")) return false;
             return true;
         });
 
@@ -281,8 +281,8 @@ export default definePlugin({
         };
 
         const weighted = [
-            ...dedupedFakeBadges.map(badge => ({ badge, weight: weigh(badge, FAKE_NITRO_BADGE, FAKE_BOOST_BADGE, BadgeWeight.Custom) })),
-            ...realBadges.map(badge => ({ badge, weight: weigh(badge, REAL_NITRO_BADGE, REAL_BOOST_BADGE, BadgeWeight.Other) }))
+            ...fakeBadges.map(badge => ({ badge, weight: weigh(badge, FAKE_NITRO_BADGE, FAKE_BOOST_BADGE, BadgeWeight.Custom) })),
+            ...dedupedRealBadges.map(badge => ({ badge, weight: weigh(badge, REAL_NITRO_BADGE, REAL_BOOST_BADGE, BadgeWeight.Other) }))
         ];
 
         return weighted.sort((a, b) => a.weight - b.weight).map(w => w.badge);
