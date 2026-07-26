@@ -18,7 +18,7 @@ const settings = definePluginSettings({
     fakeDeafen: {
         type: OptionType.BOOLEAN,
         default: false,
-        description: "Appear deafened to others when you deafen, while you keep hearing everyone normally"
+        description: "Appear muted and deafened to others when you deafen, while you keep hearing and talking normally"
     }
 });
 
@@ -43,13 +43,19 @@ export default definePlugin({
     // just the argument here means Discord's own broadcast of the real
     // self_mute/self_deaf state (built from the same original value elsewhere)
     // is untouched, while the local engine is told to stay unmuted/undeafened.
+    //
+    // Real Discord deafening also mutes you (you can't meaningfully listen-only
+    // without also cutting your mic in the normal client) - so setSelfMute
+    // needs to stay live under fakeDeafen too, not just fakeMute, or clicking
+    // Deafen with only "fake deafen" enabled genuinely cut your mic even
+    // though you still appeared to be able to talk.
     patches: [
         {
             find: ".setSelfMute(",
             replacement: [
                 {
                     match: /(\i)\.setSelfMute\((\i)\)/,
-                    replace: (_, conn, mute) => `${conn}.setSelfMute($self.settings.store.fakeMute?false:${mute})`
+                    replace: (_, conn, mute) => `${conn}.setSelfMute($self.settings.store.fakeMute||$self.settings.store.fakeDeafen?false:${mute})`
                 },
                 {
                     match: /(\i)\.setSelfDeaf\((\i(?:\.\i)?)\)/,
