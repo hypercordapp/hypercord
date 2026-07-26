@@ -2,10 +2,10 @@
     "manifest_version": 3,
     "minimum_chrome_version": "111",
 
-    "name": "Vencord Web",
-    "description": "The cutest Discord mod now in your browser",
-    "author": "Vendicated",
-    "homepage_url": "https://github.com/Vendicated/Vencord",
+    "name": "HyperCord Web",
+    "description": "Discord mod with more plugins than Equicord, now in your browser",
+    "author": "HyperCord Team",
+    "homepage_url": "https://github.com/hypercordapp/hypercord",
     "icons": {
         "128": "icon.png"
     },
