@@ -13,7 +13,7 @@ const settings = definePluginSettings({
     fakeMute: {
         type: OptionType.BOOLEAN,
         default: false,
-        description: "Appear muted to others when you mute, while your own mic keeps working for you"
+        description: "Appear muted to others when you mute (not deafen), while your own mic keeps working for you"
     },
     fakeDeafen: {
         type: OptionType.BOOLEAN,
@@ -33,10 +33,10 @@ export default definePlugin({
             Use the normal Mute/Deafen buttons (or the Toggle Mute / Toggle Deafen commands) as usual - this
             plugin only changes what those do to your own audio engine while the matching setting above is
             on. Discord still broadcasts you as muted/deafened to everyone else either way. Fake Mute keeps
-            your mic genuinely transmitting even though you look muted. Fake Deafen only fakes the listening
-            side - you keep hearing everyone, but your mic is really cut (nobody actually hears you, same as
-            a real deafen), so it isn't overridden here too. Turning a setting off mid-call, or actually
-            unmuting/undeafening, always goes through for real.
+            your mic genuinely transmitting when you mute - but never during a deafen, so deafening always
+            genuinely cuts your mic for real regardless of Fake Mute. Fake Deafen only fakes the listening
+            side - you keep hearing everyone, but nobody actually hears you either, same as a real deafen.
+            Turning a setting off mid-call, or actually unmuting/undeafening, always goes through for real.
         </Notice.Info>
     ),
 
@@ -55,19 +55,23 @@ export default definePlugin({
     // toggle - so it alone can't tell a plain mute click apart from the
     // auto-mute that comes bundled with deafening. <deaf> (`t.deaf`) is the
     // raw, undiluted deafen target from the same statement, which is what
-    // lets Fake Deafen's own rule apply correctly without needing that
-    // distinction: when actually deafening (<deaf> true) and Fake Deafen is
-    // on, <mute> is passed through unmodified so the real mute genuinely
-    // happens (nobody hears you, same as unmodified Discord) - Fake Mute is
-    // only consulted otherwise, so it can't keep your mic broadcasting
-    // during a fake-deafen just because it also happens to be enabled.
+    // lets this tell the two apart: whenever <deaf> is true, this is a
+    // deafen (or deafen-driven re-sync), so <mute> is always passed through
+    // unmodified - Fake Mute's override only applies to a plain mute
+    // (<deaf> false). This is deliberately independent of whether Fake
+    // Deafen is even on: a real deafen should always genuinely cut the mic
+    // for everyone, same as unmodified Discord, regardless of Fake Mute
+    // being separately enabled for plain mutes - otherwise deafening while
+    // Fake Mute was on for an unrelated reason kept the mic broadcasting
+    // despite looking both muted and deafened. Fake Deafen only ever
+    // controls the *listening* side (setSelfDeaf).
     patches: [
         {
             find: ".setSelfMute(",
             replacement: {
                 match: /(\i)\.setSelfMute\((\i)\),\1\.setSelfDeaf\((\i(?:\.\i)?)\)/,
                 replace: (_, conn, mute, deaf) =>
-                    `${conn}.setSelfMute(${deaf}&&$self.settings.store.fakeDeafen?${mute}:$self.settings.store.fakeMute?false:${mute}),` +
+                    `${conn}.setSelfMute(${deaf}?${mute}:$self.settings.store.fakeMute?false:${mute}),` +
                     `${conn}.setSelfDeaf($self.settings.store.fakeDeafen?false:${deaf})`
             }
         }
