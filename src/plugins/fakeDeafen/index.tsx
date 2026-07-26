@@ -40,34 +40,36 @@ export default definePlugin({
         </Notice.Info>
     ),
 
-    // The call site that actually engages the native audio engine looks like
-    // `<conn>.setSelfMute(<mute>)` / `<conn>.setSelfDeaf(<deaf>)` - overriding
-    // just the argument here means Discord's own broadcast of the real
-    // self_mute/self_deaf state (built from the same original value elsewhere)
-    // is untouched, while the local engine is told to stay unmuted/undeafened.
+    // Verified against the live client (not guessed): both calls happen
+    // together, in one statement, in the single function that (re)syncs the
+    // native engine to the current mute/deaf targets - `function ns(e){let
+    // t=ni(e.context),n=!to||t.mute||t.deaf; ... e.setSelfMute(n),
+    // e.setSelfDeaf(t.deaf), ...}`. This runs far more often than just on a
+    // button click (any VAD/PTT/permission recompute re-triggers it too), so
+    // whatever this patch decides keeps re-asserting continuously for as
+    // long as the underlying mute/deaf state stays the same - not just at
+    // the moment you click.
     //
-    // setSelfMute is only overridden under fakeMute, not fakeDeafen - an
-    // earlier version also forced it false under fakeDeafen (reasoning: real
-    // Discord deafening auto-mutes you too, so without this your mic would
-    // get genuinely cut), but that meant fakeDeafen secretly kept your own
-    // audio broadcasting to everyone else while you merely looked deafened -
-    // not what "fake deafen" is supposed to fake. Fake Deafen is only about
-    // faking the *listening* side (you still hear everyone despite looking
-    // deafened); the auto-mute that comes with a real deafen is left to
-    // genuinely happen, same as unmodified Discord.
+    // <mute> (`n` above) is already `t.mute||t.deaf||<other real reasons>` -
+    // an OR'd "should be muted for any reason", not just the manual mute
+    // toggle - so it alone can't tell a plain mute click apart from the
+    // auto-mute that comes bundled with deafening. <deaf> (`t.deaf`) is the
+    // raw, undiluted deafen target from the same statement, which is what
+    // lets Fake Deafen's own rule apply correctly without needing that
+    // distinction: when actually deafening (<deaf> true) and Fake Deafen is
+    // on, <mute> is passed through unmodified so the real mute genuinely
+    // happens (nobody hears you, same as unmodified Discord) - Fake Mute is
+    // only consulted otherwise, so it can't keep your mic broadcasting
+    // during a fake-deafen just because it also happens to be enabled.
     patches: [
         {
             find: ".setSelfMute(",
-            replacement: [
-                {
-                    match: /(\i)\.setSelfMute\((\i)\)/,
-                    replace: (_, conn, mute) => `${conn}.setSelfMute($self.settings.store.fakeMute?false:${mute})`
-                },
-                {
-                    match: /(\i)\.setSelfDeaf\((\i(?:\.\i)?)\)/,
-                    replace: (_, conn, deaf) => `${conn}.setSelfDeaf($self.settings.store.fakeDeafen?false:${deaf})`
-                }
-            ]
+            replacement: {
+                match: /(\i)\.setSelfMute\((\i)\),\1\.setSelfDeaf\((\i(?:\.\i)?)\)/,
+                replace: (_, conn, mute, deaf) =>
+                    `${conn}.setSelfMute(${deaf}&&$self.settings.store.fakeDeafen?${mute}:$self.settings.store.fakeMute?false:${mute}),` +
+                    `${conn}.setSelfDeaf($self.settings.store.fakeDeafen?false:${deaf})`
+            }
         }
     ]
 });
