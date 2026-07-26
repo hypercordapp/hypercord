@@ -100,3 +100,29 @@ export const BADGE_CATALOG: CatalogCategory[] = [
 export const BADGES_BY_KEY: Record<string, CatalogBadge> = Object.fromEntries(
     BADGE_CATALOG.flatMap(c => c.badges).map(b => [b.key, b])
 );
+
+// The catalog above is grouped for the picker UI (related badges kept
+// together for browsing), which isn't the same as the order real Discord
+// actually renders them in. That real order follows UserFlags bit order for
+// the achievement badges (HypeSquad Houses land between Bug Hunter 1 and 2,
+// Early Supporter before Bug Hunter 2, Active Developer near the very end),
+// with Nitro/Boost tenure always last since those come from a separate
+// subscription computation, not the flag bitfield.
+const DISPLAY_ORDER = [
+    "staff", "partner", "hypesquad",
+    "bug_hunter_1",
+    "house_bravery", "house_brilliance", "house_balance",
+    "early_supporter",
+    "bug_hunter_2",
+    "verified_developer",
+    "certified_moderator",
+    "active_developer",
+    "quest",
+    "nitro_classic", "nitro_bronze", "nitro_silver", "nitro_gold", "nitro_platinum", "nitro_diamond", "nitro_emerald", "nitro_ruby", "nitro_opal",
+    "boost_1", "boost_2", "boost_3", "boost_6", "boost_9", "boost_12", "boost_15", "boost_18", "boost_24",
+];
+
+/** Reorders badge keys to match real Discord's display order, regardless of what order they were picked in. */
+export function sortByDisplayOrder(keys: string[]): string[] {
+    return [...keys].sort((a, b) => DISPLAY_ORDER.indexOf(a) - DISPLAY_ORDER.indexOf(b));
+}
