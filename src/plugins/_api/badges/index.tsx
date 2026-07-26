@@ -99,17 +99,6 @@ let intervalId: any;
 // viewer's locale.
 const FAKE_NITRO_BADGE = /^nitro\b/i;
 const FAKE_BOOST_BADGE = /^server\s*booster\b/i;
-// Real Discord badge ids/descriptions for these aren't publicly documented,
-// but consistently contain these substrings across every known tenure badge.
-const REAL_NITRO_BADGE = /premium/i;
-const REAL_BOOST_BADGE = /boost/i;
-
-function realBadgeKind(badge: { id: string; description?: string; }): "nitro" | "boost" | null {
-    const haystack = `${badge.id} ${badge.description ?? ""}`;
-    if (REAL_NITRO_BADGE.test(haystack)) return "nitro";
-    if (REAL_BOOST_BADGE.test(haystack)) return "boost";
-    return null;
-}
 
 export function BadgeContextMenu({ badge }: { badge: Omit<ProfileBadge, "id"> & BadgeUserArgs; }) {
     return (
@@ -177,7 +166,7 @@ export default definePlugin({
             find: "getLegacyUsername(){",
             replacement: {
                 match: /getBadges\(\)\{return\[(.+?)\]\}getLegacyUsername/,
-                replace: "getBadges(){return $self.mergeBadges($self.getBadges(this),[$1])}getLegacyUsername"
+                replace: "getBadges(){return $self.mergeBadges(this,$self.getBadges(this),[$1])}getLegacyUsername"
             }
         },
         // Admin-set banner overrides (from HyperCord's own backend), shown to every
@@ -242,20 +231,39 @@ export default definePlugin({
     // Hunter...). Also hides a real Nitro/Boost badge whenever our own badge
     // set already contains a matching FakeProfile pick, so the fake one reads
     // as the single real badge in that slot instead of doubling up with it.
-    mergeBadges(fakeBadges: ProfileBadge[], realBadges: Array<{ id: string; description?: string; }>) {
+    //
+    // Locating the real Nitro/Boost badges inside the real array can't rely on
+    // matching their id/description text - that's undocumented and, in an
+    // earlier version of this, turned out to just never match anything, so
+    // the reorder silently did nothing. Instead this uses the profile's own
+    // verified premiumType/premiumGuildSince fields to know whether they
+    // exist at all, combined with how Discord actually builds that array
+    // (`[...this._userProfile.badges, ...this._guildMemberProfile?.badges]`):
+    // the real Nitro badge (if any) is always the last entry contributed by
+    // _userProfile.badges, and the real Boost badge (if any) is always the
+    // last entry overall, since _guildMemberProfile only ever contributes
+    // that one boost badge on top.
+    mergeBadges(
+        profile: { premiumType?: number; premiumGuildSince?: unknown; },
+        fakeBadges: ProfileBadge[],
+        realBadges: Array<{ id: string; description?: string; }>
+    ) {
         const hasFakeNitro = fakeBadges.some(b => FAKE_NITRO_BADGE.test(b.description ?? ""));
         const hasFakeBoost = fakeBadges.some(b => FAKE_BOOST_BADGE.test(b.description ?? ""));
 
-        const nitroOrBoost: typeof realBadges = [];
-        const otherReal: typeof realBadges = [];
+        const hasRealNitro = (profile.premiumType ?? 0) > 0;
+        const hasRealBoost = profile.premiumGuildSince != null;
 
-        for (const badge of realBadges) {
-            const kind = realBadgeKind(badge);
+        const otherReal = [...realBadges];
+        let boostBadge, nitroBadge;
 
-            if ((kind === "nitro" && hasFakeNitro) || (kind === "boost" && hasFakeBoost)) continue;
+        if (hasRealBoost) boostBadge = otherReal.pop();
+        if (hasRealNitro) nitroBadge = otherReal.pop();
 
-            (kind === "nitro" || kind === "boost" ? nitroOrBoost : otherReal).push(badge);
-        }
+        const nitroOrBoost = [
+            ...(nitroBadge && !hasFakeNitro ? [nitroBadge] : []),
+            ...(boostBadge && !hasFakeBoost ? [boostBadge] : [])
+        ];
 
         return [...fakeBadges, ...nitroOrBoost, ...otherReal];
     },
