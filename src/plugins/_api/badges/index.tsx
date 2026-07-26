@@ -100,6 +100,24 @@ let intervalId: any;
 const FAKE_NITRO_BADGE = /^nitro\b/i;
 const FAKE_BOOST_BADGE = /^server\s*booster\b/i;
 
+// Discord's own real Nitro/Boost badge tooltips - unlike their id, which is
+// opaque/undocumented and never matched anything when tried before, the
+// visible tooltip text does actually say "Nitro" / mention boosting. Used
+// only to *classify* a real badge for sort order below, never to splice one
+// out of the array by position - that's what broke both dedup and ordering
+// last time (see mergeBadges).
+const REAL_NITRO_BADGE = /nitro/i;
+const REAL_BOOST_BADGE = /boost/i;
+
+const enum BadgeWeight {
+    /** HyperCord's own: Contributor, Donor, Custom, and any FakeProfile pick that isn't a Nitro/Boost tier */
+    Custom = 1,
+    Nitro = 2,
+    Boost = 3,
+    /** Every other real Discord badge (Staff, Partner, HypeSquad, Bug Hunter, Active Developer...) */
+    Other = 4
+}
+
 export function BadgeContextMenu({ badge }: { badge: Omit<ProfileBadge, "id"> & BadgeUserArgs; }) {
     return (
         <Menu.Menu
@@ -226,27 +244,18 @@ export default definePlugin({
         }
     },
 
-    // Order: our own (HyperCord) badges first, then every real badge exactly
-    // as Discord itself ordered them - we don't touch that array's order or
-    // try to pick a specific entry out of it.
-    //
-    // Two earlier versions of this tried to locate the real Nitro/Boost badge
-    // inside the real array - first by matching its id/description text
-    // (never matched anything), then by assuming it always sits at a fixed
-    // position (last overall / last from _userProfile.badges). That position
-    // assumption is exactly as unverified as the text match was, and Discord's
-    // real badges array can contain other entries appended after Nitro (Quest
-    // Completed, Active Developer, etc. depending on client version), so
-    // "pop the last one and call it Nitro" can grab the wrong entry - which
-    // both fails to hide the real duplicate AND visibly misorders whatever it
-    // grabbed instead. We don't have a reliable way to identify Discord's
-    // entry from here.
-    //
-    // What we *do* have reliably is the profile's own verified premiumType/
-    // premiumGuildSince fields. So instead of hiding Discord's real badge, we
-    // drop our *own* cosmetic pick when a real one already exists for that
-    // category - the real badge then renders once, in whatever position
-    // Discord's own (untouched) array puts it.
+    // Target order: HyperCord/Custom -> Nitro -> Boost -> every other real
+    // Discord badge (Staff, Partner, HypeSquad, Bug Hunter, Active Developer...),
+    // mirroring how real Discord itself groups premium badges ahead of the
+    // achievement ones. Built as a single weighted `.sort()` over the combined
+    // list rather than splicing specific entries out of either array by index -
+    // an earlier version popped the last 1-2 entries off the real badges array
+    // assuming they were always Nitro/Boost, which broke as soon as Discord
+    // appended anything else after them (Quest Completed, Active Developer,
+    // etc. depending on client version): wrong entry got grabbed, which both
+    // failed to dedupe AND visibly misordered whatever it grabbed instead.
+    // `.sort()` is stable (guaranteed since ES2019), so badges within the same
+    // weight keep their relative order.
     mergeBadges(
         profile: { premiumType?: number; premiumGuildSince?: unknown; },
         fakeBadges: ProfileBadge[],
@@ -255,13 +264,28 @@ export default definePlugin({
         const hasRealNitro = (profile.premiumType ?? 0) > 0;
         const hasRealBoost = profile.premiumGuildSince != null;
 
+        // A real Nitro/Boost badge always wins over our own cosmetic pick for
+        // the same category - otherwise a genuine Nitro/Booster who also
+        // picked a matching FakeProfile badge would show two Nitro- or
+        // Boost-shaped badges side by side.
         const dedupedFakeBadges = fakeBadges.filter(b => {
             if (hasRealNitro && FAKE_NITRO_BADGE.test(b.description ?? "")) return false;
             if (hasRealBoost && FAKE_BOOST_BADGE.test(b.description ?? "")) return false;
             return true;
         });
 
-        return [...dedupedFakeBadges, ...realBadges];
+        const weigh = (badge: { description?: string; }, nitroPattern: RegExp, boostPattern: RegExp, defaultWeight: BadgeWeight) => {
+            if (nitroPattern.test(badge.description ?? "")) return BadgeWeight.Nitro;
+            if (boostPattern.test(badge.description ?? "")) return BadgeWeight.Boost;
+            return defaultWeight;
+        };
+
+        const weighted = [
+            ...dedupedFakeBadges.map(badge => ({ badge, weight: weigh(badge, FAKE_NITRO_BADGE, FAKE_BOOST_BADGE, BadgeWeight.Custom) })),
+            ...realBadges.map(badge => ({ badge, weight: weigh(badge, REAL_NITRO_BADGE, REAL_BOOST_BADGE, BadgeWeight.Other) }))
+        ];
+
+        return weighted.sort((a, b) => a.weight - b.weight).map(w => w.badge);
     },
 
     renderBadgeComponent: ErrorBoundary.wrap((badge: ProfileBadge & BadgeUserArgs) => {
