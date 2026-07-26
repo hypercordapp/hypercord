@@ -237,21 +237,27 @@ export default definePlugin({
         }
     },
 
-    // Hides Discord's own real Nitro/Boost badge whenever our own badge set
-    // already contains a FakeProfile Nitro/Boost pick, so the fake one reads
+    // Order: our own (HyperCord) badges first, then Discord's real Nitro/Boost
+    // (if any), then every other real badge (Staff, Partner, HypeSquad, Bug
+    // Hunter...). Also hides a real Nitro/Boost badge whenever our own badge
+    // set already contains a matching FakeProfile pick, so the fake one reads
     // as the single real badge in that slot instead of doubling up with it.
     mergeBadges(fakeBadges: ProfileBadge[], realBadges: Array<{ id: string; description?: string; }>) {
         const hasFakeNitro = fakeBadges.some(b => FAKE_NITRO_BADGE.test(b.description ?? ""));
         const hasFakeBoost = fakeBadges.some(b => FAKE_BOOST_BADGE.test(b.description ?? ""));
 
-        if (!hasFakeNitro && !hasFakeBoost) return [...fakeBadges, ...realBadges];
+        const nitroOrBoost: typeof realBadges = [];
+        const otherReal: typeof realBadges = [];
 
-        const filteredReal = realBadges.filter(badge => {
+        for (const badge of realBadges) {
             const kind = realBadgeKind(badge);
-            return !((kind === "nitro" && hasFakeNitro) || (kind === "boost" && hasFakeBoost));
-        });
 
-        return [...fakeBadges, ...filteredReal];
+            if ((kind === "nitro" && hasFakeNitro) || (kind === "boost" && hasFakeBoost)) continue;
+
+            (kind === "nitro" || kind === "boost" ? nitroOrBoost : otherReal).push(badge);
+        }
+
+        return [...fakeBadges, ...nitroOrBoost, ...otherReal];
     },
 
     renderBadgeComponent: ErrorBoundary.wrap((badge: ProfileBadge & BadgeUserArgs) => {
