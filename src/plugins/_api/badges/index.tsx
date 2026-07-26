@@ -22,6 +22,7 @@ import { _getBadges, BadgePosition, BadgeUserArgs, ProfileBadge } from "@api/Bad
 import ErrorBoundary from "@components/ErrorBoundary";
 import { openContributorModal } from "@components/settings/tabs";
 import { openSettingsPage } from "@plugins/commandPalette/commands/openSettings";
+import { BADGE_CATALOG } from "@plugins/fakeProfile/badgeCatalog";
 import { Devs } from "@utils/constants";
 import { copyWithToast } from "@utils/discord";
 import { Logger } from "@utils/Logger";
@@ -88,18 +89,32 @@ async function refetchBadges() {
 
 let intervalId: any;
 
-// FakeProfile's Nitro/Boost catalog entries (badgeCatalog.ts) are cosmetic
-// clones of Discord's real premium-tenure and guild-booster-tenure badges, so
-// a genuine Nitro/Booster who also picks a fake tier would otherwise end up
-// with two Nitro- or Boost-shaped badges stacked side by side - the giveaway
-// that one of them isn't real. Picking a tier is an explicit choice, so the
-// fake pick wins: it takes over that slot and Discord's real badge for the
-// same category is dropped, instead of showing both.
-// Matched against our own badge.label text (FakeProfile always prefixes its
-// catalog labels this way), not Discord's, so it's stable regardless of the
-// viewer's locale.
-const FAKE_NITRO_BADGE = /^nitro\b/i;
-const FAKE_BOOST_BADGE = /^server\s*booster\b/i;
+const enum BadgeWeight {
+    /** HyperCord identity: Contributor, arbitrary-text Donor badges, Custom badges, platform indicators - nothing from BADGE_CATALOG */
+    Custom = 1,
+    Nitro = 2,
+    Boost = 3,
+    /** Every other real Discord badge (Staff, Partner, HypeSquad, Bug Hunter, Active Developer...), and any FakeProfile pick cosplaying one of those categories */
+    Other = 4
+}
+
+// FakeProfile's catalog (badgeCatalog.ts) is the exact, known set of labels
+// a synced badge can have when it's a tier pick rather than an arbitrary
+// donor/custom badge - built once from data we author ourselves, so this is
+// an exact lookup instead of a locale-risky regex guess. A picked Nitro/Boost
+// tier is cosmetically standing in for that category, so it gets the same
+// weight a real Nitro/Boost badge would; a picked badge from every other
+// category (Early Supporter, Verified Bot Developer, HypeSquad...) likewise
+// gets grouped with Discord's other real badges instead of sitting up in the
+// HyperCord-identity group with the logo/donor name badges.
+const CATALOG_LABEL_WEIGHT = new Map<string, BadgeWeight>(
+    BADGE_CATALOG.flatMap(category => {
+        const weight = category.title === "Nitro" ? BadgeWeight.Nitro
+            : category.title === "Server Boost" ? BadgeWeight.Boost
+            : BadgeWeight.Other;
+        return category.badges.map(badge => [badge.label, weight] as const);
+    })
+);
 
 // Discord's own real Nitro/Boost badges - verified against a live real badge
 // object (via a genuine Nitro+Boost account), not guessed: e.g.
@@ -111,15 +126,6 @@ const FAKE_BOOST_BADGE = /^server\s*booster\b/i;
 // never work. id is the stable, English, un-localized field.
 const REAL_NITRO_BADGE = /^premium/i;
 const REAL_BOOST_BADGE = /^guild_booster/i;
-
-const enum BadgeWeight {
-    /** HyperCord's own: Contributor, Donor, Custom, and any FakeProfile pick that isn't a Nitro/Boost tier */
-    Custom = 1,
-    Nitro = 2,
-    Boost = 3,
-    /** Every other real Discord badge (Staff, Partner, HypeSquad, Bug Hunter, Active Developer...) */
-    Other = 4
-}
 
 export function BadgeContextMenu({ badge }: { badge: Omit<ProfileBadge, "id"> & BadgeUserArgs; }) {
     return (
@@ -247,26 +253,24 @@ export default definePlugin({
         }
     },
 
-    // Target order: HyperCord/Custom -> Nitro -> Boost -> every other real
-    // Discord badge (Staff, Partner, HypeSquad, Bug Hunter, Active Developer...),
-    // mirroring how real Discord itself groups premium badges ahead of the
-    // achievement ones. Built as a single weighted `.sort()` over the combined
-    // list rather than splicing specific entries out of either array by index -
-    // an earlier version popped the last 1-2 entries off the real badges array
-    // assuming they were always Nitro/Boost, which broke as soon as Discord
-    // appended anything else after them (Quest Completed, Active Developer,
-    // etc. depending on client version): wrong entry got grabbed, which both
-    // failed to dedupe AND visibly misordered whatever it grabbed instead.
-    // `.sort()` is stable (guaranteed since ES2019), so badges within the same
-    // weight keep their relative order.
+    // Target order: HyperCord identity -> Nitro -> Boost -> every other real
+    // Discord badge (Staff, Partner, HypeSquad, Bug Hunter, Active Developer,
+    // Early Supporter, Verified Bot Developer...) *and* any FakeProfile pick
+    // cosplaying one of those non-Nitro/Boost categories, grouped together.
+    // Built as a single weighted `.sort()` over the combined list rather than
+    // splicing specific entries out of either array by index - an earlier
+    // version popped the last 1-2 entries off the real badges array assuming
+    // they were always Nitro/Boost, which broke as soon as Discord appended
+    // anything else after them: wrong entry got grabbed, which both failed to
+    // dedupe AND visibly misordered whatever it grabbed instead. `.sort()` is
+    // stable (guaranteed since ES2019), so badges within the same weight keep
+    // their relative order.
     mergeBadges(
         fakeBadges: ProfileBadge[],
         realBadges: Array<{ id: string; description?: string; }>
     ) {
-        // Our own catalog labels (FakeProfile always prefixes them this way) -
-        // stable regardless of the viewer's locale since we author them.
-        const hasFakeNitro = fakeBadges.some(b => FAKE_NITRO_BADGE.test(b.description ?? ""));
-        const hasFakeBoost = fakeBadges.some(b => FAKE_BOOST_BADGE.test(b.description ?? ""));
+        const hasFakeNitro = fakeBadges.some(b => CATALOG_LABEL_WEIGHT.get(b.description ?? "") === BadgeWeight.Nitro);
+        const hasFakeBoost = fakeBadges.some(b => CATALOG_LABEL_WEIGHT.get(b.description ?? "") === BadgeWeight.Boost);
 
         // A picked fake tier wins over Discord's real badge for the same
         // category - picking a tier is a deliberate choice to show that tier
@@ -279,11 +283,7 @@ export default definePlugin({
             return true;
         });
 
-        const weighFake = (badge: { description?: string; }) => {
-            if (FAKE_NITRO_BADGE.test(badge.description ?? "")) return BadgeWeight.Nitro;
-            if (FAKE_BOOST_BADGE.test(badge.description ?? "")) return BadgeWeight.Boost;
-            return BadgeWeight.Custom;
-        };
+        const weighFake = (badge: { description?: string; }) => CATALOG_LABEL_WEIGHT.get(badge.description ?? "") ?? BadgeWeight.Custom;
 
         const weighReal = (badge: { id: string; }) => {
             if (REAL_NITRO_BADGE.test(badge.id)) return BadgeWeight.Nitro;
