@@ -17,11 +17,18 @@ export interface CatalogCategory {
     exclusive?: boolean;
 }
 
-// These are Discord's own real badge assets (discord.com/assets/<hash>.svg and
-// cdn.discordapp.com/badge-icons/<hash>.png) - the same files the real badges
-// use, not lookalike emoji. Picking one should render indistinguishably from
-// the genuine article. Cross-checked against multiple independent public
-// badge-hash references before use.
+// Kept for the Nitro tier badges specifically - the real discord.com/assets
+// tenure SVGs looked worse here than this existing emoji set, so those stay
+// on the old lookalike images while every other category uses the real ones.
+function emojiUrl(id: string, animated = false) {
+    return `https://cdn.discordapp.com/emojis/${id}.${animated ? "gif" : "png"}?size=64`;
+}
+
+// Most of these are Discord's own real badge assets (discord.com/assets/<hash>.svg
+// and cdn.discordapp.com/badge-icons/<hash>.png) - the same files the real badges
+// use, not lookalike emoji - cross-checked against multiple independent public
+// badge-hash references before use. The Nitro tier badges are the exception: see
+// emojiUrl below.
 export const BADGE_CATALOG: CatalogCategory[] = [
     {
         title: "General",
@@ -69,15 +76,15 @@ export const BADGE_CATALOG: CatalogCategory[] = [
         title: "Nitro",
         exclusive: true,
         badges: [
-            { key: "nitro_classic", label: "Nitro Classic", iconSrc: "https://discord.com/assets/24d05f3b46a110e538674edbac0db4cd.svg" },
-            { key: "nitro_bronze", label: "Nitro — Bronze (1 Month)", iconSrc: "https://discord.com/assets/0386191373eb17c272df.svg" },
-            { key: "nitro_silver", label: "Nitro — Silver (3 Months)", iconSrc: "https://discord.com/assets/9d4d362c62da3c985845.svg" },
-            { key: "nitro_gold", label: "Nitro — Gold (6 Months)", iconSrc: "https://discord.com/assets/8725fe12ada9afa51c1a.svg" },
-            { key: "nitro_platinum", label: "Nitro — Platinum (12 Months)", iconSrc: "https://discord.com/assets/746689c803e06be87705.svg" },
-            { key: "nitro_diamond", label: "Nitro — Diamond (24 Months)", iconSrc: "https://discord.com/assets/f3521e2861ff44a0384d.svg" },
-            { key: "nitro_emerald", label: "Nitro — Emerald (36 Months)", iconSrc: "https://discord.com/assets/f2b9b02fb22cc6459922.svg" },
-            { key: "nitro_ruby", label: "Nitro — Ruby (60 Months)", iconSrc: "https://discord.com/assets/ecf86e18838013c9d95a.svg" },
-            { key: "nitro_opal", label: "Nitro — Opal (72+ Months)", iconSrc: "https://discord.com/assets/b4fc7a9c37ec2fae36e3.svg" },
+            { key: "nitro_classic", label: "Nitro Classic", iconSrc: emojiUrl("1528737728894734548") },
+            { key: "nitro_bronze", label: "Nitro — Bronze (1 Month)", iconSrc: emojiUrl("1365454925357645994") },
+            { key: "nitro_silver", label: "Nitro — Silver (3 Months)", iconSrc: emojiUrl("1365454972962996254") },
+            { key: "nitro_gold", label: "Nitro — Gold (6 Months)", iconSrc: emojiUrl("1365454994337435739") },
+            { key: "nitro_platinum", label: "Nitro — Platinum (12 Months)", iconSrc: emojiUrl("1436738175509987378") },
+            { key: "nitro_diamond", label: "Nitro — Diamond (24 Months)", iconSrc: emojiUrl("1365455075937488967") },
+            { key: "nitro_emerald", label: "Nitro — Emerald (36 Months)", iconSrc: emojiUrl("1365455096296509524") },
+            { key: "nitro_ruby", label: "Nitro — Ruby (60 Months)", iconSrc: emojiUrl("1365455125187137536") },
+            { key: "nitro_opal", label: "Nitro — Opal (72+ Months)", iconSrc: emojiUrl("1365455150260551740") },
         ]
     },
     {
