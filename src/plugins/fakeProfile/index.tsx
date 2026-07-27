@@ -127,6 +127,19 @@ async function syncCosmeticFromUser(
         } catch (e) {
             logger.error(`Failed to fetch source profile for ${noun}`, e);
         }
+
+        // If the source user's OWN decoration/nameplate/profile effect are
+        // themselves synced HyperCord fakes (not real Discord data), reading
+        // them back here depends on OUR local ProfileOverrides cache being
+        // fresh - BadgeAPIPlugin only polls it every 3 minutes otherwise, so
+        // copying from someone who *just* set theirs up could still read
+        // stale (empty) data. Force a refresh right before extracting.
+        try {
+            await BadgeAPIPlugin.refetchBadges();
+        } catch (e) {
+            logger.error(`Failed to refresh HyperCord profile overrides before syncing ${noun}`, e);
+        }
+
         data = extract(sourceUserId) ?? null;
         // TEMPORARY diagnostic - remove once cross-viewer decoration/
         // nameplate is confirmed working.
