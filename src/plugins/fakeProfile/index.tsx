@@ -285,10 +285,15 @@ export const settings = definePluginSettings({
     }
 });
 
-const isOwnId = (userId: string) => userId === UserStore.getCurrentUser()?.id;
-
 let originalGetUser: typeof UserStore.getUser | undefined;
 let originalGetCurrentUser: typeof UserStore.getCurrentUser | undefined;
+
+// Must go through the ORIGINAL unpatched getCurrentUser, never the patched
+// UserStore.getCurrentUser - that one calls buildFakeUser, which (for the
+// current user) calls isOwnId, which would call the patched
+// getCurrentUser again - unbounded recursion/stack overflow. This bit
+// FakeProfile in production once already, don't reintroduce it.
+const isOwnId = (userId: string) => userId === (originalGetCurrentUser ?? UserStore.getCurrentUser.bind(UserStore))()?.id;
 let fakeUserCache = new WeakMap<object, unknown>();
 
 function parseHexColor(hex: string): number | undefined {
