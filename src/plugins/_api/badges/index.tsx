@@ -45,7 +45,18 @@ interface ProfileOverride {
     badges: Array<Record<"tooltip" | "badge", string>>;
     banner: string | null;
     decoration: string | null;
+    nameplate: string | null;
+    profileEffect: string | null;
 }
+
+// Marker skuId for HyperCord-synced avatar decorations, distinct from Decor's
+// own SKU_ID/RAW_SKU_ID (src/plugins/decor) so the two plugins' overrides
+// never collide if both happen to be enabled. Our stored `decoration` value
+// is already a full https URL (re-hosted via hypercord-badge-api's image
+// cache), so unlike Decor's own CDN-relative asset hashes there's no further
+// URL construction needed - same "pass the asset straight through" case as
+// Decor's own RAW_SKU_ID.
+const HYPERCORD_DECORATION_SKU_ID = "hypercord_decoration";
 
 let ProfileOverrides = {} as Record<string, ProfileOverride>;
 
@@ -205,6 +216,42 @@ export default definePlugin({
                 match: /\i(?:\?)?.getPreviewBanner\(\i,\i,\i\)(?=.{0,100}"COMPLETE")/,
                 replace: "$self.getBannerOverride(arguments[0])||$&"
             }
+        },
+        // Resolves a HyperCord-synced avatar decoration into its actual image URL.
+        // Same hook point/shape as the Decor plugin's own getAvatarDecorationURL
+        // patch (proven working there) - short-circuits with our own asset only
+        // when the marker skuId is present, otherwise falls through ($&) to
+        // Discord's real resolution (including Decor's own, if that's also active).
+        {
+            find: "getAvatarDecorationURL:",
+            replacement: {
+                match: /(?<=function \i\(\i\){)(?=let{avatarDecoration)/,
+                replace: "const vcHyperCordDecoration=$self.getDecorationOverrideURL(arguments[0]);if(vcHyperCordDecoration)return vcHyperCordDecoration;"
+            }
+        },
+        // Injects a HyperCord-synced avatar decoration for WHOEVER's profile is
+        // being rendered (not just self) into the same avatar-decoration-hook
+        // module Decor patches. Grouped like Decor's own patch here: all three
+        // replacements target one contiguous piece of real Discord code and
+        // must all apply together, or the injected variable would be either
+        // unused or referenced before its declaration.
+        {
+            find: "isAvatarDecorationAnimating:",
+            group: true,
+            replacement: [
+                {
+                    match: /(?<=\.avatarDecoration,guildId:\i\}\)\),)(?<=user:(\i).+?)/,
+                    replace: "vcHyperCordDecoration=$self.getDecorationOverride($1?.id),"
+                },
+                {
+                    match: /(?<={avatarDecoration:).{1,20}?(?=,)(?<=avatarDecorationOverride:(\i).+?)/,
+                    replace: "$1??(vcHyperCordDecoration?{asset:vcHyperCordDecoration,skuId:$self.HYPERCORD_DECORATION_SKU_ID}:void 0)??($&)"
+                },
+                {
+                    match: /(?<=size:\i}\),\[)/,
+                    replace: "vcHyperCordDecoration,"
+                }
+            ]
         }
     ],
 
@@ -345,6 +392,16 @@ export default definePlugin({
 
     getBannerOverride({ displayProfile }: any) {
         return displayProfile?.userId ? ProfileOverrides[displayProfile.userId]?.banner || undefined : undefined;
+    },
+
+    HYPERCORD_DECORATION_SKU_ID,
+
+    getDecorationOverride(userId: string | undefined) {
+        return userId ? ProfileOverrides[userId]?.decoration || undefined : undefined;
+    },
+
+    getDecorationOverrideURL({ avatarDecoration }: { avatarDecoration?: { skuId?: string; asset?: string; } | null; }) {
+        if (avatarDecoration?.skuId === HYPERCORD_DECORATION_SKU_ID) return avatarDecoration.asset;
     },
 
     getCustomBadges(userId: string) {
