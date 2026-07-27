@@ -15,7 +15,7 @@ import definePlugin, { OptionType } from "@utils/types";
 import { FluxDispatcher, Forms, GuildMemberStore, Toasts, UserProfileStore, UserStore } from "@webpack/common";
 import virtualMerge from "virtual-merge";
 
-import { getBadgeAuthHeader, hasBadgeAuth } from "./badgeAuth";
+import { clearBadgeAuth, getBadgeAuthHeader, hasBadgeAuth } from "./badgeAuth";
 import { BADGES_BY_KEY, sortByDisplayOrder } from "./badgeCatalog";
 import { BadgePicker } from "./BadgePicker";
 
@@ -173,6 +173,26 @@ async function syncCosmeticFromUser(
             Toasts.show({
                 id: Toasts.genId(),
                 message: `That user doesn't have a real ${noun} to copy - double check the ID.`,
+                type: Toasts.Type.FAILURE
+            });
+        } else if (res.status === 401) {
+            // The cached secret (shared across badges/banner/decoration/
+            // nameplate/profile effect) is stale/invalid - clear it so the
+            // NEXT sync attempt actually re-triggers the Discord
+            // authorization popup instead of silently reusing the same bad
+            // secret forever. This used to be a dead end with zero feedback.
+            await clearBadgeAuth();
+            if (!silent) {
+                Toasts.show({
+                    id: Toasts.genId(),
+                    message: `Couldn't sync your ${noun} - your HyperCord authorization expired, try again to re-authorize.`,
+                    type: Toasts.Type.FAILURE
+                });
+            }
+        } else if (!res.ok && !silent) {
+            Toasts.show({
+                id: Toasts.genId(),
+                message: `Couldn't sync your ${noun} to HyperCord (error ${res.status}).`,
                 type: Toasts.Type.FAILURE
             });
         } else if (res.ok) {
