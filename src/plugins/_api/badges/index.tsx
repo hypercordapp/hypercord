@@ -95,43 +95,101 @@ async function refetchBadges() {
 
 let intervalId: any;
 
-const enum BadgeWeight {
-    /** HyperCord identity: Contributor, arbitrary-text Donor badges, Custom badges, platform indicators - nothing from BADGE_CATALOG */
-    Custom = 1,
-    Nitro = 2,
-    Boost = 3,
-    /** Every other real Discord badge (Staff, Partner, HypeSquad, Bug Hunter, Active Developer...), and any FakeProfile pick cosplaying one of those categories */
-    Other = 4
+// Discord's real, fixed render order for the achievement/subscription badges -
+// every category gets its own exact slot instead of being lumped into one
+// "everything else" bucket, which is what let a picked fake badge from one
+// category (e.g. Early Supporter) land ahead of or behind a real badge from a
+// DIFFERENT category (e.g. Partner) purely by array-concatenation order
+// instead of Discord's actual category order. Unrecognized badges land last
+// (Unknown) rather than guessed into some other slot.
+const enum BadgePriority {
+    HyperCord = 1,
+    Staff = 2,
+    Partner = 3,
+    HypeSquadEvents = 4,
+    BugHunter = 5,
+    HypeSquadHouse = 6,
+    EarlySupporter = 7,
+    Nitro = 8,
+    Boost = 9,
+    ActiveDeveloper = 10,
+    VerifiedDeveloper = 11,
+    Quest = 12,
+    Unknown = 99
 }
 
-// FakeProfile's catalog (badgeCatalog.ts) is the exact, known set of labels
-// a synced badge can have when it's a tier pick rather than an arbitrary
-// donor/custom badge - built once from data we author ourselves, so this is
-// an exact lookup instead of a locale-risky regex guess. A picked Nitro/Boost
-// tier is cosmetically standing in for that category, so it gets the same
-// weight a real Nitro/Boost badge would; a picked badge from every other
-// category (Early Supporter, Verified Bot Developer, HypeSquad...) likewise
-// gets grouped with Discord's other real badges instead of sitting up in the
-// HyperCord-identity group with the logo/donor name badges.
-const CATALOG_LABEL_WEIGHT = new Map<string, BadgeWeight>(
-    BADGE_CATALOG.flatMap(category => {
-        const weight = category.title === "Nitro" ? BadgeWeight.Nitro
-            : category.title === "Server Boost" ? BadgeWeight.Boost
-            : BadgeWeight.Other;
-        return category.badges.map(badge => [badge.label, weight] as const);
-    })
+// badgeCatalog.ts key -> priority. Deliberately keyed by catalog `key`, not
+// `title` - the "General" category alone groups Staff/Partner/HypeSquad
+// Events/Active Developer, which are four different real priority slots.
+// Certified Moderator has no defined slot and is intentionally left out, so
+// it falls through to Unknown below rather than being guessed into one.
+const CATALOG_KEY_PRIORITY: Partial<Record<string, BadgePriority>> = {
+    staff: BadgePriority.Staff,
+    partner: BadgePriority.Partner,
+    hypesquad: BadgePriority.HypeSquadEvents,
+    active_developer: BadgePriority.ActiveDeveloper,
+    bug_hunter_1: BadgePriority.BugHunter,
+    bug_hunter_2: BadgePriority.BugHunter,
+    early_supporter: BadgePriority.EarlySupporter,
+    verified_developer: BadgePriority.VerifiedDeveloper,
+    house_bravery: BadgePriority.HypeSquadHouse,
+    house_brilliance: BadgePriority.HypeSquadHouse,
+    house_balance: BadgePriority.HypeSquadHouse,
+    quest: BadgePriority.Quest,
+};
+
+// FakeProfile's catalog (badgeCatalog.ts) is the exact, known set of labels a
+// synced badge can have when it's a tier pick rather than an arbitrary donor/
+// custom badge - built once from data we author ourselves, so this is an
+// exact lookup instead of a locale-risky regex guess. Nitro/Boost aren't in
+// CATALOG_KEY_PRIORITY above since every badge in those two catalog
+// categories shares one priority each - cheaper to fall back on category
+// title for just those two than list every tier individually.
+const LABEL_PRIORITY = new Map<string, BadgePriority>(
+    BADGE_CATALOG.flatMap(category => category.badges.map(badge => {
+        const priority = CATALOG_KEY_PRIORITY[badge.key]
+            ?? (category.title === "Nitro" ? BadgePriority.Nitro
+                : category.title === "Server Boost" ? BadgePriority.Boost
+                : BadgePriority.Unknown);
+        return [badge.label, priority] as const;
+    }))
 );
 
-// Discord's own real Nitro/Boost badges - verified against a live real badge
-// object (via a genuine Nitro+Boost account), not guessed: e.g.
+// Discord's own real badge ids. premium_*/guild_booster_* are verified
+// against a live real badge object (via a genuine Nitro+Boost account), e.g.
 // { id: "premium_tenure_3_month_v2", description: "12.03.26 tarihinden beri abone" }
 // and { id: "guild_booster_lvl3", description: "12 Mar 2026 tarihinden beri
-// sunucu takviyesi yapıyor" }. description is server-localized to the
-// viewer's Discord language and never contains the words "nitro"/"boost" in
-// any locale - matching against it (as an earlier version of this did) can
-// never work. id is the stable, English, un-localized field.
-const REAL_NITRO_BADGE = /^premium/i;
-const REAL_BOOST_BADGE = /^guild_booster/i;
+// sunucu takviyesi yapıyor" } - description is server-localized and never
+// contains the words "nitro"/"boost" in any locale, so id is the only stable
+// field to match on. The rest below are Discord's long-standing, publicly
+// documented flag-badge ids (unchanged for years), matched the same way.
+// Quest badge ids are NOT included - they aren't a stable/verified id shape
+// here, so an unmatched quest badge deliberately falls through to Unknown
+// rather than risking a wrong guess (see the HypeSquad sibling-patch incident
+// this file already avoided once - _api/badges' own patch comment above).
+const REAL_BADGE_ID_PRIORITY: [RegExp, BadgePriority][] = [
+    [/^premium/i, BadgePriority.Nitro],
+    [/^guild_booster/i, BadgePriority.Boost],
+    [/^staff$/i, BadgePriority.Staff],
+    [/^partner$/i, BadgePriority.Partner],
+    [/^hypesquad$/i, BadgePriority.HypeSquadEvents],
+    [/^hypesquad_online_house/i, BadgePriority.HypeSquadHouse],
+    [/^bug_hunter/i, BadgePriority.BugHunter],
+    [/^early_supporter$/i, BadgePriority.EarlySupporter],
+    [/^active_developer$/i, BadgePriority.ActiveDeveloper],
+    [/^verified_developer$/i, BadgePriority.VerifiedDeveloper],
+];
+
+function getFakeBadgePriority(badge: { description?: string; }): BadgePriority {
+    return LABEL_PRIORITY.get(badge.description ?? "") ?? BadgePriority.HyperCord;
+}
+
+function getRealBadgePriority(badge: { id: string; }): BadgePriority {
+    for (const [pattern, priority] of REAL_BADGE_ID_PRIORITY) {
+        if (pattern.test(badge.id)) return priority;
+    }
+    return BadgePriority.Unknown;
+}
 
 export function BadgeContextMenu({ badge }: { badge: Omit<ProfileBadge, "id"> & BadgeUserArgs; }) {
     return (
@@ -296,50 +354,39 @@ export default definePlugin({
         }
     },
 
-    // Target order: HyperCord identity -> Nitro -> Boost -> every other real
-    // Discord badge (Staff, Partner, HypeSquad, Bug Hunter, Active Developer,
-    // Early Supporter, Verified Bot Developer...) *and* any FakeProfile pick
-    // cosplaying one of those non-Nitro/Boost categories, grouped together.
-    // Built as a single weighted `.sort()` over the combined list rather than
-    // splicing specific entries out of either array by index - an earlier
-    // version popped the last 1-2 entries off the real badges array assuming
-    // they were always Nitro/Boost, which broke as soon as Discord appended
-    // anything else after them: wrong entry got grabbed, which both failed to
-    // dedupe AND visibly misordered whatever it grabbed instead. `.sort()` is
-    // stable (guaranteed since ES2019), so badges within the same weight keep
-    // their relative order.
+    // Single strict priority sort over the combined (fake + real) list - no
+    // slicing/popping/index-guessing against either array. Real badges are
+    // never filtered; a fake Nitro/Boost tier pick is dropped only when the
+    // user genuinely already has that real one, since showing both is a
+    // contradiction and the real one is the truth. `.sort()` is stable
+    // (guaranteed since ES2019), so badges that land on the same priority
+    // keep their relative order.
     mergeBadges(
         fakeBadges: ProfileBadge[],
         realBadges: Array<{ id: string; description?: string; }>
     ) {
-        const hasFakeNitro = fakeBadges.some(b => CATALOG_LABEL_WEIGHT.get(b.description ?? "") === BadgeWeight.Nitro);
-        const hasFakeBoost = fakeBadges.some(b => CATALOG_LABEL_WEIGHT.get(b.description ?? "") === BadgeWeight.Boost);
+        // "Genuinely has real Nitro/Boost" is exactly what makes Discord
+        // itself emit a premium_*/guild_booster_* badge here - equivalent to
+        // checking premiumType/premiumGuildSince directly, without a second
+        // store lookup for data this array already reflects.
+        const hasRealNitro = realBadges.some(b => getRealBadgePriority(b) === BadgePriority.Nitro);
+        const hasRealBoost = realBadges.some(b => getRealBadgePriority(b) === BadgePriority.Boost);
 
-        // A picked fake tier wins over Discord's real badge for the same
-        // category - picking a tier is a deliberate choice to show that tier
-        // specifically, so it replaces the real one instead of the two
-        // stacking side by side. Real badges are matched by id (see
-        // REAL_NITRO_BADGE/REAL_BOOST_BADGE above for why, not description).
-        const dedupedRealBadges = realBadges.filter(b => {
-            if (hasFakeNitro && REAL_NITRO_BADGE.test(b.id)) return false;
-            if (hasFakeBoost && REAL_BOOST_BADGE.test(b.id)) return false;
+        const dedupedFakeBadges = fakeBadges.filter(b => {
+            const priority = getFakeBadgePriority(b);
+            if (hasRealNitro && priority === BadgePriority.Nitro) return false;
+            if (hasRealBoost && priority === BadgePriority.Boost) return false;
             return true;
         });
 
-        const weighFake = (badge: { description?: string; }) => CATALOG_LABEL_WEIGHT.get(badge.description ?? "") ?? BadgeWeight.Custom;
-
-        const weighReal = (badge: { id: string; }) => {
-            if (REAL_NITRO_BADGE.test(badge.id)) return BadgeWeight.Nitro;
-            if (REAL_BOOST_BADGE.test(badge.id)) return BadgeWeight.Boost;
-            return BadgeWeight.Other;
-        };
-
-        const weighted = [
-            ...fakeBadges.map(badge => ({ badge, weight: weighFake(badge) })),
-            ...dedupedRealBadges.map(badge => ({ badge, weight: weighReal(badge) }))
+        const combined = [
+            ...dedupedFakeBadges.map(badge => ({ badge, priority: getFakeBadgePriority(badge) })),
+            ...realBadges.map(badge => ({ badge, priority: getRealBadgePriority(badge) }))
         ];
 
-        return weighted.sort((a, b) => a.weight - b.weight).map(w => w.badge);
+        return combined
+            .sort((a, b) => a.priority - b.priority)
+            .map(w => w.badge);
     },
 
     renderBadgeComponent: ErrorBoundary.wrap((badge: ProfileBadge & BadgeUserArgs) => {
