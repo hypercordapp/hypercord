@@ -9,6 +9,7 @@ import "./styles.css";
 import { definePluginSettings } from "@api/Settings";
 import BadgeAPIPlugin from "@plugins/_api/badges";
 import { Devs } from "@utils/constants";
+import { fetchUserProfile } from "@utils/discord";
 import { Logger } from "@utils/Logger";
 import definePlugin, { OptionType } from "@utils/types";
 import { FluxDispatcher, Forms, Toasts, UserProfileStore, UserStore } from "@webpack/common";
@@ -71,14 +72,63 @@ export async function syncBadgesToBackend() {
     }
 }
 
-// Shared by banner/avatar decoration/nameplate/profile effect below - same
-// PUT-a-URL-or-null shape, same admin-lock-aware 409 handling, only the route
-// segment and the toast wording differ.
-async function syncUrlFieldToBackend(routeSegment: string, url: string, noun: string, silent: boolean) {
+export async function syncBannerToBackend(silent = false) {
     const userId = UserStore.getCurrentUser()?.id;
     if (!userId) return;
 
-    if (!url && !await hasBadgeAuth()) return;
+    if (!settings.store.fakeBannerUrl && !await hasBadgeAuth()) return;
+
+    const auth = await getBadgeAuthHeader();
+    if (!auth) return;
+
+    try {
+        const res = await fetch(`${SELF_PROFILES_BASE}/${userId}/banner`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json", Authorization: auth },
+            body: JSON.stringify({ url: settings.store.fakeBannerUrl || null })
+        });
+
+        if (res.status === 409 && !silent) {
+            Toasts.show({
+                id: Toasts.genId(),
+                message: "Can't sync your banner - HyperCord staff already set one for you.",
+                type: Toasts.Type.FAILURE
+            });
+        } else if (res.ok) {
+            await BadgeAPIPlugin.refetchBadges();
+        }
+    } catch (e) {
+        logger.error("Failed to sync banner to HyperCord", e);
+    }
+}
+
+// Avatar decoration/nameplate/profile effect aren't a URL we host ourselves -
+// they're REAL Discord cosmetics, captured live off another real user's
+// profile (identified by Discord user ID) via fetchUserProfile, then synced
+// as-is. Because it's genuinely real asset/skuId data, Discord's own
+// (unpatched) rendering resolves it correctly for whoever views the profile -
+// no custom image hosting or URL construction needed, unlike banner above.
+async function syncCosmeticFromUser(
+    routeSegment: string,
+    sourceUserId: string,
+    noun: string,
+    silent: boolean,
+    extract: (sourceId: string) => Record<string, unknown> | null | undefined
+) {
+    const userId = UserStore.getCurrentUser()?.id;
+    if (!userId) return;
+
+    if (!sourceUserId && !await hasBadgeAuth()) return;
+
+    let data: Record<string, unknown> | null = null;
+    if (sourceUserId) {
+        try {
+            await fetchUserProfile(sourceUserId);
+        } catch (e) {
+            logger.error(`Failed to fetch source profile for ${noun}`, e);
+        }
+        data = extract(sourceUserId) ?? null;
+    }
 
     const auth = await getBadgeAuthHeader();
     if (!auth) return;
@@ -87,7 +137,7 @@ async function syncUrlFieldToBackend(routeSegment: string, url: string, noun: st
         const res = await fetch(`${SELF_PROFILES_BASE}/${userId}/${routeSegment}`, {
             method: "PUT",
             headers: { "Content-Type": "application/json", Authorization: auth },
-            body: JSON.stringify({ url: url || null })
+            body: JSON.stringify({ data })
         });
 
         // 409 here just means "an admin already set one of these for you and it
@@ -103,6 +153,12 @@ async function syncUrlFieldToBackend(routeSegment: string, url: string, noun: st
                 message: `Can't sync your ${noun} - HyperCord staff already set one for you.`,
                 type: Toasts.Type.FAILURE
             });
+        } else if (res.status === 400 && !silent) {
+            Toasts.show({
+                id: Toasts.genId(),
+                message: `That user doesn't have a real ${noun} to copy - double check the ID.`,
+                type: Toasts.Type.FAILURE
+            });
         } else if (res.ok) {
             await BadgeAPIPlugin.refetchBadges();
         }
@@ -111,20 +167,34 @@ async function syncUrlFieldToBackend(routeSegment: string, url: string, noun: st
     }
 }
 
-export function syncBannerToBackend(silent = false) {
-    return syncUrlFieldToBackend("banner", settings.store.fakeBannerUrl, "banner", silent);
-}
-
 export function syncAvatarDecorationToBackend(silent = false) {
-    return syncUrlFieldToBackend("decoration", settings.store.fakeAvatarDecorationUrl, "avatar decoration", silent);
+    return syncCosmeticFromUser(
+        "decoration",
+        settings.store.fakeAvatarDecorationFromUserId,
+        "avatar decoration",
+        silent,
+        id => (UserStore.getUser(id) as any)?.avatarDecorationData
+    );
 }
 
 export function syncNameplateToBackend(silent = false) {
-    return syncUrlFieldToBackend("nameplate", settings.store.fakeNameplateUrl, "nameplate", silent);
+    return syncCosmeticFromUser(
+        "nameplate",
+        settings.store.fakeNameplateFromUserId,
+        "nameplate",
+        silent,
+        id => (UserStore.getUser(id) as any)?.collectibles?.nameplate
+    );
 }
 
 export function syncProfileEffectToBackend(silent = false) {
-    return syncUrlFieldToBackend("profile-effect", settings.store.fakeProfileEffectUrl, "profile effect", silent);
+    return syncCosmeticFromUser(
+        "profile-effect",
+        settings.store.fakeProfileEffectFromUserId,
+        "profile effect",
+        silent,
+        id => (UserProfileStore.getUserProfile(id) as any)?.profileEffect
+    );
 }
 
 function syncOnConnect() {
@@ -167,19 +237,19 @@ export const settings = definePluginSettings({
         description: "Override your own profile banner with an image URL, synced to HyperCord's backend and shown to every HyperCord user viewing your profile (leave empty to disable)",
         default: ""
     },
-    fakeAvatarDecorationUrl: {
+    fakeAvatarDecorationFromUserId: {
         type: OptionType.STRING,
-        description: "Set an avatar decoration from an image URL (ideally a transparent PNG), synced to HyperCord's backend and shown to every HyperCord user viewing your profile (leave empty to disable)",
+        description: "Copy this Discord user's REAL avatar decoration onto your own profile (Discord user ID, they need to actually have one equipped) - synced to HyperCord's backend and shown to every HyperCord user viewing you (leave empty to disable)",
         default: ""
     },
-    fakeNameplateUrl: {
+    fakeNameplateFromUserId: {
         type: OptionType.STRING,
-        description: "Set a nameplate image URL - stored on HyperCord's backend, but not yet rendered on other viewers' clients (work in progress, leave empty to disable)",
+        description: "Copy this Discord user's REAL nameplate (Discord user ID, they need to actually have one equipped) - stored on HyperCord's backend, but not yet rendered on other viewers' clients (work in progress, leave empty to disable)",
         default: ""
     },
-    fakeProfileEffectUrl: {
+    fakeProfileEffectFromUserId: {
         type: OptionType.STRING,
-        description: "Set a profile effect image URL - stored on HyperCord's backend, but not yet rendered on other viewers' clients (work in progress, leave empty to disable)",
+        description: "Copy this Discord user's REAL profile effect (Discord user ID, they need to actually have one equipped) - stored on HyperCord's backend, but not yet rendered on other viewers' clients (work in progress, leave empty to disable)",
         default: ""
     },
     fakeAccentColor: {
