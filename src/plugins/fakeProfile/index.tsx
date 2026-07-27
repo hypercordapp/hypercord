@@ -71,45 +71,68 @@ export async function syncBadgesToBackend() {
     }
 }
 
-export async function syncBannerToBackend(silent = false) {
+// Shared by banner/avatar decoration/nameplate/profile effect below - same
+// PUT-a-URL-or-null shape, same admin-lock-aware 409 handling, only the route
+// segment and the toast wording differ.
+async function syncUrlFieldToBackend(routeSegment: string, url: string, noun: string, silent: boolean) {
     const userId = UserStore.getCurrentUser()?.id;
     if (!userId) return;
 
-    if (!settings.store.fakeBannerUrl && !await hasBadgeAuth()) return;
+    if (!url && !await hasBadgeAuth()) return;
 
     const auth = await getBadgeAuthHeader();
     if (!auth) return;
 
     try {
-        const res = await fetch(`${SELF_PROFILES_BASE}/${userId}/banner`, {
+        const res = await fetch(`${SELF_PROFILES_BASE}/${userId}/${routeSegment}`, {
             method: "PUT",
             headers: { "Content-Type": "application/json", Authorization: auth },
-            body: JSON.stringify({ url: settings.store.fakeBannerUrl || null })
+            body: JSON.stringify({ url: url || null })
         });
 
-        // 409 here just means "an admin banner is already set and your fakeBannerUrl
-        // conflicts with it" - a persistent state, not a one-off error. Since this
-        // same sync also runs silently on every reconnect (Discord reload/reconnect
+        // 409 here just means "an admin already set one of these for you and it
+        // conflicts" - a persistent state, not a one-off error. Since this same
+        // sync also runs silently on every reconnect (Discord reload/reconnect
         // fires CONNECTION_OPEN), toasting every time would spam the exact same
-        // message on every refresh. Only surface it for the explicit "Reapply Fake
-        // Profile" action below, where the user is actively asking for feedback.
+        // message on every refresh. Only surface it for the explicit "Reapply
+        // Fake Profile" action below, where the user is actively asking for
+        // feedback.
         if (res.status === 409 && !silent) {
             Toasts.show({
                 id: Toasts.genId(),
-                message: "Can't sync your banner - HyperCord staff already set one for you.",
+                message: `Can't sync your ${noun} - HyperCord staff already set one for you.`,
                 type: Toasts.Type.FAILURE
             });
         } else if (res.ok) {
             await BadgeAPIPlugin.refetchBadges();
         }
     } catch (e) {
-        logger.error("Failed to sync banner to HyperCord", e);
+        logger.error(`Failed to sync ${noun} to HyperCord`, e);
     }
+}
+
+export function syncBannerToBackend(silent = false) {
+    return syncUrlFieldToBackend("banner", settings.store.fakeBannerUrl, "banner", silent);
+}
+
+export function syncAvatarDecorationToBackend(silent = false) {
+    return syncUrlFieldToBackend("decoration", settings.store.fakeAvatarDecorationUrl, "avatar decoration", silent);
+}
+
+export function syncNameplateToBackend(silent = false) {
+    return syncUrlFieldToBackend("nameplate", settings.store.fakeNameplateUrl, "nameplate", silent);
+}
+
+export function syncProfileEffectToBackend(silent = false) {
+    return syncUrlFieldToBackend("profile-effect", settings.store.fakeProfileEffectUrl, "profile effect", silent);
 }
 
 function syncOnConnect() {
     syncBadgesToBackend();
     syncBannerToBackend(true);
+    syncAvatarDecorationToBackend(true);
+    syncNameplateToBackend(true);
+    syncProfileEffectToBackend(true);
 }
 
 export const settings = definePluginSettings({
@@ -141,7 +164,22 @@ export const settings = definePluginSettings({
     },
     fakeBannerUrl: {
         type: OptionType.STRING,
-        description: "Override your own profile banner with an image URL, shown on your own profile popout (leave empty to disable)",
+        description: "Override your own profile banner with an image URL, synced to HyperCord's backend and shown to every HyperCord user viewing your profile (leave empty to disable)",
+        default: ""
+    },
+    fakeAvatarDecorationUrl: {
+        type: OptionType.STRING,
+        description: "Set an avatar decoration from an image URL (ideally a transparent PNG), synced to HyperCord's backend and shown to every HyperCord user viewing your profile (leave empty to disable)",
+        default: ""
+    },
+    fakeNameplateUrl: {
+        type: OptionType.STRING,
+        description: "Set a nameplate image URL - stored on HyperCord's backend, but not yet rendered on other viewers' clients (work in progress, leave empty to disable)",
+        default: ""
+    },
+    fakeProfileEffectUrl: {
+        type: OptionType.STRING,
+        description: "Set a profile effect image URL - stored on HyperCord's backend, but not yet rendered on other viewers' clients (work in progress, leave empty to disable)",
         default: ""
     },
     fakeAccentColor: {
@@ -283,20 +321,24 @@ function SettingsAboutComponent() {
             profile theme gradient are <strong>only visible to you</strong>, in your own
             HyperCord client — that data lives on Discord's servers and can't be spoofed
             client-side for other people.{" "}
-            <strong>Your selected badges and banner are different: they're synced to
-                HyperCord's own backend and shown to every HyperCord user viewing your
-                profile</strong>, not just you. The first time you pick a badge or set a
-            banner, you'll get a one-time in-app Discord authorization prompt (identify
-            scope only) proving the account is really yours. Use the "Reapply Fake
-            Profile" toolbox action after changing settings while the plugin is already
-            running to force a resync.
+            <strong>Your selected badges, banner and avatar decoration are different:
+                they're synced to HyperCord's own backend and shown to every HyperCord
+                user viewing your profile</strong>, not just you. The first time you pick
+            a badge or set a banner/decoration, you'll get a one-time in-app Discord
+            authorization prompt (identify scope only) proving the account is really
+            yours.{" "}
+            <strong>Nameplate and profile effect are also synced to the backend
+                already, but the client-side rendering for other viewers isn't wired up
+                yet</strong> — they're stored and ready, this is still a work in
+            progress. Use the "Reapply Fake Profile" toolbox action after changing
+            settings while the plugin is already running to force a resync.
         </Forms.FormText>
     );
 }
 
 export default definePlugin({
     name: "FakeProfile",
-    description: "Locally fake your username, display name, Nitro tier, accent color and profile theme gradient on your own profile (visible only to you) — badges and banner sync to HyperCord's backend and show for every HyperCord user viewing your profile",
+    description: "Locally fake your username, display name, Nitro tier, accent color and profile theme gradient on your own profile (visible only to you) — badges, banner and avatar decoration sync to HyperCord's backend and show for every HyperCord user viewing your profile (nameplate/profile effect sync too, but aren't rendered for other viewers yet)",
     tags: ["Fun", "Appearance"],
     authors: [Devs.HyperCordTeam],
     settings,
@@ -325,10 +367,16 @@ export default definePlugin({
     toolboxActions: {
         async "Reapply Fake Profile"() {
             applyPremiumOverride();
-            await Promise.all([syncBadgesToBackend(), syncBannerToBackend()]);
+            await Promise.all([
+                syncBadgesToBackend(),
+                syncBannerToBackend(),
+                syncAvatarDecorationToBackend(),
+                syncNameplateToBackend(),
+                syncProfileEffectToBackend()
+            ]);
             Toasts.show({
                 id: Toasts.genId(),
-                message: "Synced badges and banner to HyperCord!",
+                message: "Synced badges, banner, avatar decoration, nameplate and profile effect to HyperCord!",
                 type: Toasts.Type.SUCCESS
             });
         }
