@@ -302,48 +302,46 @@ function parseHexColor(hex: string): number | undefined {
 }
 
 // Decoration/nameplate applies to ANY user with synced HyperCord data, not
-// just yourself - these are meant to be shown to every HyperCord user
-// viewing that profile, same as badges/banner already are. Username/
-// globalName/accentColor stay self-only fakes (added separately in
-// buildFakeUser below), those aren't backend-synced and would be actively
-// wrong to show for someone else's account.
-function applyCosmeticOverrides(real: any, overrides: Record<string, unknown>) {
-    // `real.avatarDecoration` is a computed getter over `avatarDecorationData`
-    // (discord-types' User class), so both the raw field and the
-    // getter-shadowing name are set - same reasoning for `collectibles`/
-    // `nameplate` below. This is on top of (not instead of) BadgeAPIPlugin's
-    // cross-viewer webpack patch, which may or may not also be matching.
+// just yourself - shown to every HyperCord user viewing that profile, same
+// as badges/banner already are. Applied by directly mutating the raw fields
+// (avatarDecorationData/collectibles) on the actual cached Discord Record
+// itself, NOT via virtualMerge's Proxy wrapper - confirmed by testing that
+// Profile Effect (which already used this same direct-mutation approach on
+// the UserProfileStore object) shows up for other viewers, while Frame/
+// Nameplate (previously done via virtualMerge, a separate Proxy object)
+// did not. Discord's own `.avatarDecoration`/`.nameplate` getters read off
+// `this.avatarDecorationData`/`this.collectibles` - mutating those raw
+// fields in place means the getters reflect the change naturally, without
+// needing the Proxy-receiver trick virtualMerge relies on.
+function applyCosmeticOverrides(real: any) {
     const decorationOverride = BadgeAPIPlugin.getDecorationOverride(real.id);
-    if (decorationOverride) {
-        overrides.avatarDecorationData = decorationOverride;
-        overrides.avatarDecoration = decorationOverride;
-    }
+    if (decorationOverride) real.avatarDecorationData = decorationOverride;
 
     const nameplateOverride = BadgeAPIPlugin.getNameplateOverride(real.id);
-    if (nameplateOverride) {
-        overrides.collectibles = { ...(real.collectibles ?? {}), nameplate: nameplateOverride };
-        overrides.nameplate = nameplateOverride;
-    }
+    if (nameplateOverride) real.collectibles = { ...(real.collectibles ?? {}), nameplate: nameplateOverride };
 }
 
 function buildFakeUser(real: any) {
     if (!real) return real;
+
+    applyCosmeticOverrides(real);
+
+    // Username/globalName/accentColor stay self-only fakes via virtualMerge
+    // (non-mutating) - these aren't backend-synced and would be actively
+    // wrong to show for someone else's account.
+    if (!isOwnId(real.id)) return real;
+
     const cached = fakeUserCache.get(real);
     if (cached !== undefined) return cached;
 
     const overrides: Record<string, unknown> = {};
+    if (settings.store.fakeUsername) overrides.username = settings.store.fakeUsername;
+    if (settings.store.fakeGlobalName) overrides.globalName = settings.store.fakeGlobalName;
 
-    if (isOwnId(real.id)) {
-        if (settings.store.fakeUsername) overrides.username = settings.store.fakeUsername;
-        if (settings.store.fakeGlobalName) overrides.globalName = settings.store.fakeGlobalName;
-
-        if (settings.store.fakeAccentColor) {
-            const color = parseHexColor(settings.store.fakeAccentColor);
-            if (color !== undefined) overrides.accentColor = color;
-        }
+    if (settings.store.fakeAccentColor) {
+        const color = parseHexColor(settings.store.fakeAccentColor);
+        if (color !== undefined) overrides.accentColor = color;
     }
-
-    applyCosmeticOverrides(real, overrides);
 
     const fake = Object.keys(overrides).length ? virtualMerge(real, overrides) : real;
     fakeUserCache.set(real, fake);
