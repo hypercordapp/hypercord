@@ -18,7 +18,7 @@ import virtualMerge from "virtual-merge";
 import { getBadgeAuthHeader, hasBadgeAuth } from "./badgeAuth";
 import { BADGES_BY_KEY, sortByDisplayOrder } from "./badgeCatalog";
 import { BadgePicker } from "./BadgePicker";
-import { AvatarDecorationPicker, NameplatePicker, ProfileEffectPicker } from "./CosmeticPicker";
+import { CosmeticsPicker } from "./CosmeticPicker";
 
 const logger = new Logger("FakeProfile");
 const SELF_PROFILES_BASE = "https://api.hypercord.pro/self/profiles";
@@ -168,10 +168,13 @@ async function syncCosmeticFromUser(
     }
 }
 
+// All three copy from the SAME source user - one Discord user ID gets you
+// their whole look (whichever of the three they actually have equipped)
+// instead of picking a different friend per cosmetic.
 export function syncAvatarDecorationToBackend(silent = false) {
     return syncCosmeticFromUser(
         "decoration",
-        settings.store.fakeAvatarDecorationFromUserId,
+        settings.store.fakeCosmeticsFromUserId,
         "avatar decoration",
         silent,
         id => (UserStore.getUser(id) as any)?.avatarDecorationData
@@ -181,7 +184,7 @@ export function syncAvatarDecorationToBackend(silent = false) {
 export function syncNameplateToBackend(silent = false) {
     return syncCosmeticFromUser(
         "nameplate",
-        settings.store.fakeNameplateFromUserId,
+        settings.store.fakeCosmeticsFromUserId,
         "nameplate",
         silent,
         id => (UserStore.getUser(id) as any)?.collectibles?.nameplate
@@ -191,19 +194,25 @@ export function syncNameplateToBackend(silent = false) {
 export function syncProfileEffectToBackend(silent = false) {
     return syncCosmeticFromUser(
         "profile-effect",
-        settings.store.fakeProfileEffectFromUserId,
+        settings.store.fakeCosmeticsFromUserId,
         "profile effect",
         silent,
         id => (UserProfileStore.getUserProfile(id) as any)?.profileEffect
     );
 }
 
+export function syncAllCosmeticsFromUser(silent = false) {
+    return Promise.all([
+        syncAvatarDecorationToBackend(silent),
+        syncNameplateToBackend(silent),
+        syncProfileEffectToBackend(silent)
+    ]);
+}
+
 function syncOnConnect() {
     syncBadgesToBackend();
     syncBannerToBackend(true);
-    syncAvatarDecorationToBackend(true);
-    syncNameplateToBackend(true);
-    syncProfileEffectToBackend(true);
+    syncAllCosmeticsFromUser(true);
 }
 
 export const settings = definePluginSettings({
@@ -238,20 +247,10 @@ export const settings = definePluginSettings({
         description: "Override your own profile banner with an image URL, synced to HyperCord's backend and shown to every HyperCord user viewing your profile (leave empty to disable)",
         default: ""
     },
-    fakeAvatarDecorationFromUserId: {
+    fakeCosmeticsFromUserId: {
         type: OptionType.COMPONENT,
         default: "",
-        component: AvatarDecorationPicker
-    },
-    fakeNameplateFromUserId: {
-        type: OptionType.COMPONENT,
-        default: "",
-        component: NameplatePicker
-    },
-    fakeProfileEffectFromUserId: {
-        type: OptionType.COMPONENT,
-        default: "",
-        component: ProfileEffectPicker
+        component: CosmeticsPicker
     },
     fakeAccentColor: {
         type: OptionType.STRING,
@@ -398,18 +397,19 @@ function SettingsAboutComponent() {
             a badge or set a banner/decoration, you'll get a one-time in-app Discord
             authorization prompt (identify scope only) proving the account is really
             yours.{" "}
-            <strong>Nameplate and profile effect are also synced to the backend
-                already, but the client-side rendering for other viewers isn't wired up
-                yet</strong> — they're stored and ready, this is still a work in
-            progress. Use the "Reapply Fake Profile" toolbox action after changing
-            settings while the plugin is already running to force a resync.
+            <strong>Nameplate and profile effect copy from that same user ID too</strong> —
+            all three come from a single pick, whichever of the three that user actually
+            has equipped. Rendering nameplate/profile effect for other viewers is still
+            experimental and may not show up yet. Use the "Reapply Fake Profile" toolbox
+            action after changing settings while the plugin is already running to force
+            a resync.
         </Forms.FormText>
     );
 }
 
 export default definePlugin({
     name: "FakeProfile",
-    description: "Locally fake your username, display name, Nitro tier, accent color and profile theme gradient on your own profile (visible only to you) — badges, banner and avatar decoration sync to HyperCord's backend and show for every HyperCord user viewing your profile (nameplate/profile effect sync too, but aren't rendered for other viewers yet)",
+    description: "Locally fake your username, display name, Nitro tier, accent color and profile theme gradient on your own profile (visible only to you) — badges, banner and avatar decoration sync to HyperCord's backend and show for every HyperCord user viewing your profile (nameplate/profile effect copy from the same user ID too, rendering for other viewers is still experimental)",
     tags: ["Fun", "Appearance"],
     authors: [Devs.HyperCordTeam],
     settings,
@@ -441,9 +441,7 @@ export default definePlugin({
             await Promise.all([
                 syncBadgesToBackend(),
                 syncBannerToBackend(),
-                syncAvatarDecorationToBackend(),
-                syncNameplateToBackend(),
-                syncProfileEffectToBackend()
+                syncAllCosmeticsFromUser()
             ]);
             Toasts.show({
                 id: Toasts.genId(),
