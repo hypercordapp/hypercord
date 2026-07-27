@@ -298,6 +298,17 @@ function buildFakeUser(real: any) {
         if (color !== undefined) overrides.accentColor = color;
     }
 
+    // Nameplate rendering for OTHER viewers is still unproven (see
+    // BadgeAPIPlugin's experimental patch), but setting it directly on your
+    // own User record here is the exact same proven mechanism accentColor
+    // above already uses - guaranteed to at least show up on your own
+    // client (profile popout, settings preview) even if the cross-viewer
+    // path never pans out.
+    const nameplateOverride = BadgeAPIPlugin.getNameplateOverride(real.id);
+    if (nameplateOverride) {
+        overrides.collectibles = { ...(real.collectibles ?? {}), nameplate: nameplateOverride };
+    }
+
     cachedRealUser = real;
     cachedFakeUser = Object.keys(overrides).length ? virtualMerge(real, overrides) : real;
     return cachedFakeUser;
@@ -348,6 +359,13 @@ function patchUserProfileStore() {
             const secondary = parseHexColor(fakeThemeColorSecondary) ?? primary;
             if (primary !== undefined && secondary !== undefined) profile.themeColors = [primary, secondary];
         }
+
+        // Same reasoning as the nameplate override in buildFakeUser above -
+        // guaranteed to show on your own client via the same mechanism as
+        // accentColor/themeColors, regardless of whether the cross-viewer
+        // webpack patch in BadgeAPIPlugin actually matches anything.
+        const profileEffectOverride = BadgeAPIPlugin.getProfileEffectOverride(id);
+        if (profileEffectOverride) profile.profileEffect = profileEffectOverride as any;
 
         return profile;
     }) as typeof UserProfileStore.getUserProfile;
