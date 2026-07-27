@@ -159,6 +159,11 @@ export const settings = definePluginSettings({
         description: "Secondary color of your own profile's two-tone theme gradient, hex like #EB459E (requires the primary color above to also be set)",
         default: ""
     },
+    fakeNameStyleColors: {
+        type: OptionType.STRING,
+        description: "Override your display name's color/gradient style everywhere it's shown (chat, member list, profile), comma-separated hex colors like #5865F2,#EB459E - one color for solid, two+ for a gradient (leave empty to disable)",
+        default: ""
+    },
     selectedBadges: {
         type: OptionType.COMPONENT,
         default: [] as string[],
@@ -178,6 +183,14 @@ function parseHexColor(hex: string): number | undefined {
     return match ? parseInt(match[1], 16) : undefined;
 }
 
+function parseNameStyleColors(value: string): number[] | undefined {
+    const colors = value
+        .split(",")
+        .map(part => parseHexColor(part))
+        .filter((c): c is number => c !== undefined);
+    return colors.length ? colors : undefined;
+}
+
 function buildFakeUser(real: any) {
     if (!real) return real;
     if (real === cachedRealUser) return cachedFakeUser;
@@ -189,6 +202,11 @@ function buildFakeUser(real: any) {
     if (settings.store.fakeAccentColor) {
         const color = parseHexColor(settings.store.fakeAccentColor);
         if (color !== undefined) overrides.accentColor = color;
+    }
+
+    if (settings.store.fakeNameStyleColors) {
+        const colors = parseNameStyleColors(settings.store.fakeNameStyleColors);
+        if (colors) overrides.displayNameStyles = { colors, effect_id: 0, font_id: 0 };
     }
 
     cachedRealUser = real;
@@ -279,8 +297,9 @@ function clearPremiumOverride() {
 function SettingsAboutComponent() {
     return (
         <Forms.FormText>
-            Username, display name, Nitro badge, account creation date, accent color and
-            profile theme gradient are <strong>only visible to you</strong>, in your own
+            Username, display name, Nitro badge, account creation date, accent color,
+            profile theme gradient and display name color style are <strong>only visible
+            to you</strong>, in your own
             HyperCord client — that data lives on Discord's servers and can't be spoofed
             client-side for other people.{" "}
             <strong>Your selected badges and banner are different: they're synced to
@@ -296,7 +315,7 @@ function SettingsAboutComponent() {
 
 export default definePlugin({
     name: "FakeProfile",
-    description: "Locally fake your username, display name, Nitro tier, accent color and profile theme gradient on your own profile (visible only to you) — badges and banner sync to HyperCord's backend and show for every HyperCord user viewing your profile",
+    description: "Locally fake your username, display name, Nitro tier, accent color, profile theme gradient and display name color style on your own profile (visible only to you) — badges and banner sync to HyperCord's backend and show for every HyperCord user viewing your profile",
     tags: ["Fun", "Appearance"],
     authors: [Devs.HyperCordTeam],
     settings,
