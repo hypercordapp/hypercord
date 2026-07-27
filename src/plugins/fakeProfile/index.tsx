@@ -289,57 +289,60 @@ const isOwnId = (userId: string) => userId === UserStore.getCurrentUser()?.id;
 
 let originalGetUser: typeof UserStore.getUser | undefined;
 let originalGetCurrentUser: typeof UserStore.getCurrentUser | undefined;
-let cachedRealUser: unknown;
-let cachedFakeUser: unknown;
+let fakeUserCache = new WeakMap<object, unknown>();
 
 function parseHexColor(hex: string): number | undefined {
     const match = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
     return match ? parseInt(match[1], 16) : undefined;
 }
 
-function buildFakeUser(real: any) {
-    if (!real) return real;
-    if (real === cachedRealUser) return cachedFakeUser;
-
-    const overrides: Record<string, unknown> = {};
-    if (settings.store.fakeUsername) overrides.username = settings.store.fakeUsername;
-    if (settings.store.fakeGlobalName) overrides.globalName = settings.store.fakeGlobalName;
-
-    if (settings.store.fakeAccentColor) {
-        const color = parseHexColor(settings.store.fakeAccentColor);
-        if (color !== undefined) overrides.accentColor = color;
-    }
-
-    // Same direct-override treatment as nameplate below - `real.avatarDecoration`
-    // is a computed getter over `avatarDecorationData` (discord-types' User
-    // class), so both the raw field and the getter-shadowing name are set.
-    // This is on top of (not instead of) BadgeAPIPlugin's cross-viewer
-    // webpack patch - guarantees it shows on your own client everywhere
-    // (DM sidebar AND inside a server) even if that patch only covers one
-    // of the two contexts.
+// Decoration/nameplate applies to ANY user with synced HyperCord data, not
+// just yourself - these are meant to be shown to every HyperCord user
+// viewing that profile, same as badges/banner already are. Username/
+// globalName/accentColor stay self-only fakes (added separately in
+// buildFakeUser below), those aren't backend-synced and would be actively
+// wrong to show for someone else's account.
+function applyCosmeticOverrides(real: any, overrides: Record<string, unknown>) {
+    // `real.avatarDecoration` is a computed getter over `avatarDecorationData`
+    // (discord-types' User class), so both the raw field and the
+    // getter-shadowing name are set - same reasoning for `collectibles`/
+    // `nameplate` below. This is on top of (not instead of) BadgeAPIPlugin's
+    // cross-viewer webpack patch, which may or may not also be matching.
     const decorationOverride = BadgeAPIPlugin.getDecorationOverride(real.id);
     if (decorationOverride) {
         overrides.avatarDecorationData = decorationOverride;
         overrides.avatarDecoration = decorationOverride;
     }
 
-    // Nameplate rendering for OTHER viewers is still unproven (see
-    // BadgeAPIPlugin's experimental patch). `real.nameplate` is a computed
-    // getter over `collectibles.nameplate` (see discord-types' User class) -
-    // overriding just `collectibles` and relying on virtualMerge's Proxy to
-    // forward the getter's `this` through didn't actually show anything, so
-    // this also sets `nameplate` directly: virtualMerge checks its override
-    // objects last-to-first, so a direct `overrides.nameplate` wins outright
-    // regardless of how the real getter resolves internally.
     const nameplateOverride = BadgeAPIPlugin.getNameplateOverride(real.id);
     if (nameplateOverride) {
         overrides.collectibles = { ...(real.collectibles ?? {}), nameplate: nameplateOverride };
         overrides.nameplate = nameplateOverride;
     }
+}
 
-    cachedRealUser = real;
-    cachedFakeUser = Object.keys(overrides).length ? virtualMerge(real, overrides) : real;
-    return cachedFakeUser;
+function buildFakeUser(real: any) {
+    if (!real) return real;
+    const cached = fakeUserCache.get(real);
+    if (cached !== undefined) return cached;
+
+    const overrides: Record<string, unknown> = {};
+
+    if (isOwnId(real.id)) {
+        if (settings.store.fakeUsername) overrides.username = settings.store.fakeUsername;
+        if (settings.store.fakeGlobalName) overrides.globalName = settings.store.fakeGlobalName;
+
+        if (settings.store.fakeAccentColor) {
+            const color = parseHexColor(settings.store.fakeAccentColor);
+            if (color !== undefined) overrides.accentColor = color;
+        }
+    }
+
+    applyCosmeticOverrides(real, overrides);
+
+    const fake = Object.keys(overrides).length ? virtualMerge(real, overrides) : real;
+    fakeUserCache.set(real, fake);
+    return fake;
 }
 
 function patchUserStore() {
@@ -348,11 +351,9 @@ function patchUserStore() {
     originalGetUser = UserStore.getUser.bind(UserStore);
     originalGetCurrentUser = UserStore.getCurrentUser.bind(UserStore);
 
-    UserStore.getUser = ((id: string) => {
-        const real = originalGetUser!(id);
-        if (!real || !isOwnId(id)) return real;
-        return buildFakeUser(real);
-    }) as typeof UserStore.getUser;
+    // No isOwnId gate here anymore - decoration/nameplate need to apply to
+    // whoever's profile is being viewed, not just your own account.
+    UserStore.getUser = ((id: string) => buildFakeUser(originalGetUser!(id))) as typeof UserStore.getUser;
 
     UserStore.getCurrentUser = (() => buildFakeUser(originalGetCurrentUser!())) as typeof UserStore.getCurrentUser;
 }
@@ -361,7 +362,7 @@ function unpatchUserStore() {
     if (originalGetUser) UserStore.getUser = originalGetUser;
     if (originalGetCurrentUser) UserStore.getCurrentUser = originalGetCurrentUser;
     originalGetUser = originalGetCurrentUser = undefined;
-    cachedRealUser = cachedFakeUser = undefined;
+    fakeUserCache = new WeakMap();
 }
 
 let originalGetUserProfile: typeof UserProfileStore.getUserProfile | undefined;
@@ -373,25 +374,25 @@ function patchUserProfileStore() {
 
     UserProfileStore.getUserProfile = ((id: string) => {
         const profile = originalGetUserProfile!(id);
-        if (!profile || !isOwnId(id)) return profile;
+        if (!profile) return profile;
 
-        const { fakeAccentColor, fakeThemeColorPrimary, fakeThemeColorSecondary } = settings.store;
+        if (isOwnId(id)) {
+            const { fakeAccentColor, fakeThemeColorPrimary, fakeThemeColorSecondary } = settings.store;
 
-        if (fakeAccentColor) {
-            const color = parseHexColor(fakeAccentColor);
-            if (color !== undefined) profile.accentColor = color;
+            if (fakeAccentColor) {
+                const color = parseHexColor(fakeAccentColor);
+                if (color !== undefined) profile.accentColor = color;
+            }
+
+            if (fakeThemeColorPrimary) {
+                const primary = parseHexColor(fakeThemeColorPrimary);
+                const secondary = parseHexColor(fakeThemeColorSecondary) ?? primary;
+                if (primary !== undefined && secondary !== undefined) profile.themeColors = [primary, secondary];
+            }
         }
 
-        if (fakeThemeColorPrimary) {
-            const primary = parseHexColor(fakeThemeColorPrimary);
-            const secondary = parseHexColor(fakeThemeColorSecondary) ?? primary;
-            if (primary !== undefined && secondary !== undefined) profile.themeColors = [primary, secondary];
-        }
-
-        // Same reasoning as the nameplate override in buildFakeUser above -
-        // guaranteed to show on your own client via the same mechanism as
-        // accentColor/themeColors, regardless of whether the cross-viewer
-        // webpack patch in BadgeAPIPlugin actually matches anything.
+        // Profile effect applies to ANY user with synced HyperCord data, same
+        // as decoration/nameplate - not gated to isOwnId.
         const profileEffectOverride = BadgeAPIPlugin.getProfileEffectOverride(id);
         if (profileEffectOverride) profile.profileEffect = profileEffectOverride as any;
 
@@ -412,7 +413,8 @@ let originalGetMember: typeof GuildMemberStore.getMember | undefined;
 // : user` just for nameplate (every other field reads the same way in both
 // contexts). Without this, the buildFakeUser override above only ever shows
 // up in the DM sidebar / global profile, never when viewing yourself in an
-// actual server, which is the more common case.
+// actual server, which is the more common case. Not gated to isOwnId either -
+// applies to any guild member with synced HyperCord data.
 function patchGuildMemberStore() {
     if (originalGetMember) return;
 
@@ -420,7 +422,7 @@ function patchGuildMemberStore() {
 
     GuildMemberStore.getMember = ((guildId: string, userId: string) => {
         const member = originalGetMember!(guildId, userId);
-        if (!member || !isOwnId(userId)) return member;
+        if (!member) return member;
 
         const decorationOverride = BadgeAPIPlugin.getDecorationOverride(userId);
         if (decorationOverride) {
@@ -473,26 +475,23 @@ function SettingsAboutComponent() {
             profile theme gradient are <strong>only visible to you</strong>, in your own
             HyperCord client — that data lives on Discord's servers and can't be spoofed
             client-side for other people.{" "}
-            <strong>Your selected badges, banner and avatar decoration (Frame) are
-                different: they're synced to HyperCord's own backend and shown to every
-                HyperCord user viewing your profile</strong>, not just you. The first time
-            you pick a badge or set a banner/decoration, you'll get a one-time in-app
-            Discord authorization prompt (identify scope only) proving the account is
-            really yours.{" "}
-            <strong>Nameplate and Profile Effect work the same way</strong> - three
-            fully independent Discord user IDs, a different friend per cosmetic if you
-            want (Frame, Nameplate and Profile Effect are three separate real Discord
-            cosmetics, not the same thing). Rendering Nameplate/Profile Effect for other
-            viewers is still experimental and may not show up yet. Use the "Reapply Fake
-            Profile" toolbox action after changing settings while the plugin is already
-            running to force a resync.
+            <strong>Your selected badges, banner, Frame, Nameplate and Profile Effect
+                are different: they're synced to HyperCord's own backend and shown to
+                every HyperCord user viewing your profile</strong>, not just you - each
+            of Frame/Nameplate/Profile Effect copies from its own independent Discord
+            user ID (they're three separate real Discord cosmetics, a different friend
+            per cosmetic if you want). The first time you pick a badge or set a
+            banner/decoration, you'll get a one-time in-app Discord authorization prompt
+            (identify scope only) proving the account is really yours. Use the "Reapply
+            Fake Profile" toolbox action after changing settings while the plugin is
+            already running to force a resync.
         </Forms.FormText>
     );
 }
 
 export default definePlugin({
     name: "FakeProfile",
-    description: "Locally fake your username, display name, Nitro tier, accent color and profile theme gradient on your own profile (visible only to you) — badges, banner and avatar decoration (Frame) sync to HyperCord's backend and show for every HyperCord user viewing your profile (Nameplate/Profile Effect copy independently too, rendering for other viewers is still experimental)",
+    description: "Locally fake your username, display name, Nitro tier, accent color and profile theme gradient on your own profile (visible only to you) — badges, banner, Frame (avatar decoration), Nameplate and Profile Effect sync to HyperCord's backend and show for every HyperCord user viewing your profile",
     tags: ["Fun", "Appearance"],
     authors: [Devs.HyperCordTeam],
     settings,
