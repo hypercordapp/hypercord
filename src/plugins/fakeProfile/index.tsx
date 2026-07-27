@@ -298,6 +298,19 @@ function buildFakeUser(real: any) {
         if (color !== undefined) overrides.accentColor = color;
     }
 
+    // Same direct-override treatment as nameplate below - `real.avatarDecoration`
+    // is a computed getter over `avatarDecorationData` (discord-types' User
+    // class), so both the raw field and the getter-shadowing name are set.
+    // This is on top of (not instead of) BadgeAPIPlugin's cross-viewer
+    // webpack patch - guarantees it shows on your own client everywhere
+    // (DM sidebar AND inside a server) even if that patch only covers one
+    // of the two contexts.
+    const decorationOverride = BadgeAPIPlugin.getDecorationOverride(real.id);
+    if (decorationOverride) {
+        overrides.avatarDecorationData = decorationOverride;
+        overrides.avatarDecoration = decorationOverride;
+    }
+
     // Nameplate rendering for OTHER viewers is still unproven (see
     // BadgeAPIPlugin's experimental patch). `real.nameplate` is a computed
     // getter over `collectibles.nameplate` (see discord-types' User class) -
@@ -396,6 +409,11 @@ function patchGuildMemberStore() {
     GuildMemberStore.getMember = ((guildId: string, userId: string) => {
         const member = originalGetMember!(guildId, userId);
         if (!member || !isOwnId(userId)) return member;
+
+        const decorationOverride = BadgeAPIPlugin.getDecorationOverride(userId);
+        if (decorationOverride) {
+            (member as any).avatarDecoration = decorationOverride;
+        }
 
         const nameplateOverride = BadgeAPIPlugin.getNameplateOverride(userId);
         if (nameplateOverride) {
