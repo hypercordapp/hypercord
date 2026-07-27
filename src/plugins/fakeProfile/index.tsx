@@ -18,6 +18,7 @@ import virtualMerge from "virtual-merge";
 import { getBadgeAuthHeader, hasBadgeAuth } from "./badgeAuth";
 import { BADGES_BY_KEY, sortByDisplayOrder } from "./badgeCatalog";
 import { BadgePicker } from "./BadgePicker";
+import { AvatarDecorationPicker, NameplatePicker, ProfileEffectPicker } from "./CosmeticPicker";
 
 const logger = new Logger("FakeProfile");
 const SELF_PROFILES_BASE = "https://api.hypercord.pro/self/profiles";
@@ -238,19 +239,19 @@ export const settings = definePluginSettings({
         default: ""
     },
     fakeAvatarDecorationFromUserId: {
-        type: OptionType.STRING,
-        description: "Copy this Discord user's REAL avatar decoration onto your own profile (Discord user ID, they need to actually have one equipped) - synced to HyperCord's backend and shown to every HyperCord user viewing you (leave empty to disable)",
-        default: ""
+        type: OptionType.COMPONENT,
+        default: "",
+        component: AvatarDecorationPicker
     },
     fakeNameplateFromUserId: {
-        type: OptionType.STRING,
-        description: "Copy this Discord user's REAL nameplate (Discord user ID, they need to actually have one equipped) - stored on HyperCord's backend, but not yet rendered on other viewers' clients (work in progress, leave empty to disable)",
-        default: ""
+        type: OptionType.COMPONENT,
+        default: "",
+        component: NameplatePicker
     },
     fakeProfileEffectFromUserId: {
-        type: OptionType.STRING,
-        description: "Copy this Discord user's REAL profile effect (Discord user ID, they need to actually have one equipped) - stored on HyperCord's backend, but not yet rendered on other viewers' clients (work in progress, leave empty to disable)",
-        default: ""
+        type: OptionType.COMPONENT,
+        default: "",
+        component: ProfileEffectPicker
     },
     fakeAccentColor: {
         type: OptionType.STRING,
