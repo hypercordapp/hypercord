@@ -6,8 +6,8 @@
 
 import "./styles.css";
 
-import { openSettingsPage } from "@plugins/commandPalette/commands/openSettings";
 import badges from "@plugins/_api/badges";
+import { openSettingsPage } from "@plugins/commandPalette/commands/openSettings";
 import { Devs, EquicordDevs } from "@utils/constants";
 import { isEquicordPluginDev, isPluginDev } from "@utils/misc";
 import definePlugin from "@utils/types";
