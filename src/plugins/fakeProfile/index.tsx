@@ -18,7 +18,6 @@ import virtualMerge from "virtual-merge";
 import { getBadgeAuthHeader, hasBadgeAuth } from "./badgeAuth";
 import { BADGES_BY_KEY, sortByDisplayOrder } from "./badgeCatalog";
 import { BadgePicker } from "./BadgePicker";
-import { CosmeticsPicker } from "./CosmeticPicker";
 
 const logger = new Logger("FakeProfile");
 const SELF_PROFILES_BASE = "https://api.hypercord.pro/self/profiles";
@@ -248,9 +247,9 @@ export const settings = definePluginSettings({
         default: ""
     },
     fakeCosmeticsFromUserId: {
-        type: OptionType.COMPONENT,
-        default: "",
-        component: CosmeticsPicker
+        type: OptionType.STRING,
+        description: "Copy this Discord user's REAL avatar decoration, nameplate and profile effect onto your own profile (Discord user ID, they need to actually have them equipped) - synced to HyperCord's backend (leave empty to disable)",
+        default: ""
     },
     fakeAccentColor: {
         type: OptionType.STRING,
