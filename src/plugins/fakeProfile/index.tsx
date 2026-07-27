@@ -128,6 +128,9 @@ async function syncCosmeticFromUser(
             logger.error(`Failed to fetch source profile for ${noun}`, e);
         }
         data = extract(sourceUserId) ?? null;
+        // TEMPORARY diagnostic - remove once cross-viewer decoration/
+        // nameplate is confirmed working.
+        logger.info(`syncCosmeticFromUser extract for ${noun}`, { sourceUserId, data });
     }
 
     const auth = await getBadgeAuthHeader();
@@ -355,6 +358,19 @@ function applyCosmeticOverrides(real: any) {
 
     const nameplateOverride = BadgeAPIPlugin.getNameplateOverride(real.id);
     if (nameplateOverride) real.collectibles = { ...(real.collectibles ?? {}), nameplate: nameplateOverride };
+
+    // TEMPORARY diagnostic - remove once cross-viewer decoration/nameplate is
+    // confirmed working. Only logs when there's actually a synced override to
+    // report, so this stays silent for the 99% of users with nothing synced.
+    if (decorationOverride || nameplateOverride) {
+        logger.info("applyCosmeticOverrides", {
+            userId: real.id,
+            decorationOverride,
+            nameplateOverride,
+            realAvatarDecorationDataAfter: real.avatarDecorationData,
+            realCollectiblesAfter: real.collectibles
+        });
+    }
 }
 
 function buildFakeUser(real: any) {
