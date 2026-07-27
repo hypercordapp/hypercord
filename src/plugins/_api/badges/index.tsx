@@ -95,64 +95,93 @@ async function refetchBadges() {
 
 let intervalId: any;
 
-// Discord's real, fixed render order for the achievement/subscription badges -
-// every category gets its own exact slot instead of being lumped into one
-// "everything else" bucket, which is what let a picked fake badge from one
-// category (e.g. Early Supporter) land ahead of or behind a real badge from a
-// DIFFERENT category (e.g. Partner) purely by array-concatenation order
-// instead of Discord's actual category order. Unrecognized badges land last
-// (Unknown) rather than guessed into some other slot.
+// Discord's real, fixed render order - every individual badge/tier gets its
+// own exact slot (nothing grouped into an "everything else" bucket), so
+// sort order never depends on which array (fake vs real) an entry happened
+// to come from. Unrecognized badges land last (Unknown) rather than guessed
+// into some other slot.
 const enum BadgePriority {
     HyperCord = 1,
     Staff = 2,
     Partner = 3,
     HypeSquadEvents = 4,
-    BugHunter = 5,
-    HypeSquadHouse = 6,
-    EarlySupporter = 7,
-    Nitro = 8,
-    Boost = 9,
-    ActiveDeveloper = 10,
-    VerifiedDeveloper = 11,
-    Quest = 12,
+    BugHunterLevel2 = 5,
+    BugHunterLevel1 = 6,
+    HypeSquadBravery = 7,
+    HypeSquadBrilliance = 8,
+    HypeSquadBalance = 9,
+    EarlySupporter = 10,
+    NitroOpal = 11,
+    NitroRuby = 12,
+    NitroEmerald = 13,
+    NitroDiamond = 14,
+    NitroPlatinum = 15,
+    NitroGold = 16,
+    NitroSilver = 17,
+    NitroBronze = 18,
+    Nitro = 19,
+    Boost24 = 20,
+    Boost18 = 21,
+    Boost15 = 22,
+    Boost12 = 23,
+    Boost9 = 24,
+    Boost6 = 25,
+    Boost3 = 26,
+    Boost2 = 27,
+    Boost1 = 28,
+    ActiveDeveloper = 29,
+    VerifiedDeveloper = 30,
+    Quest = 31,
+    CertifiedModerator = 32,
     Unknown = 99
 }
 
-// badgeCatalog.ts key -> priority. Deliberately keyed by catalog `key`, not
-// `title` - the "General" category alone groups Staff/Partner/HypeSquad
-// Events/Active Developer, which are four different real priority slots.
-// Certified Moderator has no defined slot and is intentionally left out, so
-// it falls through to Unknown below rather than being guessed into one.
-const CATALOG_KEY_PRIORITY: Partial<Record<string, BadgePriority>> = {
+// badgeCatalog.ts key -> priority - every catalog key gets its own explicit
+// entry, no category-title fallback for Nitro/Boost anymore: each tenure
+// tier is its own slot per the spec, since "which exact tier" is exactly
+// what real Discord's own order distinguishes between.
+const CATALOG_KEY_PRIORITY: Record<string, BadgePriority> = {
     staff: BadgePriority.Staff,
     partner: BadgePriority.Partner,
     hypesquad: BadgePriority.HypeSquadEvents,
-    active_developer: BadgePriority.ActiveDeveloper,
-    bug_hunter_1: BadgePriority.BugHunter,
-    bug_hunter_2: BadgePriority.BugHunter,
+    bug_hunter_2: BadgePriority.BugHunterLevel2,
+    bug_hunter_1: BadgePriority.BugHunterLevel1,
+    house_bravery: BadgePriority.HypeSquadBravery,
+    house_brilliance: BadgePriority.HypeSquadBrilliance,
+    house_balance: BadgePriority.HypeSquadBalance,
     early_supporter: BadgePriority.EarlySupporter,
+    nitro_opal: BadgePriority.NitroOpal,
+    nitro_ruby: BadgePriority.NitroRuby,
+    nitro_emerald: BadgePriority.NitroEmerald,
+    nitro_diamond: BadgePriority.NitroDiamond,
+    nitro_platinum: BadgePriority.NitroPlatinum,
+    nitro_gold: BadgePriority.NitroGold,
+    nitro_silver: BadgePriority.NitroSilver,
+    nitro_bronze: BadgePriority.NitroBronze,
+    nitro_classic: BadgePriority.Nitro,
+    boost_24: BadgePriority.Boost24,
+    boost_18: BadgePriority.Boost18,
+    boost_15: BadgePriority.Boost15,
+    boost_12: BadgePriority.Boost12,
+    boost_9: BadgePriority.Boost9,
+    boost_6: BadgePriority.Boost6,
+    boost_3: BadgePriority.Boost3,
+    boost_2: BadgePriority.Boost2,
+    boost_1: BadgePriority.Boost1,
+    active_developer: BadgePriority.ActiveDeveloper,
     verified_developer: BadgePriority.VerifiedDeveloper,
-    house_bravery: BadgePriority.HypeSquadHouse,
-    house_brilliance: BadgePriority.HypeSquadHouse,
-    house_balance: BadgePriority.HypeSquadHouse,
     quest: BadgePriority.Quest,
+    certified_moderator: BadgePriority.CertifiedModerator,
 };
 
 // FakeProfile's catalog (badgeCatalog.ts) is the exact, known set of labels a
 // synced badge can have when it's a tier pick rather than an arbitrary donor/
 // custom badge - built once from data we author ourselves, so this is an
-// exact lookup instead of a locale-risky regex guess. Nitro/Boost aren't in
-// CATALOG_KEY_PRIORITY above since every badge in those two catalog
-// categories shares one priority each - cheaper to fall back on category
-// title for just those two than list every tier individually.
+// exact lookup instead of a locale-risky regex guess.
 const LABEL_PRIORITY = new Map<string, BadgePriority>(
-    BADGE_CATALOG.flatMap(category => category.badges.map(badge => {
-        const priority = CATALOG_KEY_PRIORITY[badge.key]
-            ?? (category.title === "Nitro" ? BadgePriority.Nitro
-                : category.title === "Server Boost" ? BadgePriority.Boost
-                : BadgePriority.Unknown);
-        return [badge.label, priority] as const;
-    }))
+    BADGE_CATALOG.flatMap(category => category.badges.map(
+        badge => [badge.label, CATALOG_KEY_PRIORITY[badge.key] ?? BadgePriority.Unknown] as const
+    ))
 );
 
 // Discord's own real badge ids. premium_*/guild_booster_* are verified
@@ -163,22 +192,43 @@ const LABEL_PRIORITY = new Map<string, BadgePriority>(
 // contains the words "nitro"/"boost" in any locale, so id is the only stable
 // field to match on. The rest below are Discord's long-standing, publicly
 // documented flag-badge ids (unchanged for years), matched the same way.
-// Quest badge ids are NOT included - they aren't a stable/verified id shape
-// here, so an unmatched quest badge deliberately falls through to Unknown
-// rather than risking a wrong guess (see the HypeSquad sibling-patch incident
-// this file already avoided once - _api/badges' own patch comment above).
+// Real Nitro/Boost ids don't encode which of our 8 fake tenure tiers they'd
+// correspond to (and don't need to: a profile only ever has ONE real Nitro
+// and/or ONE real Boost badge at a time, never several tenures side by side,
+// so any single slot within the right block sorts identically) - pinned to
+// the bare/base slot of each block (Nitro, Boost1) rather than guessing a
+// specific tenure tier from the id. Quest badge ids are NOT included - they
+// aren't a stable/verified id shape here, so an unmatched quest badge
+// deliberately falls through to Unknown rather than risking a wrong guess
+// (see the HypeSquad sibling-patch incident this file already avoided once -
+// _api/badges' own patch comment above).
 const REAL_BADGE_ID_PRIORITY: [RegExp, BadgePriority][] = [
     [/^premium/i, BadgePriority.Nitro],
-    [/^guild_booster/i, BadgePriority.Boost],
+    [/^guild_booster/i, BadgePriority.Boost1],
     [/^staff$/i, BadgePriority.Staff],
     [/^partner$/i, BadgePriority.Partner],
     [/^hypesquad$/i, BadgePriority.HypeSquadEvents],
-    [/^hypesquad_online_house/i, BadgePriority.HypeSquadHouse],
-    [/^bug_hunter/i, BadgePriority.BugHunter],
+    [/^hypesquad_online_house_1/i, BadgePriority.HypeSquadBravery],
+    [/^hypesquad_online_house_2/i, BadgePriority.HypeSquadBrilliance],
+    [/^hypesquad_online_house_3/i, BadgePriority.HypeSquadBalance],
+    [/^bug_hunter_level_2/i, BadgePriority.BugHunterLevel2],
+    [/^bug_hunter_level_1/i, BadgePriority.BugHunterLevel1],
     [/^early_supporter$/i, BadgePriority.EarlySupporter],
     [/^active_developer$/i, BadgePriority.ActiveDeveloper],
     [/^verified_developer$/i, BadgePriority.VerifiedDeveloper],
+    [/^certified_moderator$/i, BadgePriority.CertifiedModerator],
 ];
+
+const NITRO_TIER_RANGE = [BadgePriority.NitroOpal, BadgePriority.Nitro] as const;
+const BOOST_TIER_RANGE = [BadgePriority.Boost24, BadgePriority.Boost1] as const;
+
+function isNitroTier(priority: BadgePriority) {
+    return priority >= NITRO_TIER_RANGE[0] && priority <= NITRO_TIER_RANGE[1];
+}
+
+function isBoostTier(priority: BadgePriority) {
+    return priority >= BOOST_TIER_RANGE[0] && priority <= BOOST_TIER_RANGE[1];
+}
 
 function getFakeBadgePriority(badge: { description?: string; }): BadgePriority {
     return LABEL_PRIORITY.get(badge.description ?? "") ?? BadgePriority.HyperCord;
@@ -369,13 +419,13 @@ export default definePlugin({
         // itself emit a premium_*/guild_booster_* badge here - equivalent to
         // checking premiumType/premiumGuildSince directly, without a second
         // store lookup for data this array already reflects.
-        const hasRealNitro = realBadges.some(b => getRealBadgePriority(b) === BadgePriority.Nitro);
-        const hasRealBoost = realBadges.some(b => getRealBadgePriority(b) === BadgePriority.Boost);
+        const hasRealNitro = realBadges.some(b => isNitroTier(getRealBadgePriority(b)));
+        const hasRealBoost = realBadges.some(b => isBoostTier(getRealBadgePriority(b)));
 
         const dedupedFakeBadges = fakeBadges.filter(b => {
             const priority = getFakeBadgePriority(b);
-            if (hasRealNitro && priority === BadgePriority.Nitro) return false;
-            if (hasRealBoost && priority === BadgePriority.Boost) return false;
+            if (hasRealNitro && isNitroTier(priority)) return false;
+            if (hasRealBoost && isBoostTier(priority)) return false;
             return true;
         });
 
