@@ -131,7 +131,23 @@ async function syncCosmeticFromUser(
     }
 
     const auth = await getBadgeAuthHeader();
-    if (!auth) return;
+    if (!auth) {
+        // Silent failure here used to be indistinguishable from "nothing to
+        // sync" - if the one-time Discord authorization popup gets dismissed
+        // or fails, nothing ever reaches the backend and there was no
+        // feedback at all telling the user why. Always surface this one,
+        // even when `silent` (background reconnect syncs) - it only fires
+        // when there's actually something to sync and auth genuinely failed,
+        // not on every reconnect.
+        if (sourceUserId) {
+            Toasts.show({
+                id: Toasts.genId(),
+                message: `Couldn't verify your Discord identity to sync your ${noun} - a HyperCord authorization popup should have appeared, complete it and try again.`,
+                type: Toasts.Type.FAILURE
+            });
+        }
+        return;
+    }
 
     try {
         const res = await fetch(`${SELF_PROFILES_BASE}/${userId}/${routeSegment}`, {
