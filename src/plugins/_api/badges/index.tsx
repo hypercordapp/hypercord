@@ -240,41 +240,15 @@ export default definePlugin({
                     replace: "vcHyperCordDecoration,"
                 }
             ]
-        },
-        // EXPERIMENTAL, unverified: same shape as the avatar decoration group
-        // above, guessing that Discord's profile-preview hook has sibling
-        // `nameplateOverride`/`profileEffectOverride` props next to the
-        // confirmed-real `avatarDecorationOverride` (profileSets shows Discord
-        // treats pendingAvatarDecoration/pendingNameplate/pendingProfileEffect
-        // as a matched trio, so this is an educated guess, not a random one -
-        // but unlike the decoration patches above, this hasn't been checked
-        // against Discord's live bundle). If the prop names are wrong, this
-        // patch just fails to match and logs a warning - it won't break
-        // anything, the feature will simply keep not rendering for other
-        // viewers, same as before. Kept as its own patch group so a failure
-        // here can't undo the working avatar decoration group above.
-        {
-            find: "isAvatarDecorationAnimating:",
-            group: true,
-            replacement: [
-                {
-                    match: /(?<=\.avatarDecoration,guildId:\i\}\)\),)(?<=user:(\i).+?)/,
-                    replace: "vcHyperCordNameplate=$self.getNameplateOverride($1?.id),vcHyperCordProfileEffect=$self.getProfileEffectOverride($1?.id),"
-                },
-                {
-                    match: /(?<={nameplate:).{1,20}?(?=,)(?<=nameplateOverride:(\i).+?)/,
-                    replace: "$1??vcHyperCordNameplate??($&)"
-                },
-                {
-                    match: /(?<={profileEffect:).{1,20}?(?=,)(?<=profileEffectOverride:(\i).+?)/,
-                    replace: "$1??vcHyperCordProfileEffect??($&)"
-                },
-                {
-                    match: /(?<=size:\i}\),\[)/,
-                    replace: "vcHyperCordNameplate,vcHyperCordProfileEffect,"
-                }
-            ]
         }
+        // Nameplate/profile effect were also tried here as a guessed sibling
+        // patch (nameplateOverride/profileEffectOverride props next to
+        // avatarDecorationOverride) - confirmed via a real user's console
+        // ("Undoing patch group ... had no effect") that the guess was
+        // wrong, so it was removed rather than left as permanent dead
+        // weight/console noise. Both are instead applied via FakeProfile's
+        // own UserStore/UserProfileStore/GuildMemberStore patches (direct
+        // mutation), which is what's actually confirmed working.
     ],
 
     // for access from the console or other plugins
