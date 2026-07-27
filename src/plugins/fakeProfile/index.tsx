@@ -12,7 +12,7 @@ import { Devs } from "@utils/constants";
 import { fetchUserProfile } from "@utils/discord";
 import { Logger } from "@utils/Logger";
 import definePlugin, { OptionType } from "@utils/types";
-import { FluxDispatcher, Forms, Toasts, UserProfileStore, UserStore } from "@webpack/common";
+import { FluxDispatcher, Forms, GuildMemberStore, Toasts, UserProfileStore, UserStore } from "@webpack/common";
 import virtualMerge from "virtual-merge";
 
 import { getBadgeAuthHeader, hasBadgeAuth } from "./badgeAuth";
@@ -299,14 +299,17 @@ function buildFakeUser(real: any) {
     }
 
     // Nameplate rendering for OTHER viewers is still unproven (see
-    // BadgeAPIPlugin's experimental patch), but setting it directly on your
-    // own User record here is the exact same proven mechanism accentColor
-    // above already uses - guaranteed to at least show up on your own
-    // client (profile popout, settings preview) even if the cross-viewer
-    // path never pans out.
+    // BadgeAPIPlugin's experimental patch). `real.nameplate` is a computed
+    // getter over `collectibles.nameplate` (see discord-types' User class) -
+    // overriding just `collectibles` and relying on virtualMerge's Proxy to
+    // forward the getter's `this` through didn't actually show anything, so
+    // this also sets `nameplate` directly: virtualMerge checks its override
+    // objects last-to-first, so a direct `overrides.nameplate` wins outright
+    // regardless of how the real getter resolves internally.
     const nameplateOverride = BadgeAPIPlugin.getNameplateOverride(real.id);
     if (nameplateOverride) {
         overrides.collectibles = { ...(real.collectibles ?? {}), nameplate: nameplateOverride };
+        overrides.nameplate = nameplateOverride;
     }
 
     cachedRealUser = real;
@@ -374,6 +377,38 @@ function patchUserProfileStore() {
 function unpatchUserProfileStore() {
     if (originalGetUserProfile) UserProfileStore.getUserProfile = originalGetUserProfile;
     originalGetUserProfile = undefined;
+}
+
+let originalGetMember: typeof GuildMemberStore.getMember | undefined;
+
+// Nameplate inside a server's member list/popout reads from GuildMemberStore
+// (per-guild collectibles), NOT UserStore - confirmed by profileSets' own
+// getCurrentProfile, which explicitly branches `isGuildProfile ? guildMember
+// : user` just for nameplate (every other field reads the same way in both
+// contexts). Without this, the buildFakeUser override above only ever shows
+// up in the DM sidebar / global profile, never when viewing yourself in an
+// actual server, which is the more common case.
+function patchGuildMemberStore() {
+    if (originalGetMember) return;
+
+    originalGetMember = GuildMemberStore.getMember.bind(GuildMemberStore);
+
+    GuildMemberStore.getMember = ((guildId: string, userId: string) => {
+        const member = originalGetMember!(guildId, userId);
+        if (!member || !isOwnId(userId)) return member;
+
+        const nameplateOverride = BadgeAPIPlugin.getNameplateOverride(userId);
+        if (nameplateOverride) {
+            (member as any).collectibles = { ...((member as any).collectibles ?? {}), nameplate: nameplateOverride };
+        }
+
+        return member;
+    }) as typeof GuildMemberStore.getMember;
+}
+
+function unpatchGuildMemberStore() {
+    if (originalGetMember) GuildMemberStore.getMember = originalGetMember;
+    originalGetMember = undefined;
 }
 
 // Discord's own internal "preview" override store for the profile popout.
@@ -471,6 +506,7 @@ export default definePlugin({
     start() {
         patchUserStore();
         patchUserProfileStore();
+        patchGuildMemberStore();
         applyPremiumOverride();
 
         syncOnConnect();
@@ -482,5 +518,6 @@ export default definePlugin({
         clearPremiumOverride();
         unpatchUserStore();
         unpatchUserProfileStore();
+        unpatchGuildMemberStore();
     }
 });
