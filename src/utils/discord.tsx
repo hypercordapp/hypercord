@@ -204,9 +204,14 @@ interface FetchUserProfileOptions {
 /**
  * Fetch a user's profile
  */
-export async function fetchUserProfile(id: string, options?: FetchUserProfileOptions) {
+export async function fetchUserProfile(id: string, options?: FetchUserProfileOptions, force = false) {
     const cached = UserProfileStore.getUserProfile(id);
-    if (cached) return cached;
+    // This is also the only place that pushes a fresh avatarDecorationData/
+    // collectibles onto UserStore (via the USER_UPDATE dispatch below) - once
+    // any caller has ever cached this id, that dispatch permanently stops
+    // firing for it, so callers that need this id's CURRENT cosmetics (not
+    // just "some" profile) must pass force to skip the cache.
+    if (cached && !force) return cached;
 
     FluxDispatcher.dispatch({ type: "USER_PROFILE_FETCH_START", userId: id });
 
