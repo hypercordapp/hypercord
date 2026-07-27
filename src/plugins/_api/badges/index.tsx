@@ -41,22 +41,17 @@ const ContributorBadge: ProfileBadge = {
     onClick: (_, { userId }) => openContributorModal(UserStore.getUser(userId))
 };
 
+// decoration/nameplate/profileEffect are real Discord cosmetic objects
+// (AvatarDecorationData/Nameplate/ProfileEffect-shaped, each with at least a
+// `skuId`) captured live off another real user's profile by FakeProfile - not
+// something we host ourselves, unlike banner.
 interface ProfileOverride {
     badges: Array<Record<"tooltip" | "badge", string>>;
     banner: string | null;
-    decoration: string | null;
-    nameplate: string | null;
-    profileEffect: string | null;
+    decoration: Record<string, unknown> | null;
+    nameplate: Record<string, unknown> | null;
+    profileEffect: Record<string, unknown> | null;
 }
-
-// Marker skuId for HyperCord-synced avatar decorations, distinct from Decor's
-// own SKU_ID/RAW_SKU_ID (src/plugins/decor) so the two plugins' overrides
-// never collide if both happen to be enabled. Our stored `decoration` value
-// is already a full https URL (re-hosted via hypercord-badge-api's image
-// cache), so unlike Decor's own CDN-relative asset hashes there's no further
-// URL construction needed - same "pass the asset straight through" case as
-// Decor's own RAW_SKU_ID.
-const HYPERCORD_DECORATION_SKU_ID = "hypercord_decoration";
 
 let ProfileOverrides = {} as Record<string, ProfileOverride>;
 
@@ -217,24 +212,17 @@ export default definePlugin({
                 replace: "$self.getBannerOverride(arguments[0])||$&"
             }
         },
-        // Resolves a HyperCord-synced avatar decoration into its actual image URL.
-        // Same hook point/shape as the Decor plugin's own getAvatarDecorationURL
-        // patch (proven working there) - short-circuits with our own asset only
-        // when the marker skuId is present, otherwise falls through ($&) to
-        // Discord's real resolution (including Decor's own, if that's also active).
-        {
-            find: "getAvatarDecorationURL:",
-            replacement: {
-                match: /(?<=function \i\(\i\){)(?=let{avatarDecoration)/,
-                replace: "const vcHyperCordDecoration=$self.getDecorationOverrideURL(arguments[0]);if(vcHyperCordDecoration)return vcHyperCordDecoration;"
-            }
-        },
         // Injects a HyperCord-synced avatar decoration for WHOEVER's profile is
         // being rendered (not just self) into the same avatar-decoration-hook
-        // module Decor patches. Grouped like Decor's own patch here: all three
-        // replacements target one contiguous piece of real Discord code and
-        // must all apply together, or the injected variable would be either
-        // unused or referenced before its declaration.
+        // module the Decor plugin patches. Unlike Decor (which invents its own
+        // asset and needs a marker skuId + a URL-resolution hook to render it),
+        // our synced value is a REAL asset/skuId captured off an actual Discord
+        // user (see FakeProfile's syncAvatarDecorationToBackend) - Discord's own
+        // unpatched resolution already knows how to render real cosmetic data,
+        // so no extra getAvatarDecorationURL hook is needed here. Grouped: all
+        // three replacements target one contiguous piece of real Discord code
+        // and must all apply together, or the injected variable would be
+        // either unused or referenced before its declaration.
         {
             find: "isAvatarDecorationAnimating:",
             group: true,
@@ -245,7 +233,7 @@ export default definePlugin({
                 },
                 {
                     match: /(?<={avatarDecoration:).{1,20}?(?=,)(?<=avatarDecorationOverride:(\i).+?)/,
-                    replace: "$1??(vcHyperCordDecoration?{asset:vcHyperCordDecoration,skuId:$self.HYPERCORD_DECORATION_SKU_ID}:void 0)??($&)"
+                    replace: "$1??vcHyperCordDecoration??($&)"
                 },
                 {
                     match: /(?<=size:\i}\),\[)/,
@@ -394,14 +382,8 @@ export default definePlugin({
         return displayProfile?.userId ? ProfileOverrides[displayProfile.userId]?.banner || undefined : undefined;
     },
 
-    HYPERCORD_DECORATION_SKU_ID,
-
     getDecorationOverride(userId: string | undefined) {
         return userId ? ProfileOverrides[userId]?.decoration || undefined : undefined;
-    },
-
-    getDecorationOverrideURL({ avatarDecoration }: { avatarDecoration?: { skuId?: string; asset?: string; } | null; }) {
-        if (avatarDecoration?.skuId === HYPERCORD_DECORATION_SKU_ID) return avatarDecoration.asset;
     },
 
     getCustomBadges(userId: string) {
