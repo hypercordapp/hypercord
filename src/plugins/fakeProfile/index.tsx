@@ -247,17 +247,20 @@ export const settings = definePluginSettings({
     },
     fakeAvatarDecorationFromUserId: {
         type: OptionType.STRING,
-        description: "Copy this Discord user's REAL avatar decoration onto your own profile (Discord user ID, they need to actually have one equipped) - synced to HyperCord's backend (leave empty to disable)",
+        displayName: "Avatar Decoration (Frame)",
+        description: "Copy this Discord user's REAL avatar decoration - the ring/frame around their round avatar, what Discord's own settings now label \"Frame\" under Profile Effect & Frame - onto your own profile (Discord user ID, they need to actually have one equipped). Synced to HyperCord's backend (leave empty to disable)",
         default: ""
     },
     fakeNameplateFromUserId: {
         type: OptionType.STRING,
-        description: "Copy this Discord user's REAL nameplate onto your own profile (Discord user ID, they need to actually have one equipped) - synced to HyperCord's backend (leave empty to disable)",
+        displayName: "Nameplate",
+        description: "Copy this Discord user's REAL nameplate - the colored/patterned strip behind their username - onto your own profile (Discord user ID, they need to actually have one equipped). Synced to HyperCord's backend (leave empty to disable)",
         default: ""
     },
     fakeProfileEffectFromUserId: {
         type: OptionType.STRING,
-        description: "Copy this Discord user's REAL profile effect onto your own profile (Discord user ID, they need to actually have one equipped) - synced to HyperCord's backend (leave empty to disable)",
+        displayName: "Profile Effect",
+        description: "Copy this Discord user's REAL profile effect - the animated effect covering their whole profile card - onto your own profile (Discord user ID, they need to actually have one equipped). Distinct from the Frame above. Synced to HyperCord's backend (leave empty to disable)",
         default: ""
     },
     fakeAccentColor: {
@@ -470,25 +473,26 @@ function SettingsAboutComponent() {
             profile theme gradient are <strong>only visible to you</strong>, in your own
             HyperCord client — that data lives on Discord's servers and can't be spoofed
             client-side for other people.{" "}
-            <strong>Your selected badges, banner and avatar decoration are different:
-                they're synced to HyperCord's own backend and shown to every HyperCord
-                user viewing your profile</strong>, not just you. The first time you pick
-            a badge or set a banner/decoration, you'll get a one-time in-app Discord
-            authorization prompt (identify scope only) proving the account is really
-            yours.{" "}
-            <strong>Nameplate and profile effect work the same way</strong>, each copied
-            from its own independent Discord user ID (a different friend per cosmetic if
-            you want). Rendering nameplate/profile effect for other viewers is still
-            experimental and may not show up yet. Use the "Reapply Fake Profile" toolbox
-            action after changing settings while the plugin is already running to force
-            a resync.
+            <strong>Your selected badges, banner and avatar decoration (Frame) are
+                different: they're synced to HyperCord's own backend and shown to every
+                HyperCord user viewing your profile</strong>, not just you. The first time
+            you pick a badge or set a banner/decoration, you'll get a one-time in-app
+            Discord authorization prompt (identify scope only) proving the account is
+            really yours.{" "}
+            <strong>Nameplate and Profile Effect work the same way</strong> - three
+            fully independent Discord user IDs, a different friend per cosmetic if you
+            want (Frame, Nameplate and Profile Effect are three separate real Discord
+            cosmetics, not the same thing). Rendering Nameplate/Profile Effect for other
+            viewers is still experimental and may not show up yet. Use the "Reapply Fake
+            Profile" toolbox action after changing settings while the plugin is already
+            running to force a resync.
         </Forms.FormText>
     );
 }
 
 export default definePlugin({
     name: "FakeProfile",
-    description: "Locally fake your username, display name, Nitro tier, accent color and profile theme gradient on your own profile (visible only to you) — badges, banner and avatar decoration sync to HyperCord's backend and show for every HyperCord user viewing your profile (nameplate/profile effect copy independently too, rendering for other viewers is still experimental)",
+    description: "Locally fake your username, display name, Nitro tier, accent color and profile theme gradient on your own profile (visible only to you) — badges, banner and avatar decoration (Frame) sync to HyperCord's backend and show for every HyperCord user viewing your profile (Nameplate/Profile Effect copy independently too, rendering for other viewers is still experimental)",
     tags: ["Fun", "Appearance"],
     authors: [Devs.HyperCordTeam],
     settings,
