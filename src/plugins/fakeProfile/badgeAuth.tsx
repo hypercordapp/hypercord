@@ -37,6 +37,20 @@ export async function hasBadgeAuth() {
     return (await getSecret()) !== undefined;
 }
 
+// Call this if the backend ever rejects a cached secret (401) - forces the
+// next getBadgeAuthHeader() call to actually re-run the OAuth flow instead of
+// silently reusing a stale/invalid secret forever with no way to recover.
+export async function clearBadgeAuth() {
+    const userId = getUserId();
+    if (!userId) return;
+
+    await DataStore.update<Record<string, string>>(SECRET_KEY, secrets => {
+        secrets ??= {};
+        delete secrets[userId];
+        return secrets;
+    });
+}
+
 let authorizing: Promise<string | undefined> | null = null;
 
 // Same in-client OAuth flow as Settings Sync (identify scope only, native
