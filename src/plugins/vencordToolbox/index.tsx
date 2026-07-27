@@ -49,7 +49,7 @@ function Icon({ isShown }: { isShown: boolean; }) {
     );
 }
 
-function VencordPopoutButton() {
+function HyperCordPopoutButton() {
     const buttonRef = useRef(null);
     const [show, setShow] = useState(false);
 
@@ -78,10 +78,14 @@ function VencordPopoutButton() {
 }
 
 export default definePlugin({
-    name: "VencordToolbox",
+    name: "HyperCordToolbox",
     description: "Adds a button to the titlebar that houses HyperCord quick actions",
     tags: ["Utility", "Developers"],
-    authors: [Devs.Ven, Devs.AutumnVN],
+    authors: [Devs.Ven, Devs.AutumnVN, Devs.HyperCordTeam],
+    // Was opt-in, but plugin toolbox actions (like FakeProfile's "Reapply Fake
+    // Profile") are otherwise completely undiscoverable - there's no other UI
+    // surface for them at all, so this needs to be on by default.
+    enabledByDefault: true,
 
     settings,
 
@@ -100,7 +104,7 @@ export default definePlugin({
             <>
                 {children}
                 <ErrorBoundary key="vc-toolbox" noop>
-                    <VencordPopoutButton />
+                    <HyperCordPopoutButton />
                 </ErrorBoundary>
             </>
         );
