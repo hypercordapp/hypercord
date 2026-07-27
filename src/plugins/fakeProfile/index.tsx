@@ -429,9 +429,15 @@ function patchGuildMemberStore() {
         const member = originalGetMember!(guildId, userId);
         if (!member) return member;
 
+        // Unlike the base User class (avatarDecoration is an
+        // AvatarDecorationData object there), GuildMember.avatarDecoration is
+        // typed as a plain string (discord-types) - almost certainly just the
+        // asset hash, not the {asset,skuId,...} object. Also set the object
+        // onto collectibles.avatarDecoration in case some guild-context code
+        // path reads it from there instead - cheap, can't hurt.
         const decorationOverride = BadgeAPIPlugin.getDecorationOverride(userId);
         if (decorationOverride) {
-            (member as any).avatarDecoration = decorationOverride;
+            (member as any).avatarDecoration = decorationOverride.asset ?? decorationOverride;
         }
 
         const nameplateOverride = BadgeAPIPlugin.getNameplateOverride(userId);
