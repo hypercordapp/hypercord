@@ -123,7 +123,15 @@ async function syncCosmeticFromUser(
     let data: Record<string, unknown> | null = null;
     if (sourceUserId) {
         try {
-            await fetchUserProfile(sourceUserId);
+            // force: true - fetchUserProfile silently no-ops once this id is
+            // cached at all (see its own comment), which used to mean the
+            // source's decoration/nameplate (only refreshed into UserStore by
+            // that call's USER_UPDATE dispatch) got stuck at whatever they
+            // were the very first time anyone fetched this id, even across
+            // reconnects/retries - this is what actually broke cross-viewer
+            // decoration/nameplate sync while profileEffect (read straight
+            // off the stale-but-present cached profile) happened to look fine.
+            await fetchUserProfile(sourceUserId, undefined, true);
         } catch (e) {
             logger.error(`Failed to fetch source profile for ${noun}`, e);
         }
@@ -141,9 +149,6 @@ async function syncCosmeticFromUser(
         }
 
         data = extract(sourceUserId) ?? null;
-        // TEMPORARY diagnostic - remove once cross-viewer decoration/
-        // nameplate is confirmed working.
-        logger.info(`syncCosmeticFromUser extract for ${noun}`, { sourceUserId, data });
     }
 
     const auth = await getBadgeAuthHeader();
