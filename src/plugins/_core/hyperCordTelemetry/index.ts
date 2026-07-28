@@ -4,12 +4,15 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+import { isPluginEnabled } from "@api/PluginManager";
 import { definePluginSettings } from "@api/Settings";
 import { gitHashShort } from "@shared/vencordUserAgent";
 import { Devs } from "@utils/constants";
 import { Logger } from "@utils/Logger";
 import definePlugin, { OptionType } from "@utils/types";
 import { FluxDispatcher, UserStore } from "@webpack/common";
+
+import plugins, { PluginMeta } from "~plugins";
 
 const PING_URL = "https://api.hypercord.pro/telemetry/ping";
 const CRASH_URL = "https://api.hypercord.pro/telemetry/crash";
@@ -25,10 +28,23 @@ let crashReportCount = 0;
 export const settings = definePluginSettings({
     enabled: {
         type: OptionType.BOOLEAN,
-        description: "Let the HyperCord team see that you use HyperCord, and report crashes to help fix them (sends your user ID + current username once per session, and anonymous crash reports with no user ID attached - nothing else)",
+        description: "Let the HyperCord team see that you use HyperCord, report crashes to help fix them, and share which official plugins you have enabled to power the real \"most used plugins\" list on hypercord.pro (sends your user ID + current username + the names of your enabled official HyperCord plugins once per session, and anonymous crash reports with no user ID attached - never plugin settings/values, never third-party userplugins, nothing else)",
         default: true
     }
 });
+
+// Official catalog plugins only, and only ones a user actually chose to turn
+// on - never third-party userplugins (arbitrary names, not HyperCord's to
+// report) and never required/API plugins (always-on for everyone, so "usage"
+// of those is meaningless noise), same filter supportHelper's debug dump
+// already uses for the same reason.
+function getEnabledPluginNames(): string[] {
+    const isApiPlugin = (name: string) => name.endsWith("API") || plugins[name].required;
+
+    return Object.keys(plugins).filter(name =>
+        !PluginMeta[name].userPlugin && !isApiPlugin(name) && isPluginEnabled(name)
+    );
+}
 
 function ping() {
     if (!settings.store.enabled) return;
@@ -39,7 +55,7 @@ function ping() {
     fetch(PING_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: user.id, username: user.username })
+        body: JSON.stringify({ userId: user.id, username: user.username, enabledPlugins: getEnabledPluginNames() })
     }).catch(e => logger.error("Failed to report usage", e));
 }
 

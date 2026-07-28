@@ -256,11 +256,28 @@ export function syncProfileEffectToBackend(silent = false) {
     );
 }
 
+// Unlike the other three, this one has no skuId - it's {fontId, effectId,
+// colors}, Discord's own field name for it is plural (displayNameStyles),
+// see profileSets/utils/profile.ts's isGuildProfile branch. Read straight off
+// UserStore like decoration/nameplate, not UserProfileStore like profile
+// effect - profileSets treats it exactly the same as nameplate for that
+// reason.
+export function syncDisplayNameStyleToBackend(silent = false) {
+    return syncCosmeticFromUser(
+        "display-name-style",
+        settings.store.fakeDisplayNameStyleFromUserId,
+        "display name style",
+        silent,
+        id => (UserStore.getUser(id) as any)?.displayNameStyles
+    );
+}
+
 export function syncAllCosmeticsFromUser(silent = false) {
     return Promise.all([
         syncAvatarDecorationToBackend(silent),
         syncNameplateToBackend(silent),
-        syncProfileEffectToBackend(silent)
+        syncProfileEffectToBackend(silent),
+        syncDisplayNameStyleToBackend(silent)
     ]);
 }
 
@@ -320,6 +337,12 @@ export const settings = definePluginSettings({
         description: "Copy this Discord user's REAL profile effect - the animated effect covering their whole profile card - onto your own profile (Discord user ID, they need to actually have one equipped). Distinct from the Frame above. Synced to HyperCord's backend (leave empty to disable)",
         default: ""
     },
+    fakeDisplayNameStyleFromUserId: {
+        type: OptionType.STRING,
+        displayName: "Display Name Style",
+        description: "Copy this Discord user's REAL display name style - the custom font/color/gradient effect on their name, a separate Nitro cosmetic from the ones above - onto your own profile (Discord user ID, they need to actually have one equipped). Synced to HyperCord's backend (leave empty to disable)",
+        default: ""
+    },
     fakeAccentColor: {
         type: OptionType.STRING,
         description: "Override your own profile accent color, hex like #5865F2 (leave empty to disable)",
@@ -377,18 +400,12 @@ function applyCosmeticOverrides(real: any) {
     const nameplateOverride = BadgeAPIPlugin.getNameplateOverride(real.id);
     if (nameplateOverride) real.collectibles = { ...(real.collectibles ?? {}), nameplate: nameplateOverride };
 
-    // TEMPORARY diagnostic - remove once cross-viewer decoration/nameplate is
-    // confirmed working. Only logs when there's actually a synced override to
-    // report, so this stays silent for the 99% of users with nothing synced.
-    if (decorationOverride || nameplateOverride) {
-        logger.info("applyCosmeticOverrides", {
-            userId: real.id,
-            decorationOverride,
-            nameplateOverride,
-            realAvatarDecorationDataAfter: real.avatarDecorationData,
-            realCollectiblesAfter: real.collectibles
-        });
-    }
+    // Discord's own field is plural (displayNameStyles) - see
+    // profileSets/utils/profile.ts. Read off UserStore like decoration/
+    // nameplate above, confirmed working via the same direct-mutation
+    // approach.
+    const displayNameStyleOverride = BadgeAPIPlugin.getDisplayNameStyleOverride(real.id);
+    if (displayNameStyleOverride) real.displayNameStyles = displayNameStyleOverride;
 }
 
 function buildFakeUser(real: any) {
@@ -507,6 +524,11 @@ function patchGuildMemberStore() {
             (member as any).collectibles = { ...((member as any).collectibles ?? {}), nameplate: nameplateOverride };
         }
 
+        const displayNameStyleOverride = BadgeAPIPlugin.getDisplayNameStyleOverride(userId);
+        if (displayNameStyleOverride) {
+            (member as any).displayNameStyles = displayNameStyleOverride;
+        }
+
         return member;
     }) as typeof GuildMemberStore.getMember;
 }
@@ -548,13 +570,14 @@ function SettingsAboutComponent() {
             profile theme gradient are <strong>only visible to you</strong>, in your own
             HyperCord client — that data lives on Discord's servers and can't be spoofed
             client-side for other people.{" "}
-            <strong>Your selected badges, banner, Frame, Nameplate and Profile Effect
-                are different: they're synced to HyperCord's own backend and shown to
-                every HyperCord user viewing your profile</strong>, not just you - each
-            of Frame/Nameplate/Profile Effect copies from its own independent Discord
-            user ID (they're three separate real Discord cosmetics, a different friend
-            per cosmetic if you want). The first time you pick a badge or set a
-            banner/decoration, you'll get a one-time in-app Discord authorization prompt
+            <strong>Your selected badges, banner, Frame, Nameplate, Profile Effect and
+                Display Name Style are different: they're synced to HyperCord's own
+                backend and shown to every HyperCord user viewing your profile</strong>,
+            not just you - each of Frame/Nameplate/Profile Effect/Display Name Style
+            copies from its own independent Discord user ID (they're four separate real
+            Discord cosmetics, a different friend per cosmetic if you want). The first
+            time you pick a badge or set a
+            banner/decoration/display name style, you'll get a one-time in-app Discord authorization prompt
             (identify scope only) proving the account is really yours. Use the "Reapply
             Fake Profile" toolbox action after changing settings while the plugin is
             already running to force a resync.
@@ -564,7 +587,7 @@ function SettingsAboutComponent() {
 
 export default definePlugin({
     name: "FakeProfile",
-    description: "Locally fake your username, display name, Nitro tier, accent color and profile theme gradient on your own profile (visible only to you) — badges, banner, Frame (avatar decoration), Nameplate and Profile Effect sync to HyperCord's backend and show for every HyperCord user viewing your profile",
+    description: "Locally fake your username, display name, Nitro tier, accent color and profile theme gradient on your own profile (visible only to you) — badges, banner, Frame (avatar decoration), Nameplate, Profile Effect and Display Name Style sync to HyperCord's backend and show for every HyperCord user viewing your profile",
     tags: ["Fun", "Appearance"],
     authors: [Devs.HyperCordTeam],
     settings,
@@ -600,7 +623,7 @@ export default definePlugin({
             ]);
             Toasts.show({
                 id: Toasts.genId(),
-                message: "Synced badges, banner, avatar decoration, nameplate and profile effect to HyperCord!",
+                message: "Synced badges, banner, avatar decoration, nameplate, profile effect and display name style to HyperCord!",
                 type: Toasts.Type.SUCCESS
             });
         }
