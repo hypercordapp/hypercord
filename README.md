@@ -30,7 +30,9 @@ Vencord tabanlı, **Equicord'dan daha fazla plugin** içermeyi ve piyasada adın
 -   Herhangi bir Discord branch'inde çalışır: Stable, Canary, PTB fark etmez
 -   Özel CSS ve tema desteği: dahili CSS editörü, herhangi bir CSS dosyasını import edebilir (BetterDiscord temaları dahil)
 -   Gizlilik dostu: Discord'un analytics ve crash reporting'ini kutudan çıktığı gibi engeller, telemetri yok
--   **Yol haritasında:** kendi plugin marketi, otomatik güncelleme sistemi, bulut ayar senkronizasyonu (bkz. [hypercord.pro/#roadmap](https://hypercord.pro/#roadmap))
+-   Otomatik güncelleme: HyperCord kendini arka planda günceller (kapatılabilir)
+-   Bulut ayar senkronizasyonu: ayarlarını `cloud.hypercord.pro` üzerinden cihazlar arasında senkronla, istersen kendi backend'ini bile çalıştırabilirsin
+-   **Yol haritasında:** kendi plugin marketi (bkz. [hypercord.pro/#roadmap](https://hypercord.pro/#roadmap))
 
 ### Kurulum / Kaldırma
 
@@ -117,7 +119,9 @@ A Discord client mod based on Vencord, aiming to include **more plugins than Equ
 -   Works on any Discord branch: Stable, Canary or PTB all work
 -   Custom CSS and Themes: Inbuilt css editor with support to import any css files (including BetterDiscord themes)
 -   Privacy friendly: blocks Discord analytics & crash reporting out of the box and has no telemetry
--   **On the roadmap:** its own plugin marketplace, an automatic updater, cloud settings sync (see [hypercord.pro/#roadmap](https://hypercord.pro/#roadmap))
+-   Automatic updates: HyperCord updates itself in the background (can be turned off)
+-   Cloud settings sync: keep your settings in sync across devices via `cloud.hypercord.pro`, or point it at your own self-hosted backend
+-   **On the roadmap:** its own plugin marketplace (see [hypercord.pro/#roadmap](https://hypercord.pro/#roadmap))
 
 ### Installing / Uninstalling
 
