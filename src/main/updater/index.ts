@@ -16,5 +16,17 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+// HyperCord always ships injected into the real Discord client, copied into
+// %APPDATA%\HyperCord\dist - that directory is never a live git checkout (see
+// the client-side deploy workflow), so the git-based updater's `git remote
+// get-url origin` / `git fetch` calls always failed there ("Failed to
+// retrieve repo" / "Failed to check for updates" in the console, every
+// session). The HTTP updater needs no local git at all - it compares against
+// hypercordapp/hypercord's "DevBuild <hash>" GitHub release (already
+// published on every push) and downloads patcher.js/preload.js/renderer.js/
+// renderer.css straight from its assets, which is also exactly what the
+// manual scp+cp deploy step does by hand. Always use it, regardless of
+// IS_STANDALONE (that flag is about Vesktop-style standalone builds, a
+// different axis - HyperCord is never a git-checkout install either way).
 if (!IS_UPDATER_DISABLED)
-    require(IS_STANDALONE ? "./http" : "./git");
+    require("./http");
