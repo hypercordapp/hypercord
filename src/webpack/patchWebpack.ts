@@ -9,6 +9,7 @@ import { traceFunctionWithResults } from "@debug/Tracer";
 import { makeLazy } from "@utils/lazy";
 import { Logger } from "@utils/Logger";
 import { interpolateIfDefined } from "@utils/misc";
+import { reportPluginError } from "@utils/telemetry";
 import { Patch, PatchReplacement } from "@utils/types";
 import { WebpackRequire } from "@vencord/discord-types/webpack";
 
@@ -608,6 +609,7 @@ function patchFactory(moduleId: PropertyKey, originalFactory: AnyModuleFactory):
                 const shouldSuppressError = patch.plugin === "ContextMenuAPI" && err instanceof SyntaxError && err.message.includes("arguments");
                 if (!shouldSuppressError) {
                     logger.error(`Patch by ${patch.plugin} errored (Module id is ${String(moduleId)}): ${replacement.match}\n`, err);
+                    reportPluginError(patch.plugin, err instanceof Error ? err.message : String(err), err instanceof Error ? err.stack : undefined);
 
                     if (IS_DEV) {
                         diffErroredPatch(code, lastCode, lastCode.match(replacement.match)!);
