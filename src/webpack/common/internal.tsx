@@ -31,7 +31,7 @@ export function waitForComponent<T extends ComponentType<any> = ComponentType<an
     const lazyComponent = LazyComponent(() => {
         if (myValue) return myValue;
 
-        const error = new Error(`Vencord could not find the ${name} Component`);
+        const error = new Error(`HyperCord could not find the ${name} Component`);
         logger.error(error);
 
         if (IS_DEV) throw error;

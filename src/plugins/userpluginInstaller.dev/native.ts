@@ -173,7 +173,7 @@ async function build(): Promise<any> {
         });
         proc.once("close", () => {
             if (proc.exitCode !== 0) {
-                reject("Failed to build Vencord, try building from console");
+                reject("Failed to build HyperCord, try building from console");
             }
             resolve("Success");
         });

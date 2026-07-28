@@ -33,7 +33,7 @@ export const settings = definePluginSettings({
     },
     notifyIfUpdate: {
         type: OptionType.BOOLEAN,
-        description: "Show a Vencord notification if UserPlugins need to be updated",
+        description: "Show a HyperCord notification if UserPlugins need to be updated",
         default: true
     },
     neverNotifyForPlugins: {
