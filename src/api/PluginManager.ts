@@ -31,6 +31,7 @@ import { traceFunction } from "@debug/Tracer";
 import { Logger } from "@utils/Logger";
 import { onlyOnce } from "@utils/onlyOnce";
 import { canonicalizeFind, canonicalizeReplacement } from "@utils/patches";
+import { reportPluginError } from "@utils/telemetry";
 import { DefinedSettings, Patch, Plugin, PluginDef, PluginSettingDef, ReporterTestable, StartAt } from "@utils/types";
 import { FluxEvents } from "@vencord/discord-types";
 import { FluxDispatcher } from "@webpack/common";
@@ -168,10 +169,14 @@ export function subscribePluginFluxEvents(p: Plugin, fluxDispatcher: typeof Flux
                 try {
                     const res = handler!.apply(p, arguments as any);
                     return res instanceof Promise
-                        ? res.catch(e => logger.error(`${p.name}: Error while handling ${event}\n`, e))
+                        ? res.catch(e => {
+                            logger.error(`${p.name}: Error while handling ${event}\n`, e);
+                            reportPluginError(p.name, e instanceof Error ? e.message : String(e), e instanceof Error ? e.stack : undefined);
+                        })
                         : res;
                 } catch (e) {
                     logger.error(`${p.name}: Error while handling ${event}\n`, e);
+                    reportPluginError(p.name, e instanceof Error ? e.message : String(e), e instanceof Error ? e.stack : undefined);
                 }
             };
 
@@ -217,6 +222,7 @@ export const startPlugin = traceFunction("startPlugin", function startPlugin(p: 
             p.start();
         } catch (e) {
             logger.error(`Failed to start ${name}\n`, e);
+            reportPluginError(name, e instanceof Error ? e.message : String(e), e instanceof Error ? e.stack : undefined);
             return false;
         }
     }
