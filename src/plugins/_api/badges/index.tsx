@@ -347,6 +347,21 @@ export default definePlugin({
                 {
                     match: /(?<=size:\i}\),\[)/,
                     replace: "vcHyperCordDecoration,"
+                },
+                // The above only swaps in the real asset/skuId - it doesn't touch
+                // this sibling canAnimate default, which still reflects whatever
+                // the CURRENT (faking) user's own real decoration state naturally
+                // computes to (usually "no", since most people faking someone
+                // else's Frame don't have a real animated one themselves). Real
+                // Discord (and Decor's own getDecorAvatarDecorationURL, which
+                // strips the a_ prefix when `!canAnimate`) both gate whether the
+                // animated CDN asset is actually requested on this flag - without
+                // forcing it, the copied Frame loads the right image but freezes
+                // on frame 1 for every viewer. Same proven anchor/match shape as
+                // declutter's "remove decoration" patch on this identical string.
+                {
+                    match: /(?<=\{avatarDecoration:.{0,40}?)(void 0!==\i\?\i:)\i(?=\)?,canAnimate:)/,
+                    replace: "vcHyperCordDecoration?.asset?.startsWith(\"a_\")?!0:($&)"
                 }
             ]
         }
