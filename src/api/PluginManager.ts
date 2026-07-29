@@ -137,8 +137,14 @@ export function startDependenciesRecursive(p: Plugin) {
     const failures: string[] = [];
 
     p.dependencies?.forEach(d => {
+        const dep = Plugins[d];
+        if (!dep) {
+            logger.warn(`Plugin ${p.name} has unresolved dependency ${d}`);
+            failures.push(d);
+            return;
+        }
+
         if (!settings[d].enabled) {
-            const dep = Plugins[d];
             startDependenciesRecursive(dep);
 
             // If the plugin has patches, don't start the plugin, just enable it.
