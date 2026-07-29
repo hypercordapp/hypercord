@@ -421,33 +421,30 @@ export default definePlugin({
     },
 
     // Single strict priority sort over the combined (fake + real) list - no
-    // slicing/popping/index-guessing against either array. Real badges are
-    // never filtered; a fake Nitro/Boost tier pick is dropped only when the
-    // user genuinely already has that real one, since showing both is a
-    // contradiction and the real one is the truth. `.sort()` is stable
-    // (guaranteed since ES2019), so badges that land on the same priority
-    // keep their relative order.
+    // slicing/popping/index-guessing against either array. A picked fake
+    // Nitro/Boost tier always wins over the user's real one in that same
+    // category - picking a tier via FakeProfile is a deliberate choice to
+    // show that instead, not alongside it, so the real badge is dropped
+    // rather than the fake pick. `.sort()` is stable (guaranteed since
+    // ES2019), so badges that land on the same priority keep their relative
+    // order.
     mergeBadges(
         fakeBadges: ProfileBadge[],
         realBadges: Array<{ id: string; description?: string; }>
     ) {
-        // "Genuinely has real Nitro/Boost" is exactly what makes Discord
-        // itself emit a premium_*/guild_booster_* badge here - equivalent to
-        // checking premiumType/premiumGuildSince directly, without a second
-        // store lookup for data this array already reflects.
-        const hasRealNitro = realBadges.some(b => isNitroTier(getRealBadgePriority(b)));
-        const hasRealBoost = realBadges.some(b => isBoostTier(getRealBadgePriority(b)));
+        const hasFakeNitro = fakeBadges.some(b => isNitroTier(getFakeBadgePriority(b)));
+        const hasFakeBoost = fakeBadges.some(b => isBoostTier(getFakeBadgePriority(b)));
 
-        const dedupedFakeBadges = fakeBadges.filter(b => {
-            const priority = getFakeBadgePriority(b);
-            if (hasRealNitro && isNitroTier(priority)) return false;
-            if (hasRealBoost && isBoostTier(priority)) return false;
+        const dedupedRealBadges = realBadges.filter(b => {
+            const priority = getRealBadgePriority(b);
+            if (hasFakeNitro && isNitroTier(priority)) return false;
+            if (hasFakeBoost && isBoostTier(priority)) return false;
             return true;
         });
 
         const combined = [
-            ...dedupedFakeBadges.map(badge => ({ badge, priority: getFakeBadgePriority(badge) })),
-            ...realBadges.map(badge => ({ badge, priority: getRealBadgePriority(badge) }))
+            ...fakeBadges.map(badge => ({ badge, priority: getFakeBadgePriority(badge) })),
+            ...dedupedRealBadges.map(badge => ({ badge, priority: getRealBadgePriority(badge) }))
         ];
 
         return combined
