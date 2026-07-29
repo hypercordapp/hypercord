@@ -12,7 +12,7 @@ import { Devs } from "@utils/constants";
 import { fetchUserProfile } from "@utils/discord";
 import { Logger } from "@utils/Logger";
 import definePlugin, { OptionType } from "@utils/types";
-import { FluxDispatcher, Forms, GuildMemberStore, Toasts, UserProfileStore, UserStore } from "@webpack/common";
+import { FluxDispatcher, Forms, GuildMemberStore, SnowflakeUtils, Toasts, UserProfileStore, UserStore } from "@webpack/common";
 import virtualMerge from "virtual-merge";
 
 import { clearBadgeAuth, getBadgeAuthHeader, hasBadgeAuth } from "./badgeAuth";
@@ -455,6 +455,38 @@ function unpatchUserStore() {
     fakeUserCache = new WeakMap();
 }
 
+let originalExtractTimestamp: typeof SnowflakeUtils.extractTimestamp | undefined;
+
+// Discord doesn't store account creation as its own field - every "member
+// since"/"created at" display (including the profile popout) derives it by
+// decoding the timestamp bits baked into the account's own snowflake ID via
+// SnowflakeUtils.extractTimestamp(userId). Dispatching a fake `createdAt` on
+// SET_PREMIUM_TYPE_OVERRIDE (applyPremiumOverride below) doesn't affect this
+// at all - nothing reads that field for this purpose, which is why
+// fakeCreatedAt never visibly did anything. Patching extractTimestamp itself
+// is the actual hook point: only intercepts when the snowflake being decoded
+// is genuinely the real current user's own ID, every other snowflake
+// (messages, guilds, other users, nonces) goes through untouched.
+function patchSnowflakeUtils() {
+    if (originalExtractTimestamp) return;
+
+    originalExtractTimestamp = SnowflakeUtils.extractTimestamp.bind(SnowflakeUtils);
+
+    SnowflakeUtils.extractTimestamp = ((snowflake: string) => {
+        const { fakeCreatedAt } = settings.store;
+        if (fakeCreatedAt && isOwnId(snowflake)) {
+            const date = new Date(fakeCreatedAt);
+            if (!isNaN(date.getTime())) return date.getTime();
+        }
+        return originalExtractTimestamp!(snowflake);
+    }) as typeof SnowflakeUtils.extractTimestamp;
+}
+
+function unpatchSnowflakeUtils() {
+    if (originalExtractTimestamp) SnowflakeUtils.extractTimestamp = originalExtractTimestamp;
+    originalExtractTimestamp = undefined;
+}
+
 let originalGetUserProfile: typeof UserProfileStore.getUserProfile | undefined;
 
 function patchUserProfileStore() {
@@ -540,17 +572,15 @@ function unpatchGuildMemberStore() {
 
 // Discord's own internal "preview" override store for the profile popout.
 // Best-effort: only visible to you, never sent to Discord or other users.
+// Account creation date is handled separately, via patchSnowflakeUtils -
+// SET_PREMIUM_TYPE_OVERRIDE has no createdAt field Discord's own reducer
+// reads, dispatching one here did nothing.
 function applyPremiumOverride() {
-    const { fakeNitroType, fakeCreatedAt } = settings.store;
+    const { fakeNitroType } = settings.store;
 
     const payload: Record<string, unknown> = { type: "SET_PREMIUM_TYPE_OVERRIDE" };
 
     if (fakeNitroType !== -1) payload.premiumType = fakeNitroType;
-
-    if (fakeCreatedAt) {
-        const date = new Date(fakeCreatedAt);
-        if (!isNaN(date.getTime())) payload.createdAt = date;
-    }
 
     FluxDispatcher.dispatch(payload as any);
 }
@@ -558,8 +588,7 @@ function applyPremiumOverride() {
 function clearPremiumOverride() {
     FluxDispatcher.dispatch({
         type: "SET_PREMIUM_TYPE_OVERRIDE",
-        premiumType: undefined,
-        createdAt: undefined
+        premiumType: undefined
     } as any);
 }
 
@@ -633,6 +662,7 @@ export default definePlugin({
         patchUserStore();
         patchUserProfileStore();
         patchGuildMemberStore();
+        patchSnowflakeUtils();
         applyPremiumOverride();
 
         syncOnConnect();
@@ -642,6 +672,7 @@ export default definePlugin({
     stop() {
         FluxDispatcher.unsubscribe("CONNECTION_OPEN", syncOnConnect);
         clearPremiumOverride();
+        unpatchSnowflakeUtils();
         unpatchUserStore();
         unpatchUserProfileStore();
         unpatchGuildMemberStore();
