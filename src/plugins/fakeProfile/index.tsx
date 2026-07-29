@@ -281,10 +281,50 @@ export function syncAllCosmeticsFromUser(silent = false) {
     ]);
 }
 
+// Unlike the other cosmetics, there's no "real" creation date to capture off
+// another user - it's just an ISO date the user typed into the setting, so
+// this is closer to syncBannerToBackend than syncCosmeticFromUser.
+export async function syncCreatedAtToBackend(silent = false) {
+    const userId = UserStore.getCurrentUser()?.id;
+    if (!userId) return;
+
+    if (!settings.store.fakeCreatedAt && !await hasBadgeAuth()) return;
+
+    const auth = await getBadgeAuthHeader();
+    if (!auth) return;
+
+    let data: string | null = null;
+    if (settings.store.fakeCreatedAt) {
+        const date = new Date(settings.store.fakeCreatedAt);
+        if (!isNaN(date.getTime())) data = date.toISOString();
+    }
+
+    try {
+        const res = await fetch(`${SELF_PROFILES_BASE}/${userId}/created-at`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json", Authorization: auth },
+            body: JSON.stringify({ data })
+        });
+
+        if (res.status === 409 && !silent) {
+            Toasts.show({
+                id: Toasts.genId(),
+                message: "Can't sync your creation date - HyperCord staff already set one for you.",
+                type: Toasts.Type.FAILURE
+            });
+        } else if (res.ok) {
+            await BadgeAPIPlugin.refetchBadges();
+        }
+    } catch (e) {
+        logger.error("Failed to sync creation date to HyperCord", e);
+    }
+}
+
 function syncOnConnect() {
     syncBadgesToBackend();
     syncBannerToBackend(true);
     syncAllCosmeticsFromUser(true);
+    syncCreatedAtToBackend(true);
 }
 
 export const settings = definePluginSettings({
@@ -464,18 +504,22 @@ let originalExtractTimestamp: typeof SnowflakeUtils.extractTimestamp | undefined
 // SET_PREMIUM_TYPE_OVERRIDE (applyPremiumOverride below) doesn't affect this
 // at all - nothing reads that field for this purpose, which is why
 // fakeCreatedAt never visibly did anything. Patching extractTimestamp itself
-// is the actual hook point: only intercepts when the snowflake being decoded
-// is genuinely the real current user's own ID, every other snowflake
-// (messages, guilds, other users, nonces) goes through untouched.
+// is the actual hook point - and since the fake date is synced through
+// HyperCord's backend (syncCreatedAtToBackend) same as decoration/nameplate/
+// profileEffect, this checks BadgeAPIPlugin's override for ANY snowflake,
+// not just isOwnId - so a synced fake date shows for every HyperCord user
+// viewing that profile, not just the person who set it. Every other
+// snowflake (messages, guilds, users with no override) goes through
+// untouched.
 function patchSnowflakeUtils() {
     if (originalExtractTimestamp) return;
 
     originalExtractTimestamp = SnowflakeUtils.extractTimestamp.bind(SnowflakeUtils);
 
     SnowflakeUtils.extractTimestamp = ((snowflake: string) => {
-        const { fakeCreatedAt } = settings.store;
-        if (fakeCreatedAt && isOwnId(snowflake)) {
-            const date = new Date(fakeCreatedAt);
+        const override = BadgeAPIPlugin.getCreatedAtOverride(snowflake);
+        if (override) {
+            const date = new Date(override);
             if (!isNaN(date.getTime())) return date.getTime();
         }
         return originalExtractTimestamp!(snowflake);
@@ -648,11 +692,12 @@ export default definePlugin({
             await Promise.all([
                 syncBadgesToBackend(),
                 syncBannerToBackend(),
-                syncAllCosmeticsFromUser()
+                syncAllCosmeticsFromUser(),
+                syncCreatedAtToBackend()
             ]);
             Toasts.show({
                 id: Toasts.genId(),
-                message: "Synced badges, banner, avatar decoration, nameplate, profile effect and display name style to HyperCord!",
+                message: "Synced badges, banner, avatar decoration, nameplate, profile effect, display name style, and creation date to HyperCord!",
                 type: Toasts.Type.SUCCESS
             });
         }

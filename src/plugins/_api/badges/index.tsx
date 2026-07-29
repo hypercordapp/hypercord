@@ -52,6 +52,7 @@ interface ProfileOverride {
     nameplate: Record<string, unknown> | null;
     profileEffect: Record<string, unknown> | null;
     displayNameStyle: Record<string, unknown> | null;
+    createdAt: string | null;
 }
 
 let ProfileOverrides = {} as Record<string, ProfileOverride>;
@@ -514,6 +515,10 @@ export default definePlugin({
 
     getDisplayNameStyleOverride(userId: string | undefined) {
         return userId ? ProfileOverrides[userId]?.displayNameStyle || undefined : undefined;
+    },
+
+    getCreatedAtOverride(userId: string | undefined) {
+        return userId ? ProfileOverrides[userId]?.createdAt || undefined : undefined;
     },
 
     getCustomBadges(userId: string) {
