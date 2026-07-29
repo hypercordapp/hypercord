@@ -29,27 +29,40 @@ function emojiUrl(id: string, animated = false) {
 // use, not lookalike emoji - cross-checked against multiple independent public
 // badge-hash references before use. The Nitro tier badges are the exception: see
 // emojiUrl below.
+//
+// discord.com/assets/<hash>.svg is Discord's WEBPACK BUNDLE asset output, tied to
+// a specific frontend build - Canary/PTB run different (usually newer) bundles
+// than Stable, so a hash captured against one channel can 404 on another (same
+// risk class already called out for regex patches elsewhere in this repo).
+// cdn.discordapp.com/badge-icons/<hash>.png is Discord's actual stable, channel-
+// independent badge CDN - prefer it whenever a verified hash is available
+// (staff/hypesquad/bug hunter/early supporter above were swapped to it 2026-07-29
+// after Canary/PTB reports of missing images, cross-checked against the same
+// hashes already used in showBadgesInChat/index.tsx). partner/active_developer/
+// verified_developer/certified_moderator and the boost_* tiers below are still on
+// the fragile discord.com/assets path - no verified badge-icons hash for those
+// was available elsewhere in the codebase, don't guess new ones without checking.
 export const BADGE_CATALOG: CatalogCategory[] = [
     {
         title: "General",
         badges: [
-            { key: "staff", label: "Discord Staff", iconSrc: "https://discord.com/assets/48d5bdcffe9e7848067c2e187f1ef951.svg" },
+            { key: "staff", label: "Discord Staff", iconSrc: "https://cdn.discordapp.com/badge-icons/5e74e9b61934fc1f67c65515d1f7e60d.png" },
             { key: "partner", label: "Partner", iconSrc: "https://discord.com/assets/34306011e46e87f8ef25f3415d3b99ca.svg" },
-            { key: "hypesquad", label: "HypeSquad Events", iconSrc: "https://discord.com/assets/e666a84a7a5ea2abbbfa73adf22e627b.svg" },
+            { key: "hypesquad", label: "HypeSquad Events", iconSrc: "https://cdn.discordapp.com/badge-icons/bf01d1073931f921909045f3a39fd264.png" },
             { key: "active_developer", label: "Active Developer", iconSrc: "https://discord.com/assets/26c7a60fb1654315e0be26107bd47470.svg" },
         ]
     },
     {
         title: "Bug Hunter",
         badges: [
-            { key: "bug_hunter_1", label: "Bug Hunter (Level 1)", iconSrc: "https://discord.com/assets/8353d89b529e13365c415aef08d1d1f4.svg" },
-            { key: "bug_hunter_2", label: "Bug Hunter (Level 2)", iconSrc: "https://discord.com/assets/f599063762165e0d23e8b11b684765a8.svg" },
+            { key: "bug_hunter_1", label: "Bug Hunter (Level 1)", iconSrc: "https://cdn.discordapp.com/badge-icons/2717692c7dca7289b35297368a940dd0.png" },
+            { key: "bug_hunter_2", label: "Bug Hunter (Level 2)", iconSrc: "https://cdn.discordapp.com/badge-icons/848f79194d4be5ff5f81505cbd0ce1e6.png" },
         ]
     },
     {
         title: "Supporter & Developer",
         badges: [
-            { key: "early_supporter", label: "Early Supporter", iconSrc: "https://discord.com/assets/b802e9af134ff492276d94220e36ec5c.svg" },
+            { key: "early_supporter", label: "Early Supporter", iconSrc: "https://cdn.discordapp.com/badge-icons/7060786766c9c840eb3019e725d2b358.png" },
             { key: "verified_developer", label: "Verified Bot Developer", iconSrc: "https://discord.com/assets/4441e07fe0f46b3cb41b79366236fca6.svg" },
             { key: "certified_moderator", label: "Certified Moderator", iconSrc: "https://discord.com/assets/c981e58b5ea4b7fedd3a643cf0c60564.svg" },
         ]
@@ -58,9 +71,9 @@ export const BADGE_CATALOG: CatalogCategory[] = [
         title: "HypeSquad Houses",
         exclusive: true,
         badges: [
-            { key: "house_bravery", label: "HypeSquad Bravery", iconSrc: "https://discord.com/assets/efcc751513ec434ea4275ecda4f61136.svg" },
-            { key: "house_brilliance", label: "HypeSquad Brilliance", iconSrc: "https://discord.com/assets/ec8e92568a7c8f19a052ef42f862ff18.svg" },
-            { key: "house_balance", label: "HypeSquad Balance", iconSrc: "https://discord.com/assets/9f00b18e292e10fc0ae84ff5332e8b0b.svg" },
+            { key: "house_bravery", label: "HypeSquad Bravery", iconSrc: "https://cdn.discordapp.com/badge-icons/8a88d63823d8a71cd5e390baa45efa02.png" },
+            { key: "house_brilliance", label: "HypeSquad Brilliance", iconSrc: "https://cdn.discordapp.com/badge-icons/011940fd013da3f7fb926e4a1cd2e618.png" },
+            { key: "house_balance", label: "HypeSquad Balance", iconSrc: "https://cdn.discordapp.com/badge-icons/3aa41de486fa12454c3761e8e223442e.png" },
         ]
     },
     {
