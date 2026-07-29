@@ -47,7 +47,7 @@ function CheckBadge({ badge, author }: { badge: string; author: User; }): JSX.El
         case "EquicordDonor":
             return (
                 <span style={{ order: settings.store.EquicordDonorPosition, cursor: "pointer" }} onClick={openBadgePluginSettings}>
-                    {badges.getEquicordDonorBadges(author.id)?.map(badge => (
+                    {badges.getEquicordDonorBadges?.(author.id)?.map(badge => (
                         <RoleIconComponent
                             key={author.id}
                             className={roleIcon}
