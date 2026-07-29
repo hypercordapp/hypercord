@@ -28,7 +28,7 @@ import { copyWithToast } from "@utils/discord";
 import { Logger } from "@utils/Logger";
 import { shouldShowContributorBadge } from "@utils/misc";
 import definePlugin from "@utils/types";
-import { ContextMenuApi, Menu, Toasts, UserStore } from "@webpack/common";
+import { ContextMenuApi, Menu, SnowflakeUtils, Toasts, UserStore } from "@webpack/common";
 
 const CONTRIBUTOR_BADGE = "https://raw.githubusercontent.com/hypercordapp/hypercord/main/docs/hcanim.png";
 
@@ -93,6 +93,38 @@ async function loadCustomBadges(noCache = false) {
 // waiting for the next periodic poll.
 async function refetchBadges() {
     await Promise.all([loadBadges(true), loadCustomBadges(true)]);
+}
+
+let originalExtractTimestamp: typeof SnowflakeUtils.extractTimestamp | undefined;
+
+// Discord doesn't store account creation as its own field - every "member
+// since" display (including the profile popout) derives it by decoding the
+// timestamp bits baked into the account's own snowflake ID via
+// SnowflakeUtils.extractTimestamp(userId). FakeProfile's fakeCreatedAt
+// syncs a fake date here (ProfileOverrides[userId].createdAt) the same way
+// as decoration/nameplate/profileEffect/displayNameStyle - patched in this
+// (required, always-on) plugin rather than FakeProfile itself so it renders
+// for every HyperCord user viewing the profile, not just viewers who happen
+// to also have FakeProfile enabled. Every other snowflake (messages,
+// guilds, users with no override) passes through untouched.
+function patchSnowflakeUtils() {
+    if (originalExtractTimestamp) return;
+
+    originalExtractTimestamp = SnowflakeUtils.extractTimestamp.bind(SnowflakeUtils);
+
+    SnowflakeUtils.extractTimestamp = ((snowflake: string) => {
+        const override = ProfileOverrides[snowflake]?.createdAt;
+        if (override) {
+            const date = new Date(override);
+            if (!isNaN(date.getTime())) return date.getTime();
+        }
+        return originalExtractTimestamp!(snowflake);
+    }) as typeof SnowflakeUtils.extractTimestamp;
+}
+
+function unpatchSnowflakeUtils() {
+    if (originalExtractTimestamp) SnowflakeUtils.extractTimestamp = originalExtractTimestamp;
+    originalExtractTimestamp = undefined;
 }
 
 let intervalId: any;
@@ -398,6 +430,7 @@ export default definePlugin({
 
     async start() {
         await Promise.all([loadBadges(), loadCustomBadges()]);
+        patchSnowflakeUtils();
 
         clearInterval(intervalId);
         intervalId = setInterval(() => {
@@ -408,6 +441,7 @@ export default definePlugin({
 
     async stop() {
         clearInterval(intervalId);
+        unpatchSnowflakeUtils();
     },
 
     getBadges(profile: { userId: string; guildId: string; }) {

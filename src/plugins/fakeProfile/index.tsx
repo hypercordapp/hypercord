@@ -12,7 +12,7 @@ import { Devs } from "@utils/constants";
 import { fetchUserProfile } from "@utils/discord";
 import { Logger } from "@utils/Logger";
 import definePlugin, { OptionType } from "@utils/types";
-import { FluxDispatcher, Forms, GuildMemberStore, SnowflakeUtils, Toasts, UserProfileStore, UserStore } from "@webpack/common";
+import { FluxDispatcher, Forms, GuildMemberStore, Toasts, UserProfileStore, UserStore } from "@webpack/common";
 import virtualMerge from "virtual-merge";
 
 import { clearBadgeAuth, getBadgeAuthHeader, hasBadgeAuth } from "./badgeAuth";
@@ -495,41 +495,12 @@ function unpatchUserStore() {
     fakeUserCache = new WeakMap();
 }
 
-let originalExtractTimestamp: typeof SnowflakeUtils.extractTimestamp | undefined;
-
-// Discord doesn't store account creation as its own field - every "member
-// since"/"created at" display (including the profile popout) derives it by
-// decoding the timestamp bits baked into the account's own snowflake ID via
-// SnowflakeUtils.extractTimestamp(userId). Dispatching a fake `createdAt` on
-// SET_PREMIUM_TYPE_OVERRIDE (applyPremiumOverride below) doesn't affect this
-// at all - nothing reads that field for this purpose, which is why
-// fakeCreatedAt never visibly did anything. Patching extractTimestamp itself
-// is the actual hook point - and since the fake date is synced through
-// HyperCord's backend (syncCreatedAtToBackend) same as decoration/nameplate/
-// profileEffect, this checks BadgeAPIPlugin's override for ANY snowflake,
-// not just isOwnId - so a synced fake date shows for every HyperCord user
-// viewing that profile, not just the person who set it. Every other
-// snowflake (messages, guilds, users with no override) goes through
-// untouched.
-function patchSnowflakeUtils() {
-    if (originalExtractTimestamp) return;
-
-    originalExtractTimestamp = SnowflakeUtils.extractTimestamp.bind(SnowflakeUtils);
-
-    SnowflakeUtils.extractTimestamp = ((snowflake: string) => {
-        const override = BadgeAPIPlugin.getCreatedAtOverride(snowflake);
-        if (override) {
-            const date = new Date(override);
-            if (!isNaN(date.getTime())) return date.getTime();
-        }
-        return originalExtractTimestamp!(snowflake);
-    }) as typeof SnowflakeUtils.extractTimestamp;
-}
-
-function unpatchSnowflakeUtils() {
-    if (originalExtractTimestamp) SnowflakeUtils.extractTimestamp = originalExtractTimestamp;
-    originalExtractTimestamp = undefined;
-}
+// SnowflakeUtils.extractTimestamp is patched in BadgeAPIPlugin (@plugins/_api/badges),
+// not here - it's required/always-on for every HyperCord user, whereas
+// FakeProfile is opt-in and off by default. Patching it here meant a synced
+// fake creation date only rendered for viewers who happened to also have
+// FakeProfile enabled themselves - moved so it works for every viewer, same
+// as badges/banner/decoration already do.
 
 let originalGetUserProfile: typeof UserProfileStore.getUserProfile | undefined;
 
@@ -707,7 +678,6 @@ export default definePlugin({
         patchUserStore();
         patchUserProfileStore();
         patchGuildMemberStore();
-        patchSnowflakeUtils();
         applyPremiumOverride();
 
         syncOnConnect();
@@ -717,7 +687,6 @@ export default definePlugin({
     stop() {
         FluxDispatcher.unsubscribe("CONNECTION_OPEN", syncOnConnect);
         clearPremiumOverride();
-        unpatchSnowflakeUtils();
         unpatchUserStore();
         unpatchUserProfileStore();
         unpatchGuildMemberStore();
