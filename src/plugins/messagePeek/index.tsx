@@ -160,7 +160,7 @@ function MessagePreviewContent({ channel, user }: { channel: Channel; user: User
         return <>Official Discord Message</>;
     }
 
-    const smynName = isPluginEnabled(showMeYourName.name) ? showMeYourName.getTypingMemberListProfilesReactionsVoiceNameText({ user: user ?? lastMessage?.author, type: "membersList" }) : null;
+    const smynName = isPluginEnabled(showMeYourName.name) ? showMeYourName.getTypingMemberListProfilesReactionsVoiceNameText?.({ user: user ?? lastMessage?.author, type: "membersList" }) : null;
 
     if (!lastMessage) {
         if (channel.isMultiUserDM()) return <>{channel.recipients.length + 1} Members</>;

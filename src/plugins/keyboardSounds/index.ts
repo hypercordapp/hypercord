@@ -128,7 +128,6 @@ export default definePlugin({
     description: "Adds OperaGX or osu! sound effects when typing on your keyboard.",
     tags: ["Fun"],
     authors: [Devs.HypedDomi, EquicordDevs.Etorix],
-    dependencies: ["AudioPlayerAPI"],
     settings,
     start() {
         assignSounds(settings.store.volume, settings.store.soundPack);

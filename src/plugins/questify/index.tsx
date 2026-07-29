@@ -100,7 +100,7 @@ export default definePlugin({
     description: "Enhance specific Quest features, disable annoyances, or completely remove Quests.",
     tags: ["Appearance", "Customisation", "Privacy", "Utility"],
     authors: [EquicordDevs.Etorix],
-    dependencies: ["AudioPlayerAPI", "ServerListAPI"],
+    dependencies: ["ServerListAPI"],
     startAt: StartAt.Init, // Needed in order to beat Read All Messages to inserting above the server list.
     managedStyle,
     settings,

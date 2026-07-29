@@ -35,7 +35,6 @@ export default definePlugin({
     description: "Crossant every specified amount of clicks :trolley:",
     tags: ["Fun"],
     authors: [EquicordDevs.SomeAspy, Devs.thororen],
-    dependencies: ["AudioPlayerAPI"],
     settings,
     start() {
         croissant = createAudioPlayer("https://github.com/Equicord/Equibored/raw/main/sounds/equissant/croissant.mp3", { persistent: true });

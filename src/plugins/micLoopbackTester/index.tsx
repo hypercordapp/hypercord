@@ -117,7 +117,7 @@ export default definePlugin({
     description: "Adds mic loopback test icon to the user panel",
     tags: ["Utility", "Voice"],
     authors: [EquicordDevs.benjii],
-    dependencies: ["UserSettingsAPI", "UserAreaAPI"],
+    dependencies: ["UserSettingsAPI"],
     userAreaButton: {
         icon: MicLoopbackIcon,
         render: MicLoopbackUserAreaButton

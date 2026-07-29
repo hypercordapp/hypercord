@@ -306,7 +306,6 @@ export default definePlugin({
     authors: [Devs.Joona, EquicordDevs.justjxke],
     description: "Open a channel or DM as a sidebar or a popout.",
     tags: ["Appearance", "Chat", "Servers"],
-    dependencies: ["HeaderBarAPI"],
     patches: [
         {
             find: 'case"pendingFriends":',

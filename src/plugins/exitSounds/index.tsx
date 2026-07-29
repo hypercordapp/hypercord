@@ -104,7 +104,6 @@ export default definePlugin({
     description: "Play soundboard sounds when you disconnect from voice.",
     tags: ["Fun", "Voice"],
     authors: [Devs.prism],
-    dependencies: ["AudioPlayerAPI"],
     settings,
     contextMenus: {
         "sound-button-context": SoundButtonContext

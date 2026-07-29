@@ -443,7 +443,7 @@ export default definePlugin({
     name: "CollapsibleUI",
     description: "Native collapsible channel, member, chat button, and user area surfaces.",
     tags: ["Appearance", "Customisation", "Chat", "Servers"],
-    dependencies: ["HeaderBarAPI", "ChatInputButtonAPI", "SurfaceClassesAPI"],
+    dependencies: ["ChatInputButtonAPI"],
     authors: [EquicordDevs.benjii],
     searchTerms: ["ui", "sidebar", "collapsible"],
     managedStyle,
