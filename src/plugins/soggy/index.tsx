@@ -139,7 +139,6 @@ export default definePlugin({
     tags: ["Fun"],
     authors: [EquicordDevs.sliwka],
     settings,
-    dependencies: ["AudioPlayerAPI", "HeaderBarAPI"],
 
     headerBarButton: {
         icon: () => (
