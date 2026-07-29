@@ -35,21 +35,23 @@ function emojiUrl(id: string, animated = false) {
 // than Stable, so a hash captured against one channel can 404 on another (same
 // risk class already called out for regex patches elsewhere in this repo).
 // cdn.discordapp.com/badge-icons/<hash>.png is Discord's actual stable, channel-
-// independent badge CDN - prefer it whenever a verified hash is available
-// (staff/hypesquad/bug hunter/early supporter above were swapped to it 2026-07-29
-// after Canary/PTB reports of missing images, cross-checked against the same
-// hashes already used in showBadgesInChat/index.tsx). partner/active_developer/
-// verified_developer/certified_moderator and the boost_* tiers below are still on
-// the fragile discord.com/assets path - no verified badge-icons hash for those
-// was available elsewhere in the codebase, don't guess new ones without checking.
+// independent badge CDN - every non-Nitro-tier badge in this catalog was moved
+// to it 2026-07-29 after Canary/PTB reports of missing images (Nitro tiers stay
+// on the emoji lookalikes below on purpose, see a399a50). Hashes cross-checked
+// against showBadgesInChat/index.tsx (staff/hypesquad/bug hunter/early
+// supporter) and turkwr/badge-scraper's public badge hash map (partner/
+// active_developer/verified_developer/certified_moderator/all boost_* tiers) -
+// every hash HTTP-verified (200) before use, not guessed. If a badge is ever
+// added here without a hash confirmed from one of those kinds of sources,
+// don't assume a discord.com/assets URL will keep working on every channel.
 export const BADGE_CATALOG: CatalogCategory[] = [
     {
         title: "General",
         badges: [
             { key: "staff", label: "Discord Staff", iconSrc: "https://cdn.discordapp.com/badge-icons/5e74e9b61934fc1f67c65515d1f7e60d.png" },
-            { key: "partner", label: "Partner", iconSrc: "https://discord.com/assets/34306011e46e87f8ef25f3415d3b99ca.svg" },
+            { key: "partner", label: "Partner", iconSrc: "https://cdn.discordapp.com/badge-icons/3f9748e53446a137a052f3454e2de41e.png" },
             { key: "hypesquad", label: "HypeSquad Events", iconSrc: "https://cdn.discordapp.com/badge-icons/bf01d1073931f921909045f3a39fd264.png" },
-            { key: "active_developer", label: "Active Developer", iconSrc: "https://discord.com/assets/26c7a60fb1654315e0be26107bd47470.svg" },
+            { key: "active_developer", label: "Active Developer", iconSrc: "https://cdn.discordapp.com/badge-icons/6bdc42827a38498929a4920da12695d9.png" },
         ]
     },
     {
@@ -63,8 +65,8 @@ export const BADGE_CATALOG: CatalogCategory[] = [
         title: "Supporter & Developer",
         badges: [
             { key: "early_supporter", label: "Early Supporter", iconSrc: "https://cdn.discordapp.com/badge-icons/7060786766c9c840eb3019e725d2b358.png" },
-            { key: "verified_developer", label: "Verified Bot Developer", iconSrc: "https://discord.com/assets/4441e07fe0f46b3cb41b79366236fca6.svg" },
-            { key: "certified_moderator", label: "Certified Moderator", iconSrc: "https://discord.com/assets/c981e58b5ea4b7fedd3a643cf0c60564.svg" },
+            { key: "verified_developer", label: "Verified Bot Developer", iconSrc: "https://cdn.discordapp.com/badge-icons/6df5892e0f35b051f8b61eace34f4967.png" },
+            { key: "certified_moderator", label: "Certified Moderator", iconSrc: "https://cdn.discordapp.com/badge-icons/fee1624003e2fee35cb398e125dc479b.png" },
         ]
     },
     {
@@ -104,15 +106,15 @@ export const BADGE_CATALOG: CatalogCategory[] = [
         title: "Server Boost",
         exclusive: true,
         badges: [
-            { key: "boost_1", label: "Server Booster — 1 Month", iconSrc: "https://discord.com/assets/ca18353be0e57a2b3b3132fa1c08d6b4.svg" },
-            { key: "boost_2", label: "Server Booster — 2 Months", iconSrc: "https://discord.com/assets/22f99ed6e34eaca48950254c70f8fe8d.svg" },
-            { key: "boost_3", label: "Server Booster — 3 Months", iconSrc: "https://discord.com/assets/4a2618502278029ce88adeea179ed435.svg" },
-            { key: "boost_6", label: "Server Booster — 6 Months", iconSrc: "https://discord.com/assets/fbafa6adb7c49a6a2c3822521ff2af2f.svg" },
-            { key: "boost_9", label: "Server Booster — 9 Months", iconSrc: "https://discord.com/assets/0599f90e32c15b532647163edd72f70a.svg" },
-            { key: "boost_12", label: "Server Booster — 12 Months", iconSrc: "https://discord.com/assets/e07c08cdc72bcc78b69c76d2c7ceb344.svg" },
-            { key: "boost_15", label: "Server Booster — 15 Months", iconSrc: "https://discord.com/assets/c7f26927db5e7806790f4e968038630a.svg" },
-            { key: "boost_18", label: "Server Booster — 18 Months", iconSrc: "https://discord.com/assets/c6d88d1d12afe03bdc4ebb747f8d196b.svg" },
-            { key: "boost_24", label: "Server Booster — 24 Months", iconSrc: "https://discord.com/assets/d96ed283b74de75692487b7499fb8d09.svg" },
+            { key: "boost_1", label: "Server Booster — 1 Month", iconSrc: "https://cdn.discordapp.com/badge-icons/51040c70d4f20a921ad6674ff86fc95c.png" },
+            { key: "boost_2", label: "Server Booster — 2 Months", iconSrc: "https://cdn.discordapp.com/badge-icons/0e4080d1d333bc7ad29ef6528b6f2fb7.png" },
+            { key: "boost_3", label: "Server Booster — 3 Months", iconSrc: "https://cdn.discordapp.com/badge-icons/72bed924410c304dbe3d00a6e593ff59.png" },
+            { key: "boost_6", label: "Server Booster — 6 Months", iconSrc: "https://cdn.discordapp.com/badge-icons/df199d2050d3ed4ebf84d64ae83989f8.png" },
+            { key: "boost_9", label: "Server Booster — 9 Months", iconSrc: "https://cdn.discordapp.com/badge-icons/996b3e870e8a22ce519b3a50e6bdd52f.png" },
+            { key: "boost_12", label: "Server Booster — 12 Months", iconSrc: "https://cdn.discordapp.com/badge-icons/991c9f39ee33d7537d9f408c3e53141e.png" },
+            { key: "boost_15", label: "Server Booster — 15 Months", iconSrc: "https://cdn.discordapp.com/badge-icons/cb3ae83c15e970e8f3d410bc62cb8b99.png" },
+            { key: "boost_18", label: "Server Booster — 18 Months", iconSrc: "https://cdn.discordapp.com/badge-icons/7142225d31238f6387d9f09efaa02759.png" },
+            { key: "boost_24", label: "Server Booster — 24 Months", iconSrc: "https://cdn.discordapp.com/badge-icons/ec92202290b48d0879b7413d2dde3bab.png" },
         ]
     },
 ];
