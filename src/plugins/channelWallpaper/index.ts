@@ -7,9 +7,45 @@
 import { definePluginSettings } from "@api/Settings";
 import { Devs } from "@utils/constants";
 import definePlugin, { OptionType } from "@utils/types";
-import { FluxDispatcher, SelectedChannelStore } from "@webpack/common";
+import { FluxDispatcher, SelectedChannelStore, Toasts } from "@webpack/common";
 
 const STYLE_ID = "hypercord-channel-wallpaper-style";
+
+// Discord's CSP silently blocks loading images from domains it doesn't
+// already trust - no visible error, the background-image request just
+// never completes. This is the actual root cause of "the wallpaper doesn't
+// show up at all" (found via src/main/csp/manager.ts/index.ts), CSS alone
+// can't fix it. Same request-permission flow SettingsSync's cloudSetup.tsx
+// already uses for connect-src, just for img-src instead.
+const checkedDomains = new Set<string>();
+async function checkImageCsp(url: string): Promise<boolean> {
+    if (IS_WEB) return true;
+
+    if (await VencordNative.csp.isDomainAllowed(url, ["img-src"])) return true;
+
+    // ChannelWallpaper can hold many channelId=url entries at once, each
+    // switched to on every channel change - only prompt once per domain per
+    // session instead of re-asking on every single switch to that channel.
+    const { host } = new URL(url);
+    if (checkedDomains.has(host)) return false;
+    checkedDomains.add(host);
+
+    const res = await VencordNative.csp.requestAddOverride(url, ["img-src"], "ChannelWallpaper");
+    if (res === "ok") {
+        Toasts.show({
+            id: Toasts.genId(),
+            message: "Domain allowed - fully restart Discord for the wallpaper to actually show up.",
+            type: Toasts.Type.SUCCESS
+        });
+    } else if (res !== "cancelled") {
+        Toasts.show({
+            id: Toasts.genId(),
+            message: "Couldn't get permission to load images from that domain, so the wallpaper won't show.",
+            type: Toasts.Type.FAILURE
+        });
+    }
+    return res === "ok";
+}
 
 const settings = definePluginSettings({
     wallpapers: {
@@ -55,7 +91,7 @@ function clear() {
 // transparented too, since OledBlack's proven --background-primary etc.
 // custom properties only recolor Discord's own panels, not whatever the root
 // mount div itself paints. Scoped to whichever channel is currently open.
-function applyForCurrentChannel() {
+async function applyForCurrentChannel() {
     const channelId = SelectedChannelStore.getChannelId();
     const url = channelId ? parseWallpapers().get(channelId) : undefined;
 
@@ -65,6 +101,8 @@ function applyForCurrentChannel() {
         clear();
         return;
     }
+
+    if (!await checkImageCsp(url)) return;
 
     if (!style) {
         style = document.createElement("style");
