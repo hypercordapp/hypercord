@@ -173,19 +173,21 @@ const enum BadgePriority {
     Boost1 = 28,
     ActiveDeveloper = 29,
     VerifiedDeveloper = 30,
-    Quest = 31,
-    CertifiedModerator = 32,
+    CertifiedModerator = 31,
     // Fake-only tier ladder (see badgeCatalog.ts's "Gift Giving" category) -
     // no real Discord badge to dedupe against, so unlike Nitro/Boost these
     // never need REAL_BADGE_ID_PRIORITY entries or isX() range helpers.
-    // Kept last on purpose (always after every other badge) - Legend is the
-    // top tier (shows first among the six), Patron the entry tier (last).
-    GifterLegend = 33,
-    GifterHero = 34,
-    GifterIcon = 35,
-    GifterLuminary = 36,
-    GifterChampion = 37,
-    GifterPatron = 38,
+    // Placed after every real badge except Quest - Legend is the top tier
+    // (shows first among the six), Patron the entry tier (last).
+    GifterLegend = 32,
+    GifterHero = 33,
+    GifterIcon = 34,
+    GifterLuminary = 35,
+    GifterChampion = 36,
+    GifterPatron = 37,
+    // Quest stays last of the real badges on purpose - always after Gift
+    // Giving, only Unknown comes after it.
+    Quest = 38,
     Unknown = 99
 }
 
