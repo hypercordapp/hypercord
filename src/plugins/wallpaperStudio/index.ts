@@ -9,7 +9,6 @@ import { Devs } from "@utils/constants";
 import definePlugin, { OptionType } from "@utils/types";
 
 const STYLE_ID = "hypercord-wallpaper-studio-style";
-const IMG_ID = "hypercord-wallpaper-studio-img";
 
 interface Preset { dim: number; blur: number; saturate: number; }
 
@@ -82,61 +81,50 @@ function getEffectivePreset(): Preset {
 }
 
 function clear() {
-    document.getElementById(IMG_ID)?.remove();
     document.getElementById(STYLE_ID)?.remove();
 }
 
-// Same "make Discord's real panel backgrounds transparent, layer an image
-// behind them" technique LiveWallpaper/ChannelWallpaper already use (built on
-// OledBlack's proven --background-primary etc. custom properties) - this
-// plugin's own value-add is the preset system tuning dim/blur/saturation
-// together instead of a single flat overlay.
+// Rewritten after the first version (a separate fixed div with z-index: 0)
+// still didn't reliably show through for everyone - that approach depends on
+// exactly where in the DOM the div ends up relative to Discord's own root
+// mount, which isn't guaranteed. Setting the image as body's OWN
+// background-image sidesteps stacking-order entirely: a background-image is
+// painted as the element's own backdrop by definition, so every one of
+// body's children renders on top of it with no z-index/paint-order game
+// needed at all. #app-mount (Discord's actual React root, a stable id used
+// by every theme/injector tool for years) is force-transparented too, since
+// OledBlack's proven --background-primary etc. custom properties only
+// affect Discord's own panel colors, not whatever the root mount div itself
+// paints.
 function apply() {
+    let style = document.getElementById(STYLE_ID) as HTMLStyleElement | null;
+
     if (!settings.store.imageUrl) {
         clear();
         return;
     }
 
-    const { dim, blur, saturate } = getEffectivePreset();
-
-    let img = document.getElementById(IMG_ID) as HTMLDivElement | null;
-    if (!img) {
-        img = document.createElement("div");
-        img.id = IMG_ID;
-        Object.assign(img.style, {
-            position: "fixed",
-            inset: "0",
-            // No negative z-index on purpose - a negative z-index can end up
-            // painted behind <body>'s own background layer entirely
-            // (browsers treat that as a separate paint layer from the normal
-            // DOM stacking context), making the wallpaper invisible no matter
-            // what the image URL is. Prepending as body's first child and
-            // letting Discord's real UI (which comes after it in the DOM)
-            // naturally stack on top at the default z-index is reliable
-            // instead.
-            zIndex: "0",
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-            pointerEvents: "none",
-            transition: "filter 0.3s ease"
-        });
-        document.body.prepend(img);
-    }
-    img.style.backgroundImage = `url("${settings.store.imageUrl}")`;
-    img.style.filter = `blur(${blur}px) saturate(${saturate}%)`;
-
-    let style = document.getElementById(STYLE_ID) as HTMLStyleElement | null;
     if (!style) {
         style = document.createElement("style");
         style.id = STYLE_ID;
         document.head.appendChild(style);
     }
 
+    const { dim, blur, saturate } = getEffectivePreset();
     const alpha = dim / 100;
     const floatingAlpha = Math.min(1, alpha + 0.15);
+
     style.textContent = `
         html, body {
+            background-image: url("${settings.store.imageUrl}") !important;
+            background-size: cover !important;
+            background-position: center !important;
+            background-attachment: fixed !important;
+            background-repeat: no-repeat !important;
+        }
+        #app-mount {
             background: transparent !important;
+            backdrop-filter: blur(${blur}px) saturate(${saturate}%);
         }
         :root {
             --background-primary: rgba(0, 0, 0, ${alpha}) !important;
