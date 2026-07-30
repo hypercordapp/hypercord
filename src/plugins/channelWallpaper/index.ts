@@ -103,60 +103,27 @@ function parseWallpapers(): Map<string, string> {
 
 function clear() {
     document.getElementById(STYLE_ID)?.remove();
-    stopNeutralizing();
 }
 
 // Discord did a full internal redesign ("Visual Refresh") that replaced the
-// old semantic --background-primary/etc. variables this file used to rely on
-// with a --neutral-N-hsl scale instead (confirmed by reading ClientTheme's
-// own utils/styleUtils.ts, which has to fetch Discord's LIVE stylesheet at
-// runtime and regex out --neutral-*-hsl values because there's no longer a
-// stable variable name to hardcode) - so overriding the old variables
-// silently does nothing now. Rather than guess at whatever Discord's
-// variables are named THIS week, this walks the real DOM from body downward
-// and force-transparents any actually-opaque element it finds along the
-// single "wrapper" trunk (stopping as soon as an element has more than one
-// visible child, since that's where real UI structure starts, not a wrapper
-// div) - works regardless of what anything is named, versioned or not.
-// Re-run via a MutationObserver since Discord's own re-renders can recreate
-// these wrapper nodes and drop the inline override. Scoped to whichever
-// channel is currently open.
-let observer: MutationObserver | null = null;
-
-function neutralizeOpaqueAncestors() {
-    let el: Element | null = document.body;
-    for (let i = 0; i < 25 && el; i++) {
-        if (el !== document.body) {
-            const bg = getComputedStyle(el).backgroundColor;
-            if (bg && bg !== "rgba(0, 0, 0, 0)" && bg !== "transparent") {
-                (el as HTMLElement).style.setProperty("background-color", "transparent", "important");
-                (el as HTMLElement).style.setProperty("background-image", "none", "important");
-            }
-        }
-
-        const visibleChildren = Array.from(el.children).filter(c => (c as HTMLElement).offsetHeight > 0);
-        if (visibleChildren.length !== 1) break;
-        el = visibleChildren[0];
-    }
-}
-
-function startNeutralizing() {
-    neutralizeOpaqueAncestors();
-    observer?.disconnect();
-
-    let timeout: any;
-    observer = new MutationObserver(() => {
-        clearTimeout(timeout);
-        timeout = setTimeout(neutralizeOpaqueAncestors, 250);
-    });
-    observer.observe(document.body, { childList: true, subtree: true });
-}
-
-function stopNeutralizing() {
-    observer?.disconnect();
-    observer = null;
-}
-
+// old semantic --background-primary/etc. variables with a --neutral-N-hsl
+// scale (confirmed via ClientTheme's own styleUtils.ts). A follow-up single-
+// trunk DOM walk (stopping at the first branch) still wasn't enough - the
+// real visible panels (sidebar/chat/member list) sit AT that branch point as
+// siblings, each painting its own opaque background, so a walk that stops
+// there never actually reaches them.
+//
+// This is the blunt-but-guaranteed fix: `#app-mount *` unconditionally nulls
+// out EVERY descendant's background-color, no name/depth/branch guessing at
+// all. The dim effect can no longer come from recoloring those backgrounds
+// (nothing left to recolor), so it's baked directly into body's own
+// background-image instead, as a second CSS layer (a solid-color gradient)
+// stacked on top of the photo in the same background-image value. Scoped to
+// whichever channel is currently open.
+//
+// Tradeoff, told to the user directly: this can visually flatten some small
+// UI elements that leaned on their own background color for contrast (badges,
+// some buttons, code blocks) - worth it to actually see the wallpaper first.
 async function applyForCurrentChannel() {
     const channelId = SelectedChannelStore.getChannelId();
     const url = channelId ? parseWallpapers().get(channelId) : undefined;
@@ -180,26 +147,20 @@ async function applyForCurrentChannel() {
 
     style.textContent = `
         html, body {
-            background-image: url("${url}") !important;
+            background-image:
+                linear-gradient(rgba(0, 0, 0, ${alpha}), rgba(0, 0, 0, ${alpha})),
+                url("${url}") !important;
             background-size: cover !important;
             background-position: center !important;
             background-attachment: fixed !important;
             background-repeat: no-repeat !important;
         }
-        #app-mount {
-            background: transparent !important;
-        }
-        :root {
-            --background-primary: rgba(0, 0, 0, ${alpha}) !important;
-            --background-secondary: rgba(0, 0, 0, ${alpha}) !important;
-            --background-secondary-alt: rgba(0, 0, 0, ${alpha}) !important;
-            --channeltextarea-background: rgba(0, 0, 0, ${Math.min(1, alpha + 0.2)}) !important;
+        #app-mount, #app-mount * {
+            background-color: transparent !important;
         }
     `;
 
-    startNeutralizing();
-
-    toast("ChannelWallpaper: CSS applied. If you still don't see the image, the URL itself may be broken/blocked - try opening it directly in a browser.", Toasts.Type.SUCCESS);
+    toast("ChannelWallpaper: CSS applied (aggressive mode - every panel background inside Discord is now forced transparent). If you STILL don't see anything, the image itself is the problem - open the URL directly in a browser to confirm it actually loads.", Toasts.Type.SUCCESS);
 }
 
 export default definePlugin({
