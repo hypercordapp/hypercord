@@ -141,6 +141,11 @@ export function _getBadges(args: BadgeUserArgs) {
         );
     }
 
+    const formerUsernameBadge = BadgeAPIPlugin.getFormerUsernameBadge(args.userId);
+    if (formerUsernameBadge) {
+        badges.push({ ...args, ...formerUsernameBadge });
+    }
+
     return badges;
 }
 
