@@ -537,17 +537,6 @@ export default definePlugin({
 
     getDonorBadges(userId: string) {
         return ProfileOverrides[userId]?.badges?.map((badge, idx) => {
-            // Our own Gift Giving tier PNGs (docs/gifting-*.png) are drawn
-            // edge-to-edge with almost no internal margin - measured against
-            // real badge-icons assets (e.g. the Staff/Boost1 PNGs, downloaded
-            // and inspected directly): the real glyph only fills about the
-            // center 60% of its canvas, ~20% transparent margin on every
-            // side. A flat 3px wasn't nearly enough shrink to match that and
-            // still looked oversized. Using a percentage (not a fixed px)
-            // so it scales with whatever size Discord renders the badge
-            // slot at, instead of being right only for one specific size.
-            const isGiftIcon = badge.badge.includes("/docs/gifting-");
-
             return {
                 id: `hypercord_donor_badge_${idx}`,
                 iconSrc: badge.badge,
@@ -560,10 +549,19 @@ export default definePlugin({
                 // sizes all render identically), so we don't need to (and
                 // shouldn't guess/hardcode) a pixel size here - just fix how a
                 // non-square image fills that box instead of stretching to it.
+                //
+                // The Gift Giving tier PNGs (docs/gifting-*.png) used to need a
+                // special-cased CSS padding hack here too - they were originally
+                // drawn edge-to-edge with no internal margin, unlike Discord's own
+                // real badge-icons assets (measured directly: the real glyph only
+                // fills the center ~60% of its canvas). That CSS-only fix wasn't
+                // reliable, so the actual PNGs were re-exported with real
+                // transparent canvas padding baked in (200px art centered on a
+                // 330px canvas) instead - no per-badge special-casing needed here
+                // anymore, they're just regular images like every other custom
+                // badge now.
                 props: {
-                    style: isGiftIcon
-                        ? { objectFit: "contain", padding: "18%", boxSizing: "border-box" }
-                        : { objectFit: "cover" }
+                    style: { objectFit: "cover" }
                 },
                 onContextMenu(event, badge) {
                     ContextMenuApi.openContextMenu(event, () => <BadgeContextMenu badge={badge} />);
