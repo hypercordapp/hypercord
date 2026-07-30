@@ -538,12 +538,14 @@ export default definePlugin({
     getDonorBadges(userId: string) {
         return ProfileOverrides[userId]?.badges?.map((badge, idx) => {
             // Our own Gift Giving tier PNGs (docs/gifting-*.png) are drawn
-            // edge-to-edge with almost no internal margin, unlike Discord's
-            // real badge-icons assets (which bake in breathing room around
-            // the glyph) - at an identical badge slot size that makes them
-            // read as visibly bigger/bolder than every real badge next to
-            // them. Padding shrinks the drawn icon within that same fixed
-            // slot so it reads at the same visual weight.
+            // edge-to-edge with almost no internal margin - measured against
+            // real badge-icons assets (e.g. the Staff/Boost1 PNGs, downloaded
+            // and inspected directly): the real glyph only fills about the
+            // center 60% of its canvas, ~20% transparent margin on every
+            // side. A flat 3px wasn't nearly enough shrink to match that and
+            // still looked oversized. Using a percentage (not a fixed px)
+            // so it scales with whatever size Discord renders the badge
+            // slot at, instead of being right only for one specific size.
             const isGiftIcon = badge.badge.includes("/docs/gifting-");
 
             return {
@@ -560,7 +562,7 @@ export default definePlugin({
                 // non-square image fills that box instead of stretching to it.
                 props: {
                     style: isGiftIcon
-                        ? { objectFit: "cover", padding: 3, boxSizing: "border-box" }
+                        ? { objectFit: "contain", padding: "18%", boxSizing: "border-box" }
                         : { objectFit: "cover" }
                 },
                 onContextMenu(event, badge) {
