@@ -106,13 +106,21 @@ function apply() {
         Object.assign(img.style, {
             position: "fixed",
             inset: "0",
-            zIndex: "-1",
+            // No negative z-index on purpose - a negative z-index can end up
+            // painted behind <body>'s own background layer entirely
+            // (browsers treat that as a separate paint layer from the normal
+            // DOM stacking context), making the wallpaper invisible no matter
+            // what the image URL is. Prepending as body's first child and
+            // letting Discord's real UI (which comes after it in the DOM)
+            // naturally stack on top at the default z-index is reliable
+            // instead.
+            zIndex: "0",
             backgroundSize: "cover",
             backgroundPosition: "center",
             pointerEvents: "none",
             transition: "filter 0.3s ease"
         });
-        document.body.appendChild(img);
+        document.body.prepend(img);
     }
     img.style.backgroundImage = `url("${settings.store.imageUrl}")`;
     img.style.filter = `blur(${blur}px) saturate(${saturate}%)`;
@@ -127,6 +135,9 @@ function apply() {
     const alpha = dim / 100;
     const floatingAlpha = Math.min(1, alpha + 0.15);
     style.textContent = `
+        html, body {
+            background: transparent !important;
+        }
         :root {
             --background-primary: rgba(0, 0, 0, ${alpha}) !important;
             --background-secondary: rgba(0, 0, 0, ${alpha}) !important;
