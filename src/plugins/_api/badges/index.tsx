@@ -53,8 +53,15 @@ interface ProfileOverride {
     profileEffect: Record<string, unknown> | null;
     displayNameStyle: Record<string, unknown> | null;
     createdAt: string | null;
-    formerUsername: { name: string; until: string } | null;
+    // A real, client-observed log of the user's own past usernames - never
+    // hand-typed, see FakeProfile's recordUsernameChange(). Only entries
+    // within the last 12 months are meant to be here at all (the client
+    // prunes before syncing), but this also re-checks at render time in case
+    // stale data ever lingers.
+    formerUsername: Array<{ name: string; until: string }> | null;
 }
+
+const TWELVE_MONTHS_MS = 365 * 24 * 60 * 60 * 1000;
 
 let ProfileOverrides = {} as Record<string, ProfileOverride>;
 
@@ -577,17 +584,26 @@ export default definePlugin({
     // external image CDN at all - just a plain emoji character, same proven
     // approach as HyperCordBadge's own tag badge.
     getFormerUsernameBadge(userId: string): ProfileBadge | undefined {
-        const former = ProfileOverrides[userId]?.formerUsername;
-        if (!former) return undefined;
+        const history = ProfileOverrides[userId]?.formerUsername;
+        if (!history?.length) return undefined;
 
-        const untilLabel = new Date(former.until).toLocaleDateString();
+        const cutoff = Date.now() - TWELVE_MONTHS_MS;
+        const recent = history
+            .filter(entry => Date.parse(entry.until) >= cutoff)
+            .sort((a, b) => Date.parse(b.until) - Date.parse(a.until));
+        if (!recent.length) return undefined;
+
+        const tooltip = recent
+            .map(entry => `"${entry.name}" (until ${new Date(entry.until).toLocaleDateString()})`)
+            .join(", ");
+
         return {
             id: "hypercord_former_username_badge",
             position: BadgePosition.START,
             component: () => (
                 <span
                     style={{ fontSize: 16, lineHeight: 1 }}
-                    title={`Formerly known as "${former.name}" (until ${untilLabel})`}
+                    title={`Formerly known as ${tooltip}`}
                 >
                     📛
                 </span>

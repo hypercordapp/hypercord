@@ -6,6 +6,7 @@
 
 import "./styles.css";
 
+import * as DataStore from "@api/DataStore";
 import { definePluginSettings } from "@api/Settings";
 import BadgeAPIPlugin from "@plugins/_api/badges";
 import { Devs } from "@utils/constants";
@@ -320,34 +321,59 @@ export async function syncCreatedAtToBackend(silent = false) {
     }
 }
 
-// Unlike createdAt, there's no "clear if empty" ambiguity worth optimizing
-// around - a former username without a date to go with it isn't a valid
-// state, so both fields are required together for anything to be synced.
+interface FormerNameEntry { name: string; until: string; }
+interface UsernameHistoryState { currentName: string; history: FormerNameEntry[]; }
+
+const USERNAME_HISTORY_KEY = "HyperCord_usernameHistory";
+const TWELVE_MONTHS_MS = 365 * 24 * 60 * 60 * 1000;
+
+// Real, never hand-typed: compares the account's actual current username
+// (read via the ORIGINAL unpatched getCurrentUser, not the fakeUsername
+// override - this must track genuine Discord renames, not the local fake)
+// against the last name this client saw for this account. A mismatch means a
+// real rename happened since last check, closing out the old name with an
+// "until" timestamp. Runs unconditionally (even with the toggle below off)
+// so the log is already populated the moment someone opts in - only the sync
+// to HyperCord's backend is gated by the setting. Kept per-userId since one
+// Discord installation can be used to log into different accounts over time.
+async function recordUsernameChange(): Promise<FormerNameEntry[]> {
+    const userId = UserStore.getCurrentUser()?.id;
+    const realUsername = (originalGetCurrentUser ?? UserStore.getCurrentUser.bind(UserStore))()?.username;
+    if (!userId || !realUsername) return [];
+
+    let history: FormerNameEntry[] = [];
+
+    await DataStore.update<Record<string, UsernameHistoryState>>(USERNAME_HISTORY_KEY, all => {
+        all ??= {};
+        const state = all[userId] ?? { currentName: realUsername, history: [] };
+
+        if (state.currentName !== realUsername) {
+            state.history.push({ name: state.currentName, until: new Date().toISOString() });
+            state.currentName = realUsername;
+        }
+
+        const cutoff = Date.now() - TWELVE_MONTHS_MS;
+        state.history = state.history.filter(entry => Date.parse(entry.until) >= cutoff);
+
+        all[userId] = state;
+        history = state.history;
+        return all;
+    });
+
+    return history;
+}
+
 export async function syncFormerUsernameToBackend(silent = false) {
     const userId = UserStore.getCurrentUser()?.id;
     if (!userId) return;
 
-    const { fakeFormerUsername, fakeFormerUsernameUntil } = settings.store;
-    if (!fakeFormerUsername && !await hasBadgeAuth()) return;
+    const history = await recordUsernameChange();
+    const data = settings.store.trackFormerUsernames && history.length ? history : null;
+
+    if (!data && !await hasBadgeAuth()) return;
 
     const auth = await getBadgeAuthHeader();
     if (!auth) return;
-
-    let data: { name: string; until: string } | null = null;
-    if (fakeFormerUsername) {
-        const date = new Date(fakeFormerUsernameUntil);
-        if (isNaN(date.getTime())) {
-            if (!silent) {
-                Toasts.show({
-                    id: Toasts.genId(),
-                    message: "Set a valid \"until\" date (YYYY-MM-DD) to sync your former username badge.",
-                    type: Toasts.Type.FAILURE
-                });
-            }
-            return;
-        }
-        data = { name: fakeFormerUsername, until: date.toISOString() };
-    }
 
     try {
         const res = await fetch(`${SELF_PROFILES_BASE}/${userId}/former-username`, {
@@ -359,15 +385,20 @@ export async function syncFormerUsernameToBackend(silent = false) {
         if (res.status === 409 && !silent) {
             Toasts.show({
                 id: Toasts.genId(),
-                message: "Can't sync your former username - HyperCord staff already set one for you.",
+                message: "Can't sync your former usernames - HyperCord staff already set one for you.",
                 type: Toasts.Type.FAILURE
             });
         } else if (res.ok) {
             await BadgeAPIPlugin.refetchBadges();
         }
     } catch (e) {
-        logger.error("Failed to sync former username to HyperCord", e);
+        logger.error("Failed to sync former usernames to HyperCord", e);
     }
+}
+
+function onSelfUsernameUpdate({ user }: any) {
+    if (user?.id !== UserStore.getCurrentUser()?.id) return;
+    syncFormerUsernameToBackend(true);
 }
 
 function syncOnConnect() {
@@ -405,15 +436,10 @@ export const settings = definePluginSettings({
         description: "Override the account creation date on your own profile popout, format YYYY-MM-DD (leave empty to disable)",
         default: ""
     },
-    fakeFormerUsername: {
-        type: OptionType.STRING,
-        description: "Show a badge on your profile saying you used to go by this name, synced to HyperCord's backend and shown to every HyperCord user viewing your profile (leave empty to disable)",
-        default: ""
-    },
-    fakeFormerUsernameUntil: {
-        type: OptionType.STRING,
-        description: "Date you stopped using that name, format YYYY-MM-DD (required for the former username above to sync)",
-        default: ""
+    trackFormerUsernames: {
+        type: OptionType.BOOLEAN,
+        description: "Automatically track real changes to your own Discord username (never hand-typed) and show a badge listing the ones from the last 12 months, synced to HyperCord's backend and shown to every HyperCord user viewing your profile",
+        default: false
     },
     fakeBannerUrl: {
         type: OptionType.STRING,
@@ -744,10 +770,15 @@ export default definePlugin({
 
         syncOnConnect();
         FluxDispatcher.subscribe("CONNECTION_OPEN", syncOnConnect);
+        // Catches a rename the moment it happens instead of waiting for the
+        // next reconnect - CONNECTION_OPEN alone could miss same-session
+        // renames for hours.
+        FluxDispatcher.subscribe("USER_UPDATE", onSelfUsernameUpdate);
     },
 
     stop() {
         FluxDispatcher.unsubscribe("CONNECTION_OPEN", syncOnConnect);
+        FluxDispatcher.unsubscribe("USER_UPDATE", onSelfUsernameUpdate);
         clearPremiumOverride();
         unpatchUserStore();
         unpatchUserProfileStore();
