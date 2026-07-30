@@ -11,32 +11,56 @@ import { Toasts } from "@webpack/common";
 
 const STYLE_ID = "hypercord-live-wallpaper-style";
 
+function toast(message: string, type: string) {
+    Toasts.show({ id: Toasts.genId(), message, type });
+}
+
 // Discord's CSP silently blocks loading images from domains it doesn't
 // already trust - no visible error, the background-image request just
 // never completes. This is the actual root cause of "the wallpaper doesn't
 // show up at all" (found via src/main/csp/manager.ts/index.ts), CSS alone
 // can't fix it. Same request-permission flow SettingsSync's cloudSetup.tsx
 // already uses for connect-src, just for img-src instead.
+//
+// Every branch below toasts something on purpose, even the "already fine"
+// ones - if the wallpaper still doesn't show up after this, the toast text
+// tells us exactly which step it got stuck on instead of guessing blind.
 async function checkImageCsp(url: string): Promise<boolean> {
     if (IS_WEB) return true;
 
-    if (await VencordNative.csp.isDomainAllowed(url, ["img-src"])) return true;
-
-    const res = await VencordNative.csp.requestAddOverride(url, ["img-src"], "LiveWallpaper");
-    if (res === "ok") {
-        Toasts.show({
-            id: Toasts.genId(),
-            message: "Domain allowed - fully restart Discord for the wallpaper to actually show up.",
-            type: Toasts.Type.SUCCESS
-        });
-    } else if (res !== "cancelled") {
-        Toasts.show({
-            id: Toasts.genId(),
-            message: "Couldn't get permission to load images from that domain, so the wallpaper won't show.",
-            type: Toasts.Type.FAILURE
-        });
+    let host: string;
+    try {
+        host = new URL(url).host;
+    } catch {
+        toast("LiveWallpaper: that's not a valid URL.", Toasts.Type.FAILURE);
+        return false;
     }
-    return res === "ok";
+
+    try {
+        if (await VencordNative.csp.isDomainAllowed(url, ["img-src"])) {
+            return true;
+        }
+
+        toast(`LiveWallpaper: asking Discord for permission to load images from ${host} - look for a popup window (it may be behind Discord).`, Toasts.Type.MESSAGE);
+
+        const res = await VencordNative.csp.requestAddOverride(url, ["img-src"], "LiveWallpaper");
+
+        if (res === "ok") {
+            toast("LiveWallpaper: permission granted! Fully close and reopen Discord for the wallpaper to show up.", Toasts.Type.SUCCESS);
+        } else if (res === "cancelled") {
+            toast("LiveWallpaper: permission popup was cancelled/dismissed, so the wallpaper can't load.", Toasts.Type.FAILURE);
+        } else if (res === "unchecked") {
+            toast("LiveWallpaper: you need to tick the trust checkbox in the popup before clicking Allow.", Toasts.Type.FAILURE);
+        } else if (res === "conflict") {
+            toast(`LiveWallpaper: ${host} already has a different CSP rule set - can't add img-src for it automatically.`, Toasts.Type.FAILURE);
+        } else {
+            toast(`LiveWallpaper: permission request failed (${res}).`, Toasts.Type.FAILURE);
+        }
+        return res === "ok";
+    } catch (e) {
+        toast(`LiveWallpaper: CSP check crashed (${(e as Error).message}).`, Toasts.Type.FAILURE);
+        return false;
+    }
 }
 
 const settings = definePluginSettings({
@@ -109,6 +133,8 @@ async function apply() {
             --channeltextarea-background: rgba(0, 0, 0, ${floatingAlpha}) !important;
         }
     `;
+
+    toast("LiveWallpaper: CSS applied. If you still don't see the image, the URL itself may be broken/blocked - try opening it directly in a browser.", Toasts.Type.SUCCESS);
 }
 
 export default definePlugin({
