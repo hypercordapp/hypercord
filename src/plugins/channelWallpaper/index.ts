@@ -103,18 +103,60 @@ function parseWallpapers(): Map<string, string> {
 
 function clear() {
     document.getElementById(STYLE_ID)?.remove();
+    stopNeutralizing();
 }
 
-// Sets the image as body's OWN background-image rather than a separate fixed
-// div - a separate div needs a z-index guess relative to Discord's own root
-// mount that isn't reliably in a known-safe stacking position, whereas a
-// background-image is painted as the element's own backdrop by definition,
-// so every one of body's children renders on top of it with no
-// stacking-order guess needed at all. #app-mount (Discord's real React root,
-// a stable id long used by every external theme/injector tool) is force-
-// transparented too, since OledBlack's proven --background-primary etc.
-// custom properties only recolor Discord's own panels, not whatever the root
-// mount div itself paints. Scoped to whichever channel is currently open.
+// Discord did a full internal redesign ("Visual Refresh") that replaced the
+// old semantic --background-primary/etc. variables this file used to rely on
+// with a --neutral-N-hsl scale instead (confirmed by reading ClientTheme's
+// own utils/styleUtils.ts, which has to fetch Discord's LIVE stylesheet at
+// runtime and regex out --neutral-*-hsl values because there's no longer a
+// stable variable name to hardcode) - so overriding the old variables
+// silently does nothing now. Rather than guess at whatever Discord's
+// variables are named THIS week, this walks the real DOM from body downward
+// and force-transparents any actually-opaque element it finds along the
+// single "wrapper" trunk (stopping as soon as an element has more than one
+// visible child, since that's where real UI structure starts, not a wrapper
+// div) - works regardless of what anything is named, versioned or not.
+// Re-run via a MutationObserver since Discord's own re-renders can recreate
+// these wrapper nodes and drop the inline override. Scoped to whichever
+// channel is currently open.
+let observer: MutationObserver | null = null;
+
+function neutralizeOpaqueAncestors() {
+    let el: Element | null = document.body;
+    for (let i = 0; i < 25 && el; i++) {
+        if (el !== document.body) {
+            const bg = getComputedStyle(el).backgroundColor;
+            if (bg && bg !== "rgba(0, 0, 0, 0)" && bg !== "transparent") {
+                (el as HTMLElement).style.setProperty("background-color", "transparent", "important");
+                (el as HTMLElement).style.setProperty("background-image", "none", "important");
+            }
+        }
+
+        const visibleChildren = Array.from(el.children).filter(c => (c as HTMLElement).offsetHeight > 0);
+        if (visibleChildren.length !== 1) break;
+        el = visibleChildren[0];
+    }
+}
+
+function startNeutralizing() {
+    neutralizeOpaqueAncestors();
+    observer?.disconnect();
+
+    let timeout: any;
+    observer = new MutationObserver(() => {
+        clearTimeout(timeout);
+        timeout = setTimeout(neutralizeOpaqueAncestors, 250);
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+}
+
+function stopNeutralizing() {
+    observer?.disconnect();
+    observer = null;
+}
+
 async function applyForCurrentChannel() {
     const channelId = SelectedChannelStore.getChannelId();
     const url = channelId ? parseWallpapers().get(channelId) : undefined;
@@ -154,6 +196,8 @@ async function applyForCurrentChannel() {
             --channeltextarea-background: rgba(0, 0, 0, ${Math.min(1, alpha + 0.2)}) !important;
         }
     `;
+
+    startNeutralizing();
 
     toast("ChannelWallpaper: CSS applied. If you still don't see the image, the URL itself may be broken/blocked - try opening it directly in a browser.", Toasts.Type.SUCCESS);
 }
