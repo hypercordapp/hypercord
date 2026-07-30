@@ -7,8 +7,38 @@
 import { definePluginSettings } from "@api/Settings";
 import { Devs } from "@utils/constants";
 import definePlugin, { OptionType } from "@utils/types";
+import { Toasts } from "@webpack/common";
 
 const STYLE_ID = "hypercord-wallpaper-studio-style";
+
+// Discord's CSP blocks loading images from domains it doesn't already trust -
+// silently, no visible error, the background-image request just never
+// completes. This is the actual root cause of "the wallpaper doesn't show
+// up at all" reports (found via src/main/csp/manager.ts/index.ts) - CSS
+// alone can never fix this, the domain has to be added to the allowlist
+// first. Same request-permission flow SettingsSync's cloudSetup.tsx already
+// uses for connect-src, just for img-src instead.
+async function checkImageCsp(url: string): Promise<boolean> {
+    if (IS_WEB) return true;
+
+    if (await VencordNative.csp.isDomainAllowed(url, ["img-src"])) return true;
+
+    const res = await VencordNative.csp.requestAddOverride(url, ["img-src"], "WallpaperStudio");
+    if (res === "ok") {
+        Toasts.show({
+            id: Toasts.genId(),
+            message: "Domain allowed - fully restart Discord for the wallpaper to actually show up.",
+            type: Toasts.Type.SUCCESS
+        });
+    } else if (res !== "cancelled") {
+        Toasts.show({
+            id: Toasts.genId(),
+            message: "Couldn't get permission to load images from that domain, so the wallpaper won't show.",
+            type: Toasts.Type.FAILURE
+        });
+    }
+    return res === "ok";
+}
 
 interface Preset { dim: number; blur: number; saturate: number; }
 
@@ -96,13 +126,15 @@ function clear() {
 // OledBlack's proven --background-primary etc. custom properties only
 // affect Discord's own panel colors, not whatever the root mount div itself
 // paints.
-function apply() {
+async function apply() {
     let style = document.getElementById(STYLE_ID) as HTMLStyleElement | null;
 
     if (!settings.store.imageUrl) {
         clear();
         return;
     }
+
+    if (!await checkImageCsp(settings.store.imageUrl)) return;
 
     if (!style) {
         style = document.createElement("style");
