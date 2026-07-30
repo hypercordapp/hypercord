@@ -136,20 +136,64 @@ function getEffectivePreset(): Preset {
 
 function clear() {
     document.getElementById(STYLE_ID)?.remove();
+    stopNeutralizing();
 }
 
-// Rewritten after the first version (a separate fixed div with z-index: 0)
-// still didn't reliably show through for everyone - that approach depends on
-// exactly where in the DOM the div ends up relative to Discord's own root
-// mount, which isn't guaranteed. Setting the image as body's OWN
-// background-image sidesteps stacking-order entirely: a background-image is
-// painted as the element's own backdrop by definition, so every one of
-// body's children renders on top of it with no z-index/paint-order game
-// needed at all. #app-mount (Discord's actual React root, a stable id used
-// by every theme/injector tool for years) is force-transparented too, since
-// OledBlack's proven --background-primary etc. custom properties only
-// affect Discord's own panel colors, not whatever the root mount div itself
-// paints.
+// Discord did a full internal redesign ("Visual Refresh") that replaced the
+// old semantic --background-primary/--background-secondary/etc. variables
+// this file used to rely on with a --neutral-N-hsl scale instead (confirmed
+// by reading ClientTheme's own utils/styleUtils.ts, which has to fetch
+// Discord's LIVE stylesheet at runtime and regex out --neutral-*-hsl values
+// because there's no longer a stable variable name to hardcode) - so
+// overriding the old variables silently does nothing now, on top of the
+// earlier z-index/stacking issue already fixed. Rather than guess at
+// whatever Discord's variables are named THIS week, this walks the real DOM
+// from body downward and force-transparents any actually-opaque element it
+// finds along the single "wrapper" trunk (stopping as soon as an element has
+// more than one visible child, since that's where real UI structure starts,
+// not a wrapper div) - this works regardless of what anything is named,
+// versioned or not. Re-run via a MutationObserver since Discord's own
+// re-renders can recreate these wrapper nodes and drop the inline override.
+let observer: MutationObserver | null = null;
+
+function neutralizeOpaqueAncestors() {
+    let el: Element | null = document.body;
+    for (let i = 0; i < 25 && el; i++) {
+        if (el !== document.body) {
+            const bg = getComputedStyle(el).backgroundColor;
+            if (bg && bg !== "rgba(0, 0, 0, 0)" && bg !== "transparent") {
+                (el as HTMLElement).style.setProperty("background-color", "transparent", "important");
+                (el as HTMLElement).style.setProperty("background-image", "none", "important");
+            }
+        }
+
+        const visibleChildren = Array.from(el.children).filter(c => (c as HTMLElement).offsetHeight > 0);
+        if (visibleChildren.length !== 1) break;
+        el = visibleChildren[0];
+    }
+}
+
+function startNeutralizing() {
+    neutralizeOpaqueAncestors();
+    observer?.disconnect();
+
+    // Debounced - subtree:true fires on essentially every message/typing/
+    // presence update Discord's own UI makes, and re-walking on every single
+    // one of those would be wasteful. The wrapper trunk this targets rarely
+    // changes, so a short debounce loses nothing perceptible.
+    let timeout: any;
+    observer = new MutationObserver(() => {
+        clearTimeout(timeout);
+        timeout = setTimeout(neutralizeOpaqueAncestors, 250);
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+}
+
+function stopNeutralizing() {
+    observer?.disconnect();
+    observer = null;
+}
+
 async function apply() {
     let style = document.getElementById(STYLE_ID) as HTMLStyleElement | null;
 
@@ -191,6 +235,8 @@ async function apply() {
             --channeltextarea-background: rgba(0, 0, 0, ${floatingAlpha}) !important;
         }
     `;
+
+    startNeutralizing();
 
     toast("WallpaperStudio: CSS applied. If you still don't see the image, the URL itself may be broken/blocked - try opening it directly in a browser.", Toasts.Type.SUCCESS);
 }
