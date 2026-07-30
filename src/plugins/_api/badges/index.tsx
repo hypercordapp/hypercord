@@ -59,6 +59,12 @@ interface ProfileOverride {
     // prunes before syncing), but this also re-checks at render time in case
     // stale data ever lingers.
     formerUsername: Array<{ name: string; until: string }> | null;
+    // FakeProfile's basic username/display-name override - Discord's own
+    // username system can't be spoofed for other people client-side, so this
+    // has to be a real synced value read back here (see the required, always-
+    // on getUser/getCurrentUser patch below) rather than a local-only fake,
+    // the same lesson already learned once for createdAt/decoration/etc.
+    fakeIdentity: { username?: string; globalName?: string; } | null;
 }
 
 const TWELVE_MONTHS_MS = 365 * 24 * 60 * 60 * 1000;
@@ -133,6 +139,45 @@ function patchSnowflakeUtils() {
 function unpatchSnowflakeUtils() {
     if (originalExtractTimestamp) SnowflakeUtils.extractTimestamp = originalExtractTimestamp;
     originalExtractTimestamp = undefined;
+}
+
+let originalGetUser: typeof UserStore.getUser | undefined;
+let originalGetCurrentUser: typeof UserStore.getCurrentUser | undefined;
+
+// FakeProfile's own username/globalName override only ever applies locally
+// (virtualMerge, gated to isOwnId) and only on clients that have FakeProfile
+// itself enabled - fine for the profile owner's own instant preview, but a
+// viewer without FakeProfile enabled never sees it, the exact same gotcha
+// already fixed once for createdAt/decoration/nameplate/etc. This applies the
+// SYNCED version to ANY userId, in this required/always-on plugin, so it
+// renders for every HyperCord viewer regardless of their own plugin choices.
+// Direct mutation of the real cached record (not a Proxy wrapper) - the same
+// technique already confirmed working for decoration/nameplate overrides.
+function patchIdentity() {
+    if (originalGetUser) return;
+
+    originalGetUser = UserStore.getUser.bind(UserStore);
+    originalGetCurrentUser = UserStore.getCurrentUser.bind(UserStore);
+
+    const applyIdentity = (real: any) => {
+        if (!real) return real;
+
+        const fake = ProfileOverrides[real.id]?.fakeIdentity;
+        if (!fake) return real;
+
+        if (fake.username) real.username = fake.username;
+        if (fake.globalName) real.globalName = fake.globalName;
+        return real;
+    };
+
+    UserStore.getUser = ((id: string) => applyIdentity(originalGetUser!(id))) as typeof UserStore.getUser;
+    UserStore.getCurrentUser = (() => applyIdentity(originalGetCurrentUser!())) as typeof UserStore.getCurrentUser;
+}
+
+function unpatchIdentity() {
+    if (originalGetUser) UserStore.getUser = originalGetUser;
+    if (originalGetCurrentUser) UserStore.getCurrentUser = originalGetCurrentUser;
+    originalGetUser = originalGetCurrentUser = undefined;
 }
 
 let intervalId: any;
@@ -460,6 +505,7 @@ export default definePlugin({
     async start() {
         await Promise.all([loadBadges(), loadCustomBadges()]);
         patchSnowflakeUtils();
+        patchIdentity();
 
         clearInterval(intervalId);
         intervalId = setInterval(() => {
@@ -471,6 +517,7 @@ export default definePlugin({
     async stop() {
         clearInterval(intervalId);
         unpatchSnowflakeUtils();
+        unpatchIdentity();
     },
 
     getBadges(profile: { userId: string; guildId: string; }) {
