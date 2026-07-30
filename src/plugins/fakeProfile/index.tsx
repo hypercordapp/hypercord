@@ -401,24 +401,69 @@ function onSelfUsernameUpdate({ user }: any) {
     syncFormerUsernameToBackend(true);
 }
 
+// The basic fakeUsername/fakeGlobalName fields used to be entirely local
+// (virtualMerge, gated to isOwnId) - Discord's own username system can't be
+// spoofed for other people client-side, so making this visible to OTHER
+// HyperCord users needs a real synced value, rendered back by BadgeAPI's own
+// required getUser/getCurrentUser patch (see _api/badges/index.tsx) instead
+// of just this plugin's local preview. The local preview stays as-is for
+// instant self-feedback - this only adds the sync half.
+export async function syncFakeIdentityToBackend(silent = false) {
+    const userId = UserStore.getCurrentUser()?.id;
+    if (!userId) return;
+
+    const { fakeUsername, fakeGlobalName } = settings.store;
+    const data = fakeUsername || fakeGlobalName
+        ? { username: fakeUsername || undefined, globalName: fakeGlobalName || undefined }
+        : null;
+
+    if (!data && !await hasBadgeAuth()) return;
+
+    const auth = await getBadgeAuthHeader();
+    if (!auth) return;
+
+    try {
+        const res = await fetch(`${SELF_PROFILES_BASE}/${userId}/fake-identity`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json", Authorization: auth },
+            body: JSON.stringify({ data })
+        });
+
+        if (res.status === 409 && !silent) {
+            Toasts.show({
+                id: Toasts.genId(),
+                message: "Can't sync your fake username/display name - HyperCord staff already set one for you.",
+                type: Toasts.Type.FAILURE
+            });
+        } else if (res.ok) {
+            await BadgeAPIPlugin.refetchBadges();
+        }
+    } catch (e) {
+        logger.error("Failed to sync fake identity to HyperCord", e);
+    }
+}
+
 function syncOnConnect() {
     syncBadgesToBackend();
     syncBannerToBackend(true);
     syncAllCosmeticsFromUser(true);
     syncCreatedAtToBackend(true);
     syncFormerUsernameToBackend(true);
+    syncFakeIdentityToBackend(true);
 }
 
 export const settings = definePluginSettings({
     fakeUsername: {
         type: OptionType.STRING,
-        description: "Override your own username across your own client (leave empty to disable)",
-        default: ""
+        description: "Override your own username - synced to HyperCord's backend and shown to every HyperCord user viewing your profile (leave empty to disable)",
+        default: "",
+        onChange: () => syncFakeIdentityToBackend()
     },
     fakeGlobalName: {
         type: OptionType.STRING,
-        description: "Override your own display name across your own client (leave empty to disable)",
-        default: ""
+        description: "Override your own display name - synced to HyperCord's backend and shown to every HyperCord user viewing your profile (leave empty to disable)",
+        default: "",
+        onChange: () => syncFakeIdentityToBackend()
     },
     fakeNitroType: {
         type: OptionType.SELECT,
@@ -752,11 +797,12 @@ export default definePlugin({
                 syncBannerToBackend(),
                 syncAllCosmeticsFromUser(),
                 syncCreatedAtToBackend(),
-                syncFormerUsernameToBackend()
+                syncFormerUsernameToBackend(),
+                syncFakeIdentityToBackend()
             ]);
             Toasts.show({
                 id: Toasts.genId(),
-                message: "Synced badges, banner, avatar decoration, nameplate, profile effect, display name style, creation date, and former username to HyperCord!",
+                message: "Synced badges, banner, avatar decoration, nameplate, profile effect, display name style, creation date, former username, and fake identity to HyperCord!",
                 type: Toasts.Type.SUCCESS
             });
         }
