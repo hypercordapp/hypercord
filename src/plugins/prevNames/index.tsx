@@ -34,7 +34,7 @@ async function loadCache() {
 async function recordUsername(userId: string, username: string) {
     if (!username) return;
 
-    let state = cache.get(userId);
+    const state = cache.get(userId);
     if (!state) {
         cache.set(userId, { currentName: username, history: [] });
         return;
