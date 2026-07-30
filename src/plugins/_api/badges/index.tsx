@@ -536,28 +536,41 @@ export default definePlugin({
     },
 
     getDonorBadges(userId: string) {
-        return ProfileOverrides[userId]?.badges?.map((badge, idx) => ({
-            id: `hypercord_donor_badge_${idx}`,
-            iconSrc: badge.badge,
-            description: badge.tooltip,
-            position: BadgePosition.START,
-            // Custom badge images come from arbitrary external URLs at
-            // arbitrary native resolutions/aspect ratios, unlike Discord's own
-            // pre-cropped badge assets. Discord's own badge CSS class already
-            // constrains the <img> box (real badges of very different native
-            // sizes all render identically), so we don't need to (and
-            // shouldn't guess/hardcode) a pixel size here - just fix how a
-            // non-square image fills that box instead of stretching to it.
-            props: {
-                style: { objectFit: "cover" }
-            },
-            onContextMenu(event, badge) {
-                ContextMenuApi.openContextMenu(event, () => <BadgeContextMenu badge={badge} />);
-            },
-            onClick() {
-                openSettingsPage("equicord_plugins", "Plugins");
-            },
-        } satisfies ProfileBadge));
+        return ProfileOverrides[userId]?.badges?.map((badge, idx) => {
+            // Our own Gift Giving tier PNGs (docs/gifting-*.png) are drawn
+            // edge-to-edge with almost no internal margin, unlike Discord's
+            // real badge-icons assets (which bake in breathing room around
+            // the glyph) - at an identical badge slot size that makes them
+            // read as visibly bigger/bolder than every real badge next to
+            // them. Padding shrinks the drawn icon within that same fixed
+            // slot so it reads at the same visual weight.
+            const isGiftIcon = badge.badge.includes("/docs/gifting-");
+
+            return {
+                id: `hypercord_donor_badge_${idx}`,
+                iconSrc: badge.badge,
+                description: badge.tooltip,
+                position: BadgePosition.START,
+                // Custom badge images come from arbitrary external URLs at
+                // arbitrary native resolutions/aspect ratios, unlike Discord's own
+                // pre-cropped badge assets. Discord's own badge CSS class already
+                // constrains the <img> box (real badges of very different native
+                // sizes all render identically), so we don't need to (and
+                // shouldn't guess/hardcode) a pixel size here - just fix how a
+                // non-square image fills that box instead of stretching to it.
+                props: {
+                    style: isGiftIcon
+                        ? { objectFit: "cover", padding: 3, boxSizing: "border-box" }
+                        : { objectFit: "cover" }
+                },
+                onContextMenu(event, badge) {
+                    ContextMenuApi.openContextMenu(event, () => <BadgeContextMenu badge={badge} />);
+                },
+                onClick() {
+                    openSettingsPage("equicord_plugins", "Plugins");
+                },
+            } satisfies ProfileBadge;
+        });
     },
 
     getBannerOverride({ displayProfile }: any) {
