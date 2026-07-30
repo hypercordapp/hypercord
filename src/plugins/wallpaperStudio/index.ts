@@ -136,64 +136,30 @@ function getEffectivePreset(): Preset {
 
 function clear() {
     document.getElementById(STYLE_ID)?.remove();
-    stopNeutralizing();
 }
 
 // Discord did a full internal redesign ("Visual Refresh") that replaced the
-// old semantic --background-primary/--background-secondary/etc. variables
-// this file used to rely on with a --neutral-N-hsl scale instead (confirmed
-// by reading ClientTheme's own utils/styleUtils.ts, which has to fetch
-// Discord's LIVE stylesheet at runtime and regex out --neutral-*-hsl values
-// because there's no longer a stable variable name to hardcode) - so
-// overriding the old variables silently does nothing now, on top of the
-// earlier z-index/stacking issue already fixed. Rather than guess at
-// whatever Discord's variables are named THIS week, this walks the real DOM
-// from body downward and force-transparents any actually-opaque element it
-// finds along the single "wrapper" trunk (stopping as soon as an element has
-// more than one visible child, since that's where real UI structure starts,
-// not a wrapper div) - this works regardless of what anything is named,
-// versioned or not. Re-run via a MutationObserver since Discord's own
-// re-renders can recreate these wrapper nodes and drop the inline override.
-let observer: MutationObserver | null = null;
-
-function neutralizeOpaqueAncestors() {
-    let el: Element | null = document.body;
-    for (let i = 0; i < 25 && el; i++) {
-        if (el !== document.body) {
-            const bg = getComputedStyle(el).backgroundColor;
-            if (bg && bg !== "rgba(0, 0, 0, 0)" && bg !== "transparent") {
-                (el as HTMLElement).style.setProperty("background-color", "transparent", "important");
-                (el as HTMLElement).style.setProperty("background-image", "none", "important");
-            }
-        }
-
-        const visibleChildren = Array.from(el.children).filter(c => (c as HTMLElement).offsetHeight > 0);
-        if (visibleChildren.length !== 1) break;
-        el = visibleChildren[0];
-    }
-}
-
-function startNeutralizing() {
-    neutralizeOpaqueAncestors();
-    observer?.disconnect();
-
-    // Debounced - subtree:true fires on essentially every message/typing/
-    // presence update Discord's own UI makes, and re-walking on every single
-    // one of those would be wasteful. The wrapper trunk this targets rarely
-    // changes, so a short debounce loses nothing perceptible.
-    let timeout: any;
-    observer = new MutationObserver(() => {
-        clearTimeout(timeout);
-        timeout = setTimeout(neutralizeOpaqueAncestors, 250);
-    });
-    observer.observe(document.body, { childList: true, subtree: true });
-}
-
-function stopNeutralizing() {
-    observer?.disconnect();
-    observer = null;
-}
-
+// old semantic --background-primary/etc. variables with a --neutral-N-hsl
+// scale (confirmed via ClientTheme's own styleUtils.ts). Two follow-up
+// attempts after that discovery (overriding #app-mount, then a single-trunk
+// DOM walk that stops at the first branch) still weren't enough - the real
+// visible panels (sidebar/chat/member list) sit AT that branch point as
+// siblings, each painting its own opaque background, so a walk that stops
+// there never actually reaches them.
+//
+// This is the blunt-but-guaranteed fix: `#app-mount *` unconditionally nulls
+// out EVERY descendant's background-color, with no name/depth/branch
+// guessing at all - whatever Discord calls anything, however deep, it's
+// covered. The dim/blur effect can no longer come from recoloring those
+// backgrounds (there's nothing left to recolor), so it's baked directly into
+// body's own background-image instead, as a second CSS layer (a solid-color
+// gradient) stacked on top of the photo in the same background-image value -
+// a well-supported multi-layer background technique, not a separate element.
+//
+// Tradeoff, told to the user directly: this can visually flatten some small
+// UI elements that leaned on their own background color for contrast/
+// legibility (badges, some buttons, code blocks) - worth it to actually see
+// the wallpaper at all first; can dial back with exceptions once confirmed.
 async function apply() {
     let style = document.getElementById(STYLE_ID) as HTMLStyleElement | null;
 
@@ -212,33 +178,27 @@ async function apply() {
 
     const { dim, blur, saturate } = getEffectivePreset();
     const alpha = dim / 100;
-    const floatingAlpha = Math.min(1, alpha + 0.15);
 
     style.textContent = `
         html, body {
-            background-image: url("${settings.store.imageUrl}") !important;
+            background-image:
+                linear-gradient(rgba(0, 0, 0, ${alpha}), rgba(0, 0, 0, ${alpha})),
+                url("${settings.store.imageUrl}") !important;
             background-size: cover !important;
             background-position: center !important;
             background-attachment: fixed !important;
             background-repeat: no-repeat !important;
+            filter: saturate(${saturate}%) !important;
+        }
+        #app-mount, #app-mount * {
+            background-color: transparent !important;
         }
         #app-mount {
-            background: transparent !important;
-            backdrop-filter: blur(${blur}px) saturate(${saturate}%);
-        }
-        :root {
-            --background-primary: rgba(0, 0, 0, ${alpha}) !important;
-            --background-secondary: rgba(0, 0, 0, ${alpha}) !important;
-            --background-secondary-alt: rgba(0, 0, 0, ${alpha}) !important;
-            --background-tertiary: rgba(0, 0, 0, ${alpha}) !important;
-            --background-floating: rgba(0, 0, 0, ${floatingAlpha}) !important;
-            --channeltextarea-background: rgba(0, 0, 0, ${floatingAlpha}) !important;
+            backdrop-filter: blur(${blur}px);
         }
     `;
 
-    startNeutralizing();
-
-    toast("WallpaperStudio: CSS applied. If you still don't see the image, the URL itself may be broken/blocked - try opening it directly in a browser.", Toasts.Type.SUCCESS);
+    toast("WallpaperStudio: CSS applied (aggressive mode - every panel background inside Discord is now forced transparent). If you STILL don't see anything, the image itself is the problem - open the URL directly in a browser to confirm it actually loads.", Toasts.Type.SUCCESS);
 }
 
 export default definePlugin({
