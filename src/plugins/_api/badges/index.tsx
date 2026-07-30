@@ -137,57 +137,58 @@ function unpatchSnowflakeUtils() {
 
 let intervalId: any;
 
-// Discord's real, fixed render order - every individual badge/tier gets its
-// own exact slot (nothing grouped into an "everything else" bucket), so
-// sort order never depends on which array (fake vs real) an entry happened
-// to come from. Unrecognized badges land last (Unknown) rather than guessed
-// into some other slot.
+// User-specified render order (not Discord's own raw flag-bit order anymore -
+// a deliberate simplified scheme): every Nitro tier shares one slot and every
+// Boost tier shares one slot (a profile only ever has ONE of each active
+// anyway, see REAL_BADGE_ID_PRIORITY's comment below), unlike the old
+// per-tier-distinct scheme. Unrecognized badges land last (Unknown) rather
+// than guessed into some other slot.
 const enum BadgePriority {
     HyperCord = 1,
     Staff = 2,
     Partner = 3,
     HypeSquadEvents = 4,
+    BugHunterLevel1 = 5,
     BugHunterLevel2 = 5,
-    BugHunterLevel1 = 6,
-    HypeSquadBravery = 7,
-    HypeSquadBrilliance = 8,
-    HypeSquadBalance = 9,
-    EarlySupporter = 10,
-    NitroOpal = 11,
-    NitroRuby = 12,
-    NitroEmerald = 13,
-    NitroDiamond = 14,
-    NitroPlatinum = 15,
-    NitroGold = 16,
-    NitroSilver = 17,
-    NitroBronze = 18,
-    Nitro = 19,
-    Boost24 = 20,
-    Boost18 = 21,
-    Boost15 = 22,
-    Boost12 = 23,
-    Boost9 = 24,
-    Boost6 = 25,
-    Boost3 = 26,
-    Boost2 = 27,
-    Boost1 = 28,
-    ActiveDeveloper = 29,
-    VerifiedDeveloper = 30,
-    CertifiedModerator = 31,
+    HypeSquadBravery = 6,
+    HypeSquadBrilliance = 6,
+    HypeSquadBalance = 6,
+    EarlySupporter = 7,
+    // Every Nitro tier collapses to this one value on purpose.
+    NitroOpal = 8,
+    NitroRuby = 8,
+    NitroEmerald = 8,
+    NitroDiamond = 8,
+    NitroPlatinum = 8,
+    NitroGold = 8,
+    NitroSilver = 8,
+    NitroBronze = 8,
+    Nitro = 8,
+    // Every Boost tier collapses to this one value on purpose.
+    Boost24 = 9,
+    Boost18 = 9,
+    Boost15 = 9,
+    Boost12 = 9,
+    Boost9 = 9,
+    Boost6 = 9,
+    Boost3 = 9,
+    Boost2 = 9,
+    Boost1 = 9,
+    ActiveDeveloper = 10,
+    VerifiedDeveloper = 11,
+    CertifiedModerator = 12,
+    Quest = 13,
     // Fake-only tier ladder (see badgeCatalog.ts's "Gift Giving" category) -
     // no real Discord badge to dedupe against, so unlike Nitro/Boost these
     // never need REAL_BADGE_ID_PRIORITY entries or isX() range helpers.
-    // Placed after every real badge except Quest - Legend is the top tier
+    // Kept last of all the real badges on purpose - Legend is the top tier
     // (shows first among the six), Patron the entry tier (last).
-    GifterLegend = 32,
-    GifterHero = 33,
-    GifterIcon = 34,
-    GifterLuminary = 35,
-    GifterChampion = 36,
-    GifterPatron = 37,
-    // Quest stays last of the real badges on purpose - always after Gift
-    // Giving, only Unknown comes after it.
-    Quest = 38,
+    GifterLegend = 14,
+    GifterHero = 15,
+    GifterIcon = 16,
+    GifterLuminary = 17,
+    GifterChampion = 18,
+    GifterPatron = 19,
     Unknown = 99
 }
 
