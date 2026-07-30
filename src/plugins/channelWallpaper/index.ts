@@ -10,7 +10,6 @@ import definePlugin, { OptionType } from "@utils/types";
 import { FluxDispatcher, SelectedChannelStore } from "@webpack/common";
 
 const STYLE_ID = "hypercord-channel-wallpaper-style";
-const IMG_ID = "hypercord-channel-wallpaper-img";
 
 const settings = definePluginSettings({
     wallpapers: {
@@ -43,44 +42,30 @@ function parseWallpapers(): Map<string, string> {
 }
 
 function clear() {
-    document.getElementById(IMG_ID)?.remove();
     document.getElementById(STYLE_ID)?.remove();
 }
 
-// Same "make the real panel backgrounds transparent, layer an image behind
-// them" technique as LiveWallpaper (built on OledBlack's already-proven CSS
-// custom properties) - just scoped to whichever channel is currently open.
+// Sets the image as body's OWN background-image rather than a separate fixed
+// div - a separate div needs a z-index guess relative to Discord's own root
+// mount that isn't reliably in a known-safe stacking position, whereas a
+// background-image is painted as the element's own backdrop by definition,
+// so every one of body's children renders on top of it with no
+// stacking-order guess needed at all. #app-mount (Discord's real React root,
+// a stable id long used by every external theme/injector tool) is force-
+// transparented too, since OledBlack's proven --background-primary etc.
+// custom properties only recolor Discord's own panels, not whatever the root
+// mount div itself paints. Scoped to whichever channel is currently open.
 function applyForCurrentChannel() {
     const channelId = SelectedChannelStore.getChannelId();
     const url = channelId ? parseWallpapers().get(channelId) : undefined;
+
+    let style = document.getElementById(STYLE_ID) as HTMLStyleElement | null;
 
     if (!url) {
         clear();
         return;
     }
 
-    let img = document.getElementById(IMG_ID) as HTMLDivElement | null;
-    if (!img) {
-        img = document.createElement("div");
-        img.id = IMG_ID;
-        Object.assign(img.style, {
-            position: "fixed",
-            inset: "0",
-            // No negative z-index - it can end up painted behind <body>'s own
-            // background layer entirely, making the wallpaper invisible
-            // regardless of the image URL. Prepending as body's first child
-            // and letting Discord's real UI stack on top naturally (it comes
-            // later in the DOM) is reliable instead.
-            zIndex: "0",
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-            pointerEvents: "none"
-        });
-        document.body.prepend(img);
-    }
-    img.style.backgroundImage = `url("${url}")`;
-
-    let style = document.getElementById(STYLE_ID) as HTMLStyleElement | null;
     if (!style) {
         style = document.createElement("style");
         style.id = STYLE_ID;
@@ -88,8 +73,16 @@ function applyForCurrentChannel() {
     }
 
     const alpha = (100 - settings.store.opacity) / 100;
+
     style.textContent = `
         html, body {
+            background-image: url("${url}") !important;
+            background-size: cover !important;
+            background-position: center !important;
+            background-attachment: fixed !important;
+            background-repeat: no-repeat !important;
+        }
+        #app-mount {
             background: transparent !important;
         }
         :root {

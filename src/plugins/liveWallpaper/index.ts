@@ -9,7 +9,6 @@ import { Devs } from "@utils/constants";
 import definePlugin, { OptionType } from "@utils/types";
 
 const STYLE_ID = "hypercord-live-wallpaper-style";
-const IMG_ID = "hypercord-live-wallpaper-img";
 
 const settings = definePluginSettings({
     imageUrl: {
@@ -28,38 +27,28 @@ const settings = definePluginSettings({
     }
 });
 
-// Same CSS custom properties OledBlack already proves control Discord's real
-// panel backgrounds - set to transparent instead of a solid color here so a
-// fixed background image behind everything shows through.
+function clear() {
+    document.getElementById(STYLE_ID)?.remove();
+}
+
+// Sets the image as body's OWN background-image rather than a separate
+// fixed div - a separate div needs a z-index guess relative to Discord's own
+// root mount that isn't reliably in a known-safe stacking position, whereas
+// a background-image is painted as the element's own backdrop by
+// definition, so every one of body's children renders on top of it with no
+// stacking-order guess needed at all. #app-mount (Discord's real React root,
+// a stable id long used by every external theme/injector tool) is force-
+// transparented too, since OledBlack's proven --background-primary etc.
+// custom properties only recolor Discord's own panels, not whatever the
+// root mount div itself paints.
 function apply() {
-    let img = document.getElementById(IMG_ID) as HTMLDivElement | null;
+    let style = document.getElementById(STYLE_ID) as HTMLStyleElement | null;
+
     if (!settings.store.imageUrl) {
-        img?.remove();
-        document.getElementById(STYLE_ID)?.remove();
+        clear();
         return;
     }
 
-    if (!img) {
-        img = document.createElement("div");
-        img.id = IMG_ID;
-        Object.assign(img.style, {
-            position: "fixed",
-            inset: "0",
-            // No negative z-index - it can end up painted behind <body>'s own
-            // background layer entirely, making the wallpaper invisible
-            // regardless of the image URL. Prepending as body's first child
-            // and letting Discord's real UI stack on top naturally (it comes
-            // later in the DOM) is reliable instead.
-            zIndex: "0",
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-            pointerEvents: "none"
-        });
-        document.body.prepend(img);
-    }
-    img.style.backgroundImage = `url("${settings.store.imageUrl}")`;
-
-    let style = document.getElementById(STYLE_ID) as HTMLStyleElement | null;
     if (!style) {
         style = document.createElement("style");
         style.id = STYLE_ID;
@@ -67,8 +56,17 @@ function apply() {
     }
 
     const alpha = (100 - settings.store.opacity) / 100;
+    const floatingAlpha = Math.min(1, alpha + 0.2);
+
     style.textContent = `
         html, body {
+            background-image: url("${settings.store.imageUrl}") !important;
+            background-size: cover !important;
+            background-position: center !important;
+            background-attachment: fixed !important;
+            background-repeat: no-repeat !important;
+        }
+        #app-mount {
             background: transparent !important;
         }
         :root {
@@ -76,8 +74,8 @@ function apply() {
             --background-secondary: rgba(0, 0, 0, ${alpha}) !important;
             --background-secondary-alt: rgba(0, 0, 0, ${alpha}) !important;
             --background-tertiary: rgba(0, 0, 0, ${alpha}) !important;
-            --background-floating: rgba(0, 0, 0, ${Math.min(1, alpha + 0.2)}) !important;
-            --channeltextarea-background: rgba(0, 0, 0, ${Math.min(1, alpha + 0.2)}) !important;
+            --background-floating: rgba(0, 0, 0, ${floatingAlpha}) !important;
+            --channeltextarea-background: rgba(0, 0, 0, ${floatingAlpha}) !important;
         }
     `;
 }
@@ -90,8 +88,5 @@ export default definePlugin({
     settings,
 
     start: apply,
-    stop() {
-        document.getElementById(IMG_ID)?.remove();
-        document.getElementById(STYLE_ID)?.remove();
-    }
+    stop: clear
 });
