@@ -320,11 +320,62 @@ export async function syncCreatedAtToBackend(silent = false) {
     }
 }
 
+// Unlike createdAt, there's no "clear if empty" ambiguity worth optimizing
+// around - a former username without a date to go with it isn't a valid
+// state, so both fields are required together for anything to be synced.
+export async function syncFormerUsernameToBackend(silent = false) {
+    const userId = UserStore.getCurrentUser()?.id;
+    if (!userId) return;
+
+    const { fakeFormerUsername, fakeFormerUsernameUntil } = settings.store;
+    if (!fakeFormerUsername && !await hasBadgeAuth()) return;
+
+    const auth = await getBadgeAuthHeader();
+    if (!auth) return;
+
+    let data: { name: string; until: string } | null = null;
+    if (fakeFormerUsername) {
+        const date = new Date(fakeFormerUsernameUntil);
+        if (isNaN(date.getTime())) {
+            if (!silent) {
+                Toasts.show({
+                    id: Toasts.genId(),
+                    message: "Set a valid \"until\" date (YYYY-MM-DD) to sync your former username badge.",
+                    type: Toasts.Type.FAILURE
+                });
+            }
+            return;
+        }
+        data = { name: fakeFormerUsername, until: date.toISOString() };
+    }
+
+    try {
+        const res = await fetch(`${SELF_PROFILES_BASE}/${userId}/former-username`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json", Authorization: auth },
+            body: JSON.stringify({ data })
+        });
+
+        if (res.status === 409 && !silent) {
+            Toasts.show({
+                id: Toasts.genId(),
+                message: "Can't sync your former username - HyperCord staff already set one for you.",
+                type: Toasts.Type.FAILURE
+            });
+        } else if (res.ok) {
+            await BadgeAPIPlugin.refetchBadges();
+        }
+    } catch (e) {
+        logger.error("Failed to sync former username to HyperCord", e);
+    }
+}
+
 function syncOnConnect() {
     syncBadgesToBackend();
     syncBannerToBackend(true);
     syncAllCosmeticsFromUser(true);
     syncCreatedAtToBackend(true);
+    syncFormerUsernameToBackend(true);
 }
 
 export const settings = definePluginSettings({
@@ -352,6 +403,16 @@ export const settings = definePluginSettings({
     fakeCreatedAt: {
         type: OptionType.STRING,
         description: "Override the account creation date on your own profile popout, format YYYY-MM-DD (leave empty to disable)",
+        default: ""
+    },
+    fakeFormerUsername: {
+        type: OptionType.STRING,
+        description: "Show a badge on your profile saying you used to go by this name, synced to HyperCord's backend and shown to every HyperCord user viewing your profile (leave empty to disable)",
+        default: ""
+    },
+    fakeFormerUsernameUntil: {
+        type: OptionType.STRING,
+        description: "Date you stopped using that name, format YYYY-MM-DD (required for the former username above to sync)",
         default: ""
     },
     fakeBannerUrl: {
@@ -664,11 +725,12 @@ export default definePlugin({
                 syncBadgesToBackend(),
                 syncBannerToBackend(),
                 syncAllCosmeticsFromUser(),
-                syncCreatedAtToBackend()
+                syncCreatedAtToBackend(),
+                syncFormerUsernameToBackend()
             ]);
             Toasts.show({
                 id: Toasts.genId(),
-                message: "Synced badges, banner, avatar decoration, nameplate, profile effect, display name style, and creation date to HyperCord!",
+                message: "Synced badges, banner, avatar decoration, nameplate, profile effect, display name style, creation date, and former username to HyperCord!",
                 type: Toasts.Type.SUCCESS
             });
         }

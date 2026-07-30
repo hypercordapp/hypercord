@@ -53,6 +53,7 @@ interface ProfileOverride {
     profileEffect: Record<string, unknown> | null;
     displayNameStyle: Record<string, unknown> | null;
     createdAt: string | null;
+    formerUsername: { name: string; until: string } | null;
 }
 
 let ProfileOverrides = {} as Record<string, ProfileOverride>;
@@ -163,10 +164,18 @@ const enum BadgePriority {
     Boost3 = 26,
     Boost2 = 27,
     Boost1 = 28,
-    ActiveDeveloper = 29,
-    VerifiedDeveloper = 30,
-    Quest = 31,
-    CertifiedModerator = 32,
+    // Fake-only tier ladder (see badgeCatalog.ts's "Gift Giving" category) -
+    // no real Discord badge to dedupe against, so unlike Nitro/Boost these
+    // never need REAL_BADGE_ID_PRIORITY entries or isX() range helpers.
+    GifterDiamond = 29,
+    GifterPlatinum = 30,
+    GifterGold = 31,
+    GifterSilver = 32,
+    GifterBronze = 33,
+    ActiveDeveloper = 34,
+    VerifiedDeveloper = 35,
+    Quest = 36,
+    CertifiedModerator = 37,
     Unknown = 99
 }
 
@@ -202,6 +211,11 @@ const CATALOG_KEY_PRIORITY: Record<string, BadgePriority> = {
     boost_3: BadgePriority.Boost3,
     boost_2: BadgePriority.Boost2,
     boost_1: BadgePriority.Boost1,
+    gifter_diamond: BadgePriority.GifterDiamond,
+    gifter_platinum: BadgePriority.GifterPlatinum,
+    gifter_gold: BadgePriority.GifterGold,
+    gifter_silver: BadgePriority.GifterSilver,
+    gifter_bronze: BadgePriority.GifterBronze,
     active_developer: BadgePriority.ActiveDeveloper,
     verified_developer: BadgePriority.VerifiedDeveloper,
     quest: BadgePriority.Quest,
@@ -553,6 +567,28 @@ export default definePlugin({
 
     getCreatedAtOverride(userId: string | undefined) {
         return userId ? ProfileOverrides[userId]?.createdAt || undefined : undefined;
+    },
+
+    // Rendered as a component badge (not iconSrc) so it doesn't depend on any
+    // external image CDN at all - just a plain emoji character, same proven
+    // approach as HyperCordBadge's own tag badge.
+    getFormerUsernameBadge(userId: string): ProfileBadge | undefined {
+        const former = ProfileOverrides[userId]?.formerUsername;
+        if (!former) return undefined;
+
+        const untilLabel = new Date(former.until).toLocaleDateString();
+        return {
+            id: "hypercord_former_username_badge",
+            position: BadgePosition.START,
+            component: () => (
+                <span
+                    style={{ fontSize: 16, lineHeight: 1 }}
+                    title={`Formerly known as "${former.name}" (until ${untilLabel})`}
+                >
+                    📛
+                </span>
+            ),
+        };
     },
 
     getCustomBadges(userId: string) {

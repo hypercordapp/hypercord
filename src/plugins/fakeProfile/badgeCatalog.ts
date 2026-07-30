@@ -117,6 +117,23 @@ export const BADGE_CATALOG: CatalogCategory[] = [
             { key: "boost_24", label: "Server Booster — 24 Months", iconSrc: "https://cdn.discordapp.com/badge-icons/ec92202290b48d0879b7413d2dde3bab.png" },
         ]
     },
+    {
+        // Not a real Discord badge category (Discord has no persistent
+        // "gifted Nitro to someone" badge) - a fake tenure-style tier ladder
+        // requested by users, reusing the same already-verified tier-gem
+        // emoji assets as the Nitro tiers above (same emojiUrl helper) so the
+        // color genuinely changes per tier without introducing any new
+        // unverified image hash.
+        title: "Gift Giving",
+        exclusive: true,
+        badges: [
+            { key: "gifter_bronze", label: "Gift Giver — Bronze (5+ Gifts)", iconSrc: emojiUrl("1365454925357645994") },
+            { key: "gifter_silver", label: "Gift Giver — Silver (15+ Gifts)", iconSrc: emojiUrl("1365454972962996254") },
+            { key: "gifter_gold", label: "Gift Giver — Gold (30+ Gifts)", iconSrc: emojiUrl("1365454994337435739") },
+            { key: "gifter_platinum", label: "Gift Giver — Platinum (50+ Gifts)", iconSrc: emojiUrl("1436738175509987378") },
+            { key: "gifter_diamond", label: "Gift Giver — Diamond (100+ Gifts)", iconSrc: emojiUrl("1365455075937488967") },
+        ]
+    },
 ];
 
 export const BADGES_BY_KEY: Record<string, CatalogBadge> = Object.fromEntries(
@@ -142,6 +159,7 @@ const DISPLAY_ORDER = [
     "quest",
     "nitro_classic", "nitro_bronze", "nitro_silver", "nitro_gold", "nitro_platinum", "nitro_diamond", "nitro_emerald", "nitro_ruby", "nitro_opal",
     "boost_1", "boost_2", "boost_3", "boost_6", "boost_9", "boost_12", "boost_15", "boost_18", "boost_24",
+    "gifter_bronze", "gifter_silver", "gifter_gold", "gifter_platinum", "gifter_diamond",
 ];
 
 /** Reorders badge keys to match real Discord's display order, regardless of what order they were picked in. */
