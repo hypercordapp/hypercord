@@ -126,12 +126,19 @@ export const BADGE_CATALOG: CatalogCategory[] = [
         title: "Gift Giving",
         exclusive: true,
         badges: [
-            { key: "gifter_patron", label: "Gift Giver — Patron", iconSrc: "https://raw.githubusercontent.com/hypercordapp/hypercord/main/docs/gifting-patron.png" },
-            { key: "gifter_champion", label: "Gift Giver — Champion", iconSrc: "https://raw.githubusercontent.com/hypercordapp/hypercord/main/docs/gifting-champion.png" },
-            { key: "gifter_luminary", label: "Gift Giver — Luminary", iconSrc: "https://raw.githubusercontent.com/hypercordapp/hypercord/main/docs/gifting-luminary.png" },
-            { key: "gifter_icon", label: "Gift Giver — Icon", iconSrc: "https://raw.githubusercontent.com/hypercordapp/hypercord/main/docs/gifting-icon.png" },
-            { key: "gifter_hero", label: "Gift Giver — Hero", iconSrc: "https://raw.githubusercontent.com/hypercordapp/hypercord/main/docs/gifting-hero.png" },
-            { key: "gifter_legend", label: "Gift Giver — Legend", iconSrc: "https://raw.githubusercontent.com/hypercordapp/hypercord/main/docs/gifting-legend.png" },
+            // -v2 filenames on purpose (not the original gifting-*.png names) -
+            // overwriting the same filename's bytes wasn't enough to make
+            // clients pick up the re-padded PNGs, likely a same-URL image
+            // cache (Electron/Chromium disk cache, keyed by URL) serving the
+            // old edge-to-edge bytes indefinitely. A genuinely new URL forces
+            // every client to actually fetch the new file instead of
+            // assuming a cache invalidated itself.
+            { key: "gifter_patron", label: "Gift Giver — Patron", iconSrc: "https://raw.githubusercontent.com/hypercordapp/hypercord/main/docs/gifting-patron-v2.png" },
+            { key: "gifter_champion", label: "Gift Giver — Champion", iconSrc: "https://raw.githubusercontent.com/hypercordapp/hypercord/main/docs/gifting-champion-v2.png" },
+            { key: "gifter_luminary", label: "Gift Giver — Luminary", iconSrc: "https://raw.githubusercontent.com/hypercordapp/hypercord/main/docs/gifting-luminary-v2.png" },
+            { key: "gifter_icon", label: "Gift Giver — Icon", iconSrc: "https://raw.githubusercontent.com/hypercordapp/hypercord/main/docs/gifting-icon-v2.png" },
+            { key: "gifter_hero", label: "Gift Giver — Hero", iconSrc: "https://raw.githubusercontent.com/hypercordapp/hypercord/main/docs/gifting-hero-v2.png" },
+            { key: "gifter_legend", label: "Gift Giver — Legend", iconSrc: "https://raw.githubusercontent.com/hypercordapp/hypercord/main/docs/gifting-legend-v2.png" },
         ]
     },
 ];
