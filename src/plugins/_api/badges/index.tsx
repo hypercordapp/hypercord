@@ -167,15 +167,17 @@ const enum BadgePriority {
     // Fake-only tier ladder (see badgeCatalog.ts's "Gift Giving" category) -
     // no real Discord badge to dedupe against, so unlike Nitro/Boost these
     // never need REAL_BADGE_ID_PRIORITY entries or isX() range helpers.
-    GifterDiamond = 29,
-    GifterPlatinum = 30,
-    GifterGold = 31,
-    GifterSilver = 32,
-    GifterBronze = 33,
-    ActiveDeveloper = 34,
-    VerifiedDeveloper = 35,
-    Quest = 36,
-    CertifiedModerator = 37,
+    // Legend is the top tier (shows first), Patron the entry tier (last).
+    GifterLegend = 29,
+    GifterHero = 30,
+    GifterIcon = 31,
+    GifterLuminary = 32,
+    GifterChampion = 33,
+    GifterPatron = 34,
+    ActiveDeveloper = 35,
+    VerifiedDeveloper = 36,
+    Quest = 37,
+    CertifiedModerator = 38,
     Unknown = 99
 }
 
@@ -211,11 +213,12 @@ const CATALOG_KEY_PRIORITY: Record<string, BadgePriority> = {
     boost_3: BadgePriority.Boost3,
     boost_2: BadgePriority.Boost2,
     boost_1: BadgePriority.Boost1,
-    gifter_diamond: BadgePriority.GifterDiamond,
-    gifter_platinum: BadgePriority.GifterPlatinum,
-    gifter_gold: BadgePriority.GifterGold,
-    gifter_silver: BadgePriority.GifterSilver,
-    gifter_bronze: BadgePriority.GifterBronze,
+    gifter_legend: BadgePriority.GifterLegend,
+    gifter_hero: BadgePriority.GifterHero,
+    gifter_icon: BadgePriority.GifterIcon,
+    gifter_luminary: BadgePriority.GifterLuminary,
+    gifter_champion: BadgePriority.GifterChampion,
+    gifter_patron: BadgePriority.GifterPatron,
     active_developer: BadgePriority.ActiveDeveloper,
     verified_developer: BadgePriority.VerifiedDeveloper,
     quest: BadgePriority.Quest,

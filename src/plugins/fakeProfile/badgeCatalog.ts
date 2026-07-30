@@ -120,18 +120,18 @@ export const BADGE_CATALOG: CatalogCategory[] = [
     {
         // Not a real Discord badge category (Discord has no persistent
         // "gifted Nitro to someone" badge) - a fake tenure-style tier ladder
-        // requested by users, reusing the same already-verified tier-gem
-        // emoji assets as the Nitro tiers above (same emojiUrl helper) so the
-        // color genuinely changes per tier without introducing any new
-        // unverified image hash.
+        // requested by users. Custom-made icons (docs/gifting-*.png, hosted
+        // via raw.githubusercontent.com same as CONTRIBUTOR_BADGE/docs/booster.png
+        // above), not reused Discord CDN assets like the other categories.
         title: "Gift Giving",
         exclusive: true,
         badges: [
-            { key: "gifter_bronze", label: "Gift Giver — Bronze (5+ Gifts)", iconSrc: emojiUrl("1365454925357645994") },
-            { key: "gifter_silver", label: "Gift Giver — Silver (15+ Gifts)", iconSrc: emojiUrl("1365454972962996254") },
-            { key: "gifter_gold", label: "Gift Giver — Gold (30+ Gifts)", iconSrc: emojiUrl("1365454994337435739") },
-            { key: "gifter_platinum", label: "Gift Giver — Platinum (50+ Gifts)", iconSrc: emojiUrl("1436738175509987378") },
-            { key: "gifter_diamond", label: "Gift Giver — Diamond (100+ Gifts)", iconSrc: emojiUrl("1365455075937488967") },
+            { key: "gifter_patron", label: "Gift Giver — Patron", iconSrc: "https://raw.githubusercontent.com/hypercordapp/hypercord/main/docs/gifting-patron.png" },
+            { key: "gifter_champion", label: "Gift Giver — Champion", iconSrc: "https://raw.githubusercontent.com/hypercordapp/hypercord/main/docs/gifting-champion.png" },
+            { key: "gifter_luminary", label: "Gift Giver — Luminary", iconSrc: "https://raw.githubusercontent.com/hypercordapp/hypercord/main/docs/gifting-luminary.png" },
+            { key: "gifter_icon", label: "Gift Giver — Icon", iconSrc: "https://raw.githubusercontent.com/hypercordapp/hypercord/main/docs/gifting-icon.png" },
+            { key: "gifter_hero", label: "Gift Giver — Hero", iconSrc: "https://raw.githubusercontent.com/hypercordapp/hypercord/main/docs/gifting-hero.png" },
+            { key: "gifter_legend", label: "Gift Giver — Legend", iconSrc: "https://raw.githubusercontent.com/hypercordapp/hypercord/main/docs/gifting-legend.png" },
         ]
     },
 ];
@@ -159,7 +159,7 @@ const DISPLAY_ORDER = [
     "quest",
     "nitro_classic", "nitro_bronze", "nitro_silver", "nitro_gold", "nitro_platinum", "nitro_diamond", "nitro_emerald", "nitro_ruby", "nitro_opal",
     "boost_1", "boost_2", "boost_3", "boost_6", "boost_9", "boost_12", "boost_15", "boost_18", "boost_24",
-    "gifter_bronze", "gifter_silver", "gifter_gold", "gifter_platinum", "gifter_diamond",
+    "gifter_patron", "gifter_champion", "gifter_luminary", "gifter_icon", "gifter_hero", "gifter_legend",
 ];
 
 /** Reorders badge keys to match real Discord's display order, regardless of what order they were picked in. */
