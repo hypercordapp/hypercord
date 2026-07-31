@@ -93,6 +93,37 @@ function onUnhandledRejection(event: PromiseRejectionEvent) {
     reportCrash(message || "Unhandled rejection", stack);
 }
 
+// React's own error boundaries (componentDidCatch) swallow the error before
+// it ever becomes a real uncaught exception - they never reach window.onerror
+// or unhandledrejection, they only ever get printed via console.error. This
+// was a real, confirmed blind spot: a genuine user-facing crash (a proxy
+// invariant TypeError, caught by a Discord-internal boundary and recovered
+// from) never showed up in crash telemetry at all, only in the raw devtools
+// console a user happened to paste manually. Wrapping console.error to also
+// catch real Error objects logged this way - not just plain warning strings -
+// closes that gap without touching anything else console.error is used for.
+let originalConsoleError: typeof console.error | undefined;
+
+function patchConsoleError() {
+    if (originalConsoleError) return;
+    originalConsoleError = console.error.bind(console);
+
+    console.error = (...args: unknown[]) => {
+        originalConsoleError!(...args);
+        try {
+            const error = args.find((a): a is Error => a instanceof Error);
+            if (error) reportCrash(error.message || "Unknown error", error.stack || "");
+        } catch {
+            // never let crash-reporting itself break logging
+        }
+    };
+}
+
+function unpatchConsoleError() {
+    if (originalConsoleError) console.error = originalConsoleError;
+    originalConsoleError = undefined;
+}
+
 export default definePlugin({
     name: "HyperCordTelemetry",
     description: "Reports that you use HyperCord (user ID + current username, nothing more) and anonymous crash reports (no user ID attached) to HyperCord's own backend, so the team can see real usage numbers and fix crashes. Toggle off below to opt out.",
@@ -105,11 +136,13 @@ export default definePlugin({
         FluxDispatcher.subscribe("CONNECTION_OPEN", ping);
         window.addEventListener("error", onError);
         window.addEventListener("unhandledrejection", onUnhandledRejection);
+        patchConsoleError();
     },
 
     stop() {
         FluxDispatcher.unsubscribe("CONNECTION_OPEN", ping);
         window.removeEventListener("error", onError);
         window.removeEventListener("unhandledrejection", onUnhandledRejection);
+        unpatchConsoleError();
     }
 });
