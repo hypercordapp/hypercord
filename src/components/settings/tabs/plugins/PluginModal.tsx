@@ -20,7 +20,7 @@ import "./PluginModal.css";
 
 import { generateId } from "@api/Commands";
 import { hasAnyVisibleSettings, isSettingHidden } from "@api/PluginManager";
-import { Settings, useSettings } from "@api/Settings";
+import { useSettings } from "@api/Settings";
 import { BaseText } from "@components/BaseText";
 import ErrorBoundary from "@components/ErrorBoundary";
 import { t } from "@i18n";
@@ -40,6 +40,7 @@ import { PluginMeta } from "~plugins";
 
 import { OptionComponentMap } from "./components";
 import { openContributorModal } from "./ContributorModal";
+import { LanguageToggle } from "./LanguageToggle";
 import { GithubButton, WebsiteButton } from "./LinkIconButton";
 
 const cl = classNameFactory("vc-plugin-modal-");
@@ -188,18 +189,7 @@ export default function PluginModal({ plugin, onRestartNeeded, onClose, transiti
                                 />
                             </div>
                         )}
-                        <Tooltip text={Settings.language === "tr" ? "Switch to English" : "Türkçeye geç"}>
-                            {({ onMouseEnter, onMouseLeave }) => (
-                                <Clickable
-                                    className={cl("language-toggle")}
-                                    onMouseEnter={onMouseEnter}
-                                    onMouseLeave={onMouseLeave}
-                                    onClick={() => { Settings.language = Settings.language === "tr" ? "en" : "tr"; }}
-                                >
-                                    {Settings.language === "tr" ? "EN" : "TR"}
-                                </Clickable>
-                            )}
-                        </Tooltip>
+                        <LanguageToggle />
                     </div>
                 </div>
             }
