@@ -1,8 +1,8 @@
 diff --git a/dist/index.js b/dist/index.js
-index 858cdd75563d98378a953f097edabcd9252cfa1f..f8bbffe7c44cff0e46c3bed5fb8ccbc7893cf17d 100644
+index 858cdd75563d98378a953f097edabcd9252cfa1f..335b3b1b0d3f3c3e14a291c40af7db1e097bd701 100644
 --- a/dist/index.js
 +++ b/dist/index.js
-@@ -16,10 +16,18 @@ function virtualMerge(...objects) {
+@@ -16,17 +16,45 @@ function virtualMerge(...objects) {
      }
      const handler = {
          ownKeys() {
@@ -21,12 +21,40 @@ index 858cdd75563d98378a953f097edabcd9252cfa1f..f8bbffe7c44cff0e46c3bed5fb8ccbc7
 +            return [...new Set(keys)];
          }
      };
-     for (const method of ["defineProperty", "deleteProperty", "get", "getOwnPropertyDescriptor", "has", "set"]) {
+-    for (const method of ["defineProperty", "deleteProperty", "get", "getOwnPropertyDescriptor", "has", "set"]) {
++    for (const method of ["defineProperty", "deleteProperty", "get", "has", "set"]) {
+         handler[method] = function (_, ...args) {
+             return Reflect[method](findObjectByProp(args[0]), ...args);
+         };
+     }
++    // Can't just forward this one like the others above: the proxy's real
++    // target is always the permanently-empty `fallback` object, which never
++    // has ANY own property. Per the getOwnPropertyDescriptor trap invariant,
++    // reporting a property as non-configurable is only valid if the target
++    // itself also has that property as non-configurable - since fallback
++    // never does, forwarding a real (possibly non-configurable) descriptor
++    // as-is throws "'getOwnPropertyDescriptor' on proxy: trap reported
++    // non-configurability for property '<name>' which is either non-existent
++    // or configurable in the proxy target" the moment anything reads that
++    // property's descriptor (Object.keys/entries, {...spread}, for...in all
++    // do this internally, same trigger as the ownKeys fix above). Forcing
++    // configurable:true keeps every other descriptor field intact and is
++    // safe here since virtualMerge's merged view was never meant to preserve
++    // real non-configurability semantics anyway.
++    handler.getOwnPropertyDescriptor = function (_, prop) {
++        const descriptor = Reflect.getOwnPropertyDescriptor(findObjectByProp(prop), prop);
++        if (descriptor)
++            descriptor.configurable = true;
++        return descriptor;
++    };
+     return new Proxy(fallback, handler);
+ }
+ exports.default = virtualMerge;
 diff --git a/dist/index.mjs b/dist/index.mjs
-index 5570205aa0644ab414a07c75e9ccb5f866a40c1d..5240022b907301a0dfaf067a1e01984055828528 100644
+index 5570205aa0644ab414a07c75e9ccb5f866a40c1d..a7cd174925f78703e4328f68db24e81d7bf699d8 100644
 --- a/dist/index.mjs
 +++ b/dist/index.mjs
-@@ -14,10 +14,18 @@ function virtualMerge(...objects) {
+@@ -14,17 +14,45 @@ function virtualMerge(...objects) {
    }
    const handler = {
      ownKeys() {
@@ -45,4 +73,32 @@ index 5570205aa0644ab414a07c75e9ccb5f866a40c1d..5240022b907301a0dfaf067a1e019840
 +      return [...new Set(keys)];
      }
    };
-   for (const method of ["defineProperty", "deleteProperty", "get", "getOwnPropertyDescriptor", "has", "set"]) {
+-  for (const method of ["defineProperty", "deleteProperty", "get", "getOwnPropertyDescriptor", "has", "set"]) {
++  for (const method of ["defineProperty", "deleteProperty", "get", "has", "set"]) {
+     handler[method] = function(_, ...args) {
+       return Reflect[method](findObjectByProp(args[0]), ...args);
+     };
+   }
++  // Can't just forward this one like the others above: the proxy's real
++  // target is always the permanently-empty `fallback` object, which never
++  // has ANY own property. Per the getOwnPropertyDescriptor trap invariant,
++  // reporting a property as non-configurable is only valid if the target
++  // itself also has that property as non-configurable - since fallback
++  // never does, forwarding a real (possibly non-configurable) descriptor
++  // as-is throws "'getOwnPropertyDescriptor' on proxy: trap reported
++  // non-configurability for property '<name>' which is either non-existent
++  // or configurable in the proxy target" the moment anything reads that
++  // property's descriptor (Object.keys/entries, {...spread}, for...in all
++  // do this internally, same trigger as the ownKeys fix above). Forcing
++  // configurable:true keeps every other descriptor field intact and is
++  // safe here since virtualMerge's merged view was never meant to preserve
++  // real non-configurability semantics anyway.
++  handler.getOwnPropertyDescriptor = function(_, prop) {
++    const descriptor = Reflect.getOwnPropertyDescriptor(findObjectByProp(prop), prop);
++    if (descriptor)
++      descriptor.configurable = true;
++    return descriptor;
++  };
+   return new Proxy(fallback, handler);
+ }
+ var src_default = virtualMerge;
