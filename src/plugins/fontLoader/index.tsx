@@ -112,24 +112,34 @@ function GoogleFontSearch({ onSelect }: { onSelect: (font: GoogleFontMetadata) =
         previewStyles.current.forEach(style => style.remove());
     }, []);
 
-    const debouncedSearch = debounce(async (value: string) => {
-        setLoading(true);
-        if (!value) {
-            setResults([]);
-            setLoading(false);
-            return;
-        }
+    // Created once (not on every render, unlike the old `const debouncedSearch =
+    // debounce(...)` here) - debounce() closes over its own `timeout` variable, so a
+    // fresh instance per render meant every render got its own independent timer that
+    // no later render could ever clearNext, i.e. every keystroke fired its own search
+    // 300ms later regardless of further typing - the opposite of debouncing, and the
+    // overlapping stale results/loading-state updates made the search box look like it
+    // kept resetting itself while typing.
+    const debouncedSearchRef = React.useRef<((value: string) => void) | null>(null);
+    if (!debouncedSearchRef.current) {
+        debouncedSearchRef.current = debounce(async (value: string) => {
+            setLoading(true);
+            if (!value) {
+                setResults([]);
+                setLoading(false);
+                return;
+            }
 
-        const fonts = await searchGoogleFonts(value);
-        previewStyles.current.forEach(style => style.remove());
-        previewStyles.current = await Promise.all(fonts.map(f => preloadFont(f.family)));
-        setResults(fonts);
-        setLoading(false);
-    }, 300);
+            const fonts = await searchGoogleFonts(value);
+            previewStyles.current.forEach(style => style.remove());
+            previewStyles.current = await Promise.all(fonts.map(f => preloadFont(f.family)));
+            setResults(fonts);
+            setLoading(false);
+        }, 300);
+    }
 
     const handleSearch = (e: string) => {
         setQuery(e);
-        debouncedSearch(e);
+        debouncedSearchRef.current!(e);
     };
 
     return (
