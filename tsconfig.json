@@ -26,6 +26,8 @@
             "@components/*": ["./src/components/*"],
             "@debug/*": ["./src/debug/*"],
             "@utils/*": ["./src/utils/*"],
+            "@i18n": ["./src/i18n/index.ts"],
+            "@i18n/*": ["./src/i18n/*"],
             "@plugins/*": ["./src/plugins/*"],
             "@shared/*": ["./src/shared/*"],
             "@webpack/common": ["./src/webpack/common"],

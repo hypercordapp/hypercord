@@ -20,9 +20,10 @@ import "./PluginModal.css";
 
 import { generateId } from "@api/Commands";
 import { hasAnyVisibleSettings, isSettingHidden } from "@api/PluginManager";
-import { useSettings } from "@api/Settings";
+import { Settings, useSettings } from "@api/Settings";
 import { BaseText } from "@components/BaseText";
 import ErrorBoundary from "@components/ErrorBoundary";
+import { t } from "@i18n";
 import { debounce } from "@shared/debounce";
 import { gitRemote } from "@shared/vencordUserAgent";
 import { classNameFactory } from "@utils/css";
@@ -79,7 +80,7 @@ function PluginTags({ tags }: { tags: PluginTag[]; }) {
 }
 
 export default function PluginModal({ plugin, onRestartNeeded, onClose, transitionState }: PluginModalProps) {
-    const pluginSettings = useSettings([`plugins.${plugin.name}.*`]).plugins[plugin.name];
+    const pluginSettings = useSettings([`plugins.${plugin.name}.*`, "language"]).plugins[plugin.name];
     const hasSettings = hasAnyVisibleSettings(plugin);
 
     // avoid layout shift by showing dummy users while loading users
@@ -106,7 +107,7 @@ export default function PluginModal({ plugin, onRestartNeeded, onClose, transiti
     function renderSettings() {
         const { settings } = plugin;
         if (!hasSettings || !settings)
-            return <Forms.FormText>There are no settings for this plugin.</Forms.FormText>;
+            return <Forms.FormText>{t("There are no settings for this plugin.")}</Forms.FormText>;
 
         const options = Object.entries(settings.def).map(([key, setting]) => {
             if (setting.type === OptionType.CUSTOM) return null;
@@ -174,24 +175,38 @@ export default function PluginModal({ plugin, onRestartNeeded, onClose, transiti
             title={
                 <div className={cl("header")}>
                     <BaseText tag="h1" weight="semibold" size="lg">{plugin.name}</BaseText>
-                    {!pluginMeta.userPlugin && (
-                        <div className="vc-settings-modal-links">
-                            <WebsiteButton
-                                text="View more info"
-                                href={`https://hypercord.pro/plugins/${plugin.name}`}
-                            />
-                            <GithubButton
-                                text="View source code"
-                                href={`https://github.com/${gitRemote}/tree/main/src/plugins/${pluginMeta.folderName}`}
-                            />
-                        </div>
-                    )}
+                    <div className={cl("header-right")}>
+                        {!pluginMeta.userPlugin && (
+                            <div className="vc-settings-modal-links">
+                                <WebsiteButton
+                                    text={t("View more info")}
+                                    href={`https://hypercord.pro/plugins/${plugin.name}`}
+                                />
+                                <GithubButton
+                                    text={t("View source code")}
+                                    href={`https://github.com/${gitRemote}/tree/main/src/plugins/${pluginMeta.folderName}`}
+                                />
+                            </div>
+                        )}
+                        <Tooltip text={Settings.language === "tr" ? "Switch to English" : "Türkçeye geç"}>
+                            {({ onMouseEnter, onMouseLeave }) => (
+                                <Clickable
+                                    className={cl("language-toggle")}
+                                    onMouseEnter={onMouseEnter}
+                                    onMouseLeave={onMouseLeave}
+                                    onClick={() => { Settings.language = Settings.language === "tr" ? "en" : "tr"; }}
+                                >
+                                    {Settings.language === "tr" ? "EN" : "TR"}
+                                </Clickable>
+                            )}
+                        </Tooltip>
+                    </div>
                 </div>
             }
             subtitle={
                 <div className={cl("info")}>
                     <div>
-                        <Forms.FormText>{plugin.description}</Forms.FormText>
+                        <Forms.FormText>{t(plugin.description)}</Forms.FormText>
                         {!!plugin.tags?.length && <PluginTags tags={plugin.tags} />}
                     </div>
                 </div>
@@ -199,7 +214,7 @@ export default function PluginModal({ plugin, onRestartNeeded, onClose, transiti
         >
             <div className={"vc-settings-modal-content"}>
                 <section>
-                    <Text variant="heading-lg/semibold" className={classes(Margins.top8, Margins.bottom8)}>Authors</Text>
+                    <Text variant="heading-lg/semibold" className={classes(Margins.top8, Margins.bottom8)}>{t("Authors")}</Text>
                     <div style={{ width: "fit-content" }}>
                         <ErrorBoundary noop>
                             <UserSummaryItem
@@ -238,7 +253,7 @@ export default function PluginModal({ plugin, onRestartNeeded, onClose, transiti
                 )}
 
                 <section>
-                    <Text variant="heading-lg/semibold" className={classes(Margins.top16, Margins.bottom8)}>Settings</Text>
+                    <Text variant="heading-lg/semibold" className={classes(Margins.top16, Margins.bottom8)}>{t("Settings")}</Text>
                     {renderSettings()}
                 </section>
             </div>

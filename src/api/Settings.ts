@@ -65,6 +65,7 @@ export interface Settings {
     windowsMaterial: "none" | "mica" | "tabbed" | "acrylic";
     disableMinSize: boolean;
     winNativeTitleBar: boolean;
+    language: "en" | "tr";
     plugins: {
         [plugin: string]: {
             enabled: boolean;
@@ -107,6 +108,7 @@ const DefaultSettings: Settings = {
     windowsMaterial: "none",
     disableMinSize: false,
     winNativeTitleBar: false,
+    language: "en",
     plugins: {},
 
     uiElements: {
