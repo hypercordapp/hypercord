@@ -77,6 +77,13 @@ export default definePlugin({
 
     flux: {
         VOICE_CHANNEL_SELECT({ channelId, currentVoiceChannelId }: { channelId: string | null; currentVoiceChannelId: string | null; }) {
+            // Real, confirmed crash: UserStore.getCurrentUser() can briefly
+            // return undefined (seen live via crash telemetry, right around a
+            // reconnect) - .id on it threw "Cannot read properties of
+            // undefined (reading 'id')" straight out of a flux handler.
+            const currentUser = UserStore.getCurrentUser();
+            if (!currentUser) return;
+
             const leaving = channelId == null && currentVoiceChannelId != null;
             const joining = channelId != null && currentVoiceChannelId == null;
             const oldChannel = currentVoiceChannelId ?? clientOldChannelId;
@@ -84,7 +91,7 @@ export default definePlugin({
             clientOldChannelId = channelId ?? undefined;
 
             if (leaving && oldChannel) {
-                const userId = UserStore.getCurrentUser().id;
+                const userId = currentUser.id;
                 if (settings.store.logJoinLeave) {
                     log({ type: "leave", userId, channelId: oldChannel });
                 }
@@ -94,13 +101,15 @@ export default definePlugin({
                 clientJoinedAt = Date.now();
                 setCallStartTime(new Date());
                 if (settings.store.logJoinLeave) {
-                    log({ type: "join", userId: UserStore.getCurrentUser().id, channelId });
+                    log({ type: "join", userId: currentUser.id, channelId });
                 }
             }
         },
 
         VOICE_STATE_UPDATES({ voiceStates }: { voiceStates: VoiceState[]; }) {
-            const clientUserId = UserStore.getCurrentUser().id;
+            const currentUser = UserStore.getCurrentUser();
+            if (!currentUser) return;
+            const clientUserId = currentUser.id;
             const suppressJoins = Date.now() - clientJoinedAt < 5000;
 
             for (const state of voiceStates) {
