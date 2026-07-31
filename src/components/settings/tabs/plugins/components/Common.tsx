@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+import { t } from "@i18n";
 import { classNameFactory } from "@utils/css";
 import { classes } from "@utils/misc";
 import { wordsFromCamel, wordsToTitle } from "@utils/text";
@@ -48,12 +49,12 @@ export function SettingsSection({ tag: Tag = "div", name, id, description, error
         <Tag className={cl("section")}>
             <div className={classes(cl("content"), inlineSetting && cl("inline"))}>
                 <div className={cl("label")}>
-                    <Text className={cl("title")} variant="text-md/medium">{name ?? wordsToTitle(wordsFromCamel(id))}</Text>
-                    {description && <Text className={cl("description")} variant="text-sm/normal">{description}</Text>}
+                    <Text className={cl("title")} variant="text-md/medium">{t(name) ?? wordsToTitle(wordsFromCamel(id))}</Text>
+                    {description && <Text className={cl("description")} variant="text-sm/normal">{t(description)}</Text>}
                 </div>
                 {children}
             </div>
-            {error && <Text className={cl("error")} variant="text-sm/normal">{error}</Text>}
+            {error && <Text className={cl("error")} variant="text-sm/normal">{t(error)}</Text>}
         </Tag>
     );
 }
