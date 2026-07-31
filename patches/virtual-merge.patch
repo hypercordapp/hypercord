@@ -1,0 +1,48 @@
+diff --git a/dist/index.js b/dist/index.js
+index 858cdd75563d98378a953f097edabcd9252cfa1f..f8bbffe7c44cff0e46c3bed5fb8ccbc7893cf17d 100644
+--- a/dist/index.js
++++ b/dist/index.js
+@@ -16,10 +16,18 @@ function virtualMerge(...objects) {
+     }
+     const handler = {
+         ownKeys() {
+-            return objects.reduce((acc, obj) => {
++            // De-duped: when two merged objects share a key (the whole point of
++            // virtualMerge - e.g. overriding a real user's `username` with a fake
++            // one, where both the real object and the overrides object have a
++            // `username` key), the naive concat below returned that key twice,
++            // which throws "'ownKeys' on proxy: trap returned duplicate entries"
++            // (a hard, uncatchable TypeError) the moment anything enumerates the
++            // proxy's keys (Object.keys/entries, {...spread}, for...in, etc).
++            const keys = objects.reduce((acc, obj) => {
+                 acc.push(...Reflect.ownKeys(obj));
+                 return acc;
+             }, Reflect.ownKeys(fallback));
++            return [...new Set(keys)];
+         }
+     };
+     for (const method of ["defineProperty", "deleteProperty", "get", "getOwnPropertyDescriptor", "has", "set"]) {
+diff --git a/dist/index.mjs b/dist/index.mjs
+index 5570205aa0644ab414a07c75e9ccb5f866a40c1d..5240022b907301a0dfaf067a1e01984055828528 100644
+--- a/dist/index.mjs
++++ b/dist/index.mjs
+@@ -14,10 +14,18 @@ function virtualMerge(...objects) {
+   }
+   const handler = {
+     ownKeys() {
+-      return objects.reduce((acc, obj) => {
++      // De-duped: when two merged objects share a key (the whole point of
++      // virtualMerge - e.g. overriding a real user's `username` with a fake
++      // one, where both the real object and the overrides object have a
++      // `username` key), the naive concat below returned that key twice,
++      // which throws "'ownKeys' on proxy: trap returned duplicate entries"
++      // (a hard, uncatchable TypeError) the moment anything enumerates the
++      // proxy's keys (Object.keys/entries, {...spread}, for...in, etc).
++      const keys = objects.reduce((acc, obj) => {
+         acc.push(...Reflect.ownKeys(obj));
+         return acc;
+       }, Reflect.ownKeys(fallback));
++      return [...new Set(keys)];
+     }
+   };
+   for (const method of ["defineProperty", "deleteProperty", "get", "getOwnPropertyDescriptor", "has", "set"]) {

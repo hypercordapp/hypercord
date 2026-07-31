@@ -6,6 +6,7 @@ settings:
 
 patchedDependencies:
   eslint-plugin-path-alias@2.1.0: 87545cb13985b338c8fa2ea7b0a3c75c57ad7fbc81c56b38d6c9438329957727
+  virtual-merge: 2e0e0969c4ccbc989ae54cfb1b5853ad97fdc12f27dae7b9ab21261bdcec4a4e
 
 importers:
 
@@ -61,7 +62,7 @@ importers:
         version: 3.0.1
       virtual-merge:
         specifier: ^1.0.1
-        version: 1.0.2
+        version: 1.0.2(patch_hash=2e0e0969c4ccbc989ae54cfb1b5853ad97fdc12f27dae7b9ab21261bdcec4a4e)
       yaml-js:
         specifier: ^0.3.1
         version: 0.3.1
@@ -5413,7 +5414,7 @@ snapshots:
 
   util-deprecate@1.0.2: {}
 
-  virtual-merge@1.0.2: {}
+  virtual-merge@1.0.2(patch_hash=2e0e0969c4ccbc989ae54cfb1b5853ad97fdc12f27dae7b9ab21261bdcec4a4e): {}
 
   vscode-oniguruma@1.7.0: {}
 
