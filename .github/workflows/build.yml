@@ -47,6 +47,16 @@ jobs:
               run: |
                   rm -rf dist/*-unpacked dist/vendor Vencord.user.css vencordDesktopRenderer.css vencordDesktopRenderer.css.map
 
+            # Lets the desktop app's own self-updater (src/main/updater/http.ts)
+            # verify the integrity of patcher.js/preload.js/renderer.js/renderer.css
+            # before overwriting its own files with them - same fix already applied
+            # to the sibling HyperCordInstaller repo's self-updater.
+            - name: Generate checksums
+              run: |
+                  cd dist
+                  sha256sum * > checksums.txt
+                  cd ..
+
             - name: Get some values needed for the release
               id: release_values
               run: |
