@@ -47,6 +47,7 @@ const ContributorBadge: ProfileBadge = {
 // something we host ourselves, unlike banner.
 interface ProfileOverride {
     badges: Array<Record<"tooltip" | "badge", string>>;
+    avatar: string | null;
     banner: string | null;
     decoration: Record<string, unknown> | null;
     nameplate: Record<string, unknown> | null;
@@ -428,6 +429,21 @@ export default definePlugin({
                 replace: "$self.getBannerOverride(arguments[0])||$&"
             }
         },
+        // Same idea, same loading-state module, for avatar - a sibling
+        // getPreviewAvatar call is expected right next to getPreviewBanner's
+        // one above (Discord's profile-image loading state machine handles
+        // avatar/banner/icon in parallel). If Discord ever renames/removes
+        // this specific method, this patch just silently fails to match
+        // (Vencord's normal safe-failure behavior for any unmatched patch)
+        // rather than breaking anything - confirm live if avatar sync is
+        // ever reported as "saved but not showing".
+        {
+            find: ':"SHOULD_LOAD");',
+            replacement: {
+                match: /\i(?:\?)?.getPreviewAvatar\(\i,\i,\i\)(?=.{0,100}"COMPLETE")/,
+                replace: "$self.getAvatarOverride(arguments[0])||$&"
+            }
+        },
         // Injects a HyperCord-synced avatar decoration for WHOEVER's profile is
         // being rendered (not just self) into the same avatar-decoration-hook
         // module the Decor plugin patches. Unlike Decor (which invents its own
@@ -622,6 +638,10 @@ export default definePlugin({
 
     getBannerOverride({ displayProfile }: any) {
         return displayProfile?.userId ? ProfileOverrides[displayProfile.userId]?.banner || undefined : undefined;
+    },
+
+    getAvatarOverride({ displayProfile }: any) {
+        return displayProfile?.userId ? ProfileOverrides[displayProfile.userId]?.avatar || undefined : undefined;
     },
 
     getDecorationOverride(userId: string | undefined) {

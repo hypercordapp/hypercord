@@ -61,7 +61,18 @@ const enum EmojiIntentions {
     POLLS
 }
 
-const IS_BYPASSEABLE_INTENTION = `[${EmojiIntentions.CHAT},${EmojiIntentions.GUILD_STICKER_RELATED_EMOJI}].includes(fakeNitroIntention)`;
+// COMMUNITY_CONTENT/COMMUNITY_CONTENT_ONLY are included so custom/animated
+// emoji typed directly into a profile's About Me bio also render properly
+// without Nitro - unlike messages (composed through a rich-text editor that
+// validates emoji permissions before send), the bio field is a plain text
+// input with no such validation, so a real Nitro user can already save any
+// emoji shortcode into their bio; this only affects whether OTHER users see
+// it rendered as a full emoji or as literal text when viewing that bio.
+// Best-effort: unlike the CHAT/GUILD_STICKER_RELATED_EMOJI bypass above
+// (long-proven in production), this hasn't been confirmed against a live
+// Discord bundle - if bio emoji still don't render after enabling this,
+// the intention value bios actually use may differ, report back if so.
+const IS_BYPASSEABLE_INTENTION = `[${EmojiIntentions.CHAT},${EmojiIntentions.GUILD_STICKER_RELATED_EMOJI},${EmojiIntentions.COMMUNITY_CONTENT},${EmojiIntentions.COMMUNITY_CONTENT_ONLY}].includes(fakeNitroIntention)`;
 
 const enum FakeNoticeType {
     Sticker,

@@ -29,3 +29,19 @@
     height: 18px;
     object-fit: contain;
 }
+
+.vc-fakeprofile-avatar-upload-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.vc-fakeprofile-color-row {
+    margin-top: 12px;
+}
+
+.vc-fakeprofile-color-swatch {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
