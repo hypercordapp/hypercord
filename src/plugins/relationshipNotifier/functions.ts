@@ -32,7 +32,15 @@ export const removeFriend = (id: string) => manuallyRemovedFriend = id;
 export const removeGuild = (id: string) => manuallyRemovedGuild = id;
 export const removeGroup = (id: string) => manuallyRemovedGroup = id;
 
-export async function onRelationshipRemove({ relationship: { type, id } }: RelationshipRemove) {
+export async function onRelationshipRemove({ relationship }: RelationshipRemove) {
+    // Real, confirmed crash: Discord doesn't always send a fully-populated
+    // `relationship` on this event (seen live via crash telemetry) - the
+    // destructuring used to happen straight in the function's parameter list,
+    // throwing "Cannot read properties of undefined (reading 'id')" the
+    // moment that field was missing.
+    if (!relationship) return;
+    const { type, id } = relationship;
+
     if (manuallyRemovedFriend === id) {
         manuallyRemovedFriend = undefined;
         return;
@@ -62,7 +70,10 @@ export async function onRelationshipRemove({ relationship: { type, id } }: Relat
     }
 }
 
-export function onGuildDelete({ guild: { id, unavailable } }: GuildDelete) {
+export function onGuildDelete({ guild: guildDelete }: GuildDelete) {
+    if (!guildDelete) return;
+    const { id, unavailable } = guildDelete;
+
     if (!settings.store.servers) return;
     if (unavailable || GuildAvailabilityStore.isUnavailable(id)) return;
 
@@ -79,7 +90,10 @@ export function onGuildDelete({ guild: { id, unavailable } }: GuildDelete) {
     }
 }
 
-export function onChannelDelete({ channel: { id, type } }: ChannelDelete) {
+export function onChannelDelete({ channel }: ChannelDelete) {
+    if (!channel) return;
+    const { id, type } = channel;
+
     if (!settings.store.groups) return;
     if (type !== ChannelType.GROUP_DM) return;
 
