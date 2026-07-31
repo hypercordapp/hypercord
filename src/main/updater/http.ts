@@ -19,6 +19,7 @@
 import { fetchBuffer, fetchJson } from "@main/utils/http";
 import { IpcEvents } from "@shared/IpcEvents";
 import { VENCORD_USER_AGENT } from "@shared/vencordUserAgent";
+import { createHash } from "crypto";
 import { ipcMain } from "electron";
 import { writeFile } from "fs/promises";
 import { join } from "path";
@@ -30,6 +31,7 @@ import { serializeErrors, VENCORD_FILES } from "./common";
 
 const API_BASE = `https://api.github.com/repos/${gitRemote}`;
 let PendingUpdates = [] as [string, string][];
+let ChecksumsUrl: string | undefined;
 
 async function githubGet<T = any>(endpoint: string) {
     return fetchJson<T>(API_BASE + endpoint, {
@@ -63,6 +65,8 @@ async function fetchUpdates() {
     if (hash === gitHash)
         return false;
 
+    ChecksumsUrl = data.assets.find(({ name }: any) => name === "checksums.txt")?.browser_download_url;
+
     data.assets.forEach(({ name, browser_download_url }) => {
         if (VENCORD_FILES.some(s => name.startsWith(s))) {
             PendingUpdates.push([name, browser_download_url]);
@@ -72,9 +76,35 @@ async function fetchUpdates() {
     return true;
 }
 
+// Parses sha256sum's "<hex digest>  <filename>" output format into a lookup map.
+function parseChecksums(text: string) {
+    const map = new Map<string, string>();
+    for (const line of text.split("\n")) {
+        const match = /^([a-f0-9]{64})\s+\*?(.+?)\s*$/.exec(line);
+        if (match) map.set(match[2], match[1]);
+    }
+    return map;
+}
+
 async function applyUpdates() {
+    if (!ChecksumsUrl) {
+        throw new Error("Refusing to apply update: no checksums.txt found in the release, cannot verify integrity");
+    }
+
+    const checksumsText = (await fetchBuffer(ChecksumsUrl)).toString("utf-8");
+    const checksums = parseChecksums(checksumsText);
+
     const fileContents = await Promise.all(PendingUpdates.map(async ([name, url]) => {
         const contents = await fetchBuffer(url);
+
+        const expected = checksums.get(name);
+        if (!expected) throw new Error(`Refusing to apply update: no checksum entry for ${name}`);
+
+        const actual = createHash("sha256").update(contents).digest("hex");
+        if (actual !== expected) {
+            throw new Error(`Refusing to apply update: ${name} failed checksum verification (expected ${expected}, got ${actual})`);
+        }
+
         return [join(__dirname, name), contents] as const;
     }));
 
