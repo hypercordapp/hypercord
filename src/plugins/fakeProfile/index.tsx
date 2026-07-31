@@ -16,9 +16,11 @@ import definePlugin, { OptionType } from "@utils/types";
 import { FluxDispatcher, Forms, GuildMemberStore, Toasts, UserProfileStore, UserStore } from "@webpack/common";
 import virtualMerge from "virtual-merge";
 
+import { AvatarUploadButton } from "./AvatarUpload";
 import { clearBadgeAuth, getBadgeAuthHeader, hasBadgeAuth } from "./badgeAuth";
 import { BADGES_BY_KEY, sortByDisplayOrder } from "./badgeCatalog";
 import { BadgePicker } from "./BadgePicker";
+import { ProfileColorPickers } from "./ColorPickers";
 
 const logger = new Logger("FakeProfile");
 const SELF_PROFILES_BASE = "https://api.hypercord.pro/self/profiles";
@@ -70,6 +72,36 @@ export async function syncBadgesToBackend() {
         await BadgeAPIPlugin.refetchBadges();
     } catch (e) {
         logger.error("Failed to sync badges to HyperCord", e);
+    }
+}
+
+export async function syncAvatarToBackend(silent = false) {
+    const userId = UserStore.getCurrentUser()?.id;
+    if (!userId) return;
+
+    if (!settings.store.fakeAvatarUrl && !await hasBadgeAuth()) return;
+
+    const auth = await getBadgeAuthHeader();
+    if (!auth) return;
+
+    try {
+        const res = await fetch(`${SELF_PROFILES_BASE}/${userId}/avatar`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json", Authorization: auth },
+            body: JSON.stringify({ url: settings.store.fakeAvatarUrl || null })
+        });
+
+        if (res.status === 409 && !silent) {
+            Toasts.show({
+                id: Toasts.genId(),
+                message: "Can't sync your avatar - HyperCord staff already set one for you.",
+                type: Toasts.Type.FAILURE
+            });
+        } else if (res.ok) {
+            await BadgeAPIPlugin.refetchBadges();
+        }
+    } catch (e) {
+        logger.error("Failed to sync avatar to HyperCord", e);
     }
 }
 
@@ -445,6 +477,7 @@ export async function syncFakeIdentityToBackend(silent = false) {
 
 function syncOnConnect() {
     syncBadgesToBackend();
+    syncAvatarToBackend(true);
     syncBannerToBackend(true);
     syncAllCosmeticsFromUser(true);
     syncCreatedAtToBackend(true);
@@ -464,6 +497,16 @@ export const settings = definePluginSettings({
         description: "Override your own display name - synced to HyperCord's backend and shown to every HyperCord user viewing your profile (leave empty to disable)",
         default: "",
         onChange: () => syncFakeIdentityToBackend()
+    },
+    fakeAvatarUrl: {
+        type: OptionType.STRING,
+        description: "Override your own profile picture - synced to HyperCord's backend and shown to every HyperCord user viewing your profile (leave empty to disable) - set via the upload button below",
+        default: "",
+        hidden: true
+    },
+    avatarUploadButton: {
+        type: OptionType.COMPONENT,
+        component: () => <AvatarUploadButton getCurrentUserId={() => UserStore.getCurrentUser()?.id} />
     },
     fakeNitroType: {
         type: OptionType.SELECT,
@@ -517,18 +560,25 @@ export const settings = definePluginSettings({
     },
     fakeAccentColor: {
         type: OptionType.STRING,
-        description: "Override your own profile accent color, hex like #5865F2 (leave empty to disable)",
-        default: ""
+        description: "Override your own profile accent color, hex like #5865F2 (leave empty to disable) - set via the color pickers below",
+        default: "",
+        hidden: true
     },
     fakeThemeColorPrimary: {
         type: OptionType.STRING,
-        description: "Primary color of your own profile's two-tone theme gradient, hex like #5865F2 (leave empty to disable)",
-        default: ""
+        description: "Primary color of your own profile's two-tone theme gradient, hex like #5865F2 (leave empty to disable) - set via the color pickers below",
+        default: "",
+        hidden: true
     },
     fakeThemeColorSecondary: {
         type: OptionType.STRING,
-        description: "Secondary color of your own profile's two-tone theme gradient, hex like #EB459E (requires the primary color above to also be set)",
-        default: ""
+        description: "Secondary color of your own profile's two-tone theme gradient, hex like #EB459E (requires the primary color above to also be set) - set via the color pickers below",
+        default: "",
+        hidden: true
+    },
+    profileColorPickers: {
+        type: OptionType.COMPONENT,
+        component: ProfileColorPickers
     },
     selectedBadges: {
         type: OptionType.COMPONENT,
@@ -746,8 +796,8 @@ function SettingsAboutComponent() {
             profile theme gradient are <strong>only visible to you</strong>, in your own
             HyperCord client — that data lives on Discord's servers and can't be spoofed
             client-side for other people.{" "}
-            <strong>Your selected badges, banner, Frame, Nameplate, Profile Effect and
-                Display Name Style are different: they're synced to HyperCord's own
+            <strong>Your selected badges, avatar, banner, Frame, Nameplate, Profile Effect
+                and Display Name Style are different: they're synced to HyperCord's own
                 backend and shown to every HyperCord user viewing your profile</strong>,
             not just you - each of Frame/Nameplate/Profile Effect/Display Name Style
             copies from its own independent Discord user ID (they're four separate real
@@ -763,7 +813,7 @@ function SettingsAboutComponent() {
 
 export default definePlugin({
     name: "FakeProfile",
-    description: "Locally fake your username, display name, Nitro tier, accent color and profile theme gradient on your own profile (visible only to you) — badges, banner, Frame (avatar decoration), Nameplate, Profile Effect and Display Name Style sync to HyperCord's backend and show for every HyperCord user viewing your profile",
+    description: "Locally fake your username, display name, Nitro tier, accent color and profile theme gradient on your own profile (visible only to you) — badges, avatar, banner, Frame (avatar decoration), Nameplate, Profile Effect and Display Name Style sync to HyperCord's backend and show for every HyperCord user viewing your profile",
     tags: ["Fun", "Appearance"],
     authors: [Devs.HyperCordTeam],
     settings,
@@ -794,6 +844,7 @@ export default definePlugin({
             applyPremiumOverride();
             await Promise.all([
                 syncBadgesToBackend(),
+                syncAvatarToBackend(),
                 syncBannerToBackend(),
                 syncAllCosmeticsFromUser(),
                 syncCreatedAtToBackend(),
@@ -802,7 +853,7 @@ export default definePlugin({
             ]);
             Toasts.show({
                 id: Toasts.genId(),
-                message: "Synced badges, banner, avatar decoration, nameplate, profile effect, display name style, creation date, former username, and fake identity to HyperCord!",
+                message: "Synced badges, avatar, banner, avatar decoration, nameplate, profile effect, display name style, creation date, former username, and fake identity to HyperCord!",
                 type: Toasts.Type.SUCCESS
             });
         }
