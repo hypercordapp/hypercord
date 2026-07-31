@@ -14,6 +14,7 @@ import { Card } from "@components/Card";
 import { PlaceholderIcon } from "@components/Icons";
 import { Paragraph } from "@components/Paragraph";
 import { Switch } from "@components/Switch";
+import { t } from "@i18n";
 import { classNameFactory } from "@utils/css";
 import { Margins } from "@utils/margins";
 import { classes } from "@utils/misc";
@@ -30,10 +31,10 @@ export function UIElementsButton() {
             <Card className={cl("button")} defaultPadding>
                 <div className={cl("button-description")}>
                     <Paragraph size="md" weight="semibold">
-                        Manage plugin UI elements
+                        {t("Manage plugin UI elements")}
                     </Paragraph>
                     <Paragraph size="xs">
-                        Allows you to hide buttons you don't like
+                        {t("Allows you to hide buttons you don't like")}
                     </Paragraph>
                 </div>
                 <svg
@@ -75,13 +76,13 @@ function Section(props: {
 
     return (
         <section>
-            <BaseText tag="h3" size="lg" weight="semibold">{title}</BaseText>
-            <Paragraph size="sm" className={classes(Margins.top8, Margins.bottom20)}>{description}</Paragraph>
+            <BaseText tag="h3" size="lg" weight="semibold">{t(title)}</BaseText>
+            <Paragraph size="sm" className={classes(Margins.top8, Margins.bottom20)}>{t(description)}</Paragraph>
 
             <div className={cl("switches")}>
                 {switches.length === 0 && (
                     <Paragraph weight="medium" className={cl("switches-row")} style={{ color: "var(--text-muted)" }}>
-                        Buttons of enabled plugins will appear here.
+                        {t("Buttons of enabled plugins will appear here.")}
                     </Paragraph>
                 )}
                 {switches}
@@ -94,7 +95,7 @@ function UIElementsModal(props: RenderModalProps) {
     const { uiElements } = useSettings(["uiElements.*"]);
 
     return (
-        <Modal {...props} size="md" title="Manage plugin UI elements">
+        <Modal {...props} size="md" title={t("Manage plugin UI elements")}>
             <div className={cl("modal-content")}>
                 <Section
                     title="Chatbar Buttons"

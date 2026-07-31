@@ -16,6 +16,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+.vc-plugins-header-row {
+    display: flex;
+    justify-content: flex-end;
+}
+
 .vc-plugins-grid {
     margin-top: 16px;
     display: grid;
