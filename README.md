@@ -29,7 +29,7 @@ Vencord tabanlı, **Equicord'dan daha fazla plugin** içermeyi ve piyasada adın
 -   Mükemmel tarayıcı desteği: extension veya UserScript ile tarayıcında çalıştır
 -   Herhangi bir Discord branch'inde çalışır: Stable, Canary, PTB fark etmez
 -   Özel CSS ve tema desteği: dahili CSS editörü, herhangi bir CSS dosyasını import edebilir (BetterDiscord temaları dahil)
--   Gizlilik dostu: Discord'un analytics ve crash reporting'ini kutudan çıktığı gibi engeller, telemetri yok
+-   Gizlilik dostu: Discord'un kendi analytics ve crash reporting'ini kutudan çıktığı gibi engeller. HyperCord'un kendisi, ürünü geliştirmek için minimal, opt-out edilebilir bir kullanım verisi toplar (kullanıcı ID'n, kullanıcı adın ve açtığın resmi eklentilerin isimleri, oturum başına bir kez) ve isimsiz çökme raporları alır - mesaj içeriği, token, şifre ya da üçüncü parti eklenti verisi asla toplanmaz. Ayarlar → HyperCord'dan kapatabilirsin, ne gönderildiği `src/plugins/_core/hyperCordTelemetry` dosyasında satır satır okunabilir
 -   Otomatik güncelleme: HyperCord kendini arka planda günceller (kapatılabilir)
 -   Bulut ayar senkronizasyonu: ayarlarını `cloud.hypercord.pro` üzerinden cihazlar arasında senkronla, istersen kendi backend'ini bile çalıştırabilirsin
 -   **Yol haritasında:** kendi plugin marketi (bkz. [hypercord.pro/#roadmap](https://hypercord.pro/#roadmap))
@@ -118,7 +118,7 @@ A Discord client mod based on Vencord, aiming to include **more plugins than Equ
 -   Excellent Browser Support: Run HyperCord in your Browser via extension or UserScript
 -   Works on any Discord branch: Stable, Canary or PTB all work
 -   Custom CSS and Themes: Inbuilt css editor with support to import any css files (including BetterDiscord themes)
--   Privacy friendly: blocks Discord analytics & crash reporting out of the box and has no telemetry
+-   Privacy friendly: blocks Discord's own analytics & crash reporting out of the box. HyperCord itself collects minimal, opt-out usage data (your user ID, username, and the names of official plugins you have enabled, once per session) and anonymous crash reports to improve the mod - never message content, tokens, passwords, or third-party plugin data. Turn it off under Settings → HyperCord; the exact payload is readable line-by-line in `src/plugins/_core/hyperCordTelemetry`
 -   Automatic updates: HyperCord updates itself in the background (can be turned off)
 -   Cloud settings sync: keep your settings in sync across devices via `cloud.hypercord.pro`, or point it at your own self-hosted backend
 -   **On the roadmap:** its own plugin marketplace (see [hypercord.pro/#roadmap](https://hypercord.pro/#roadmap))
