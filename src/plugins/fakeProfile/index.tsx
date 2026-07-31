@@ -25,6 +25,19 @@ import { ProfileColorPickers } from "./ColorPickers";
 const logger = new Logger("FakeProfile");
 const SELF_PROFILES_BASE = "https://api.hypercord.pro/self/profiles";
 
+// Guards against re-submitting a known-invalid stored URL on every reconnect -
+// without this, a stale/malformed fakeBannerUrl/fakeAvatarUrl (e.g. an http://
+// link, or one the user mistyped) would 400 against the backend forever,
+// every single time the client reconnects, instead of just once with a
+// clear reason.
+function isValidHttpsUrl(value: string): boolean {
+    try {
+        return new URL(value).protocol === "https:";
+    } catch {
+        return false;
+    }
+}
+
 // Pushes your selected badges/banner to HyperCord's own backend so every
 // HyperCord user viewing your profile sees them too, not just you. Requires
 // proof (via badgeAuth's OAuth-verified secret) that you actually are the
@@ -81,6 +94,17 @@ export async function syncAvatarToBackend(silent = false) {
 
     if (!settings.store.fakeAvatarUrl && !await hasBadgeAuth()) return;
 
+    if (settings.store.fakeAvatarUrl && !isValidHttpsUrl(settings.store.fakeAvatarUrl)) {
+        if (!silent) {
+            Toasts.show({
+                id: Toasts.genId(),
+                message: "Your avatar URL isn't a valid https:// link - fix or clear it in settings.",
+                type: Toasts.Type.FAILURE
+            });
+        }
+        return;
+    }
+
     const auth = await getBadgeAuthHeader();
     if (!auth) return;
 
@@ -110,6 +134,17 @@ export async function syncBannerToBackend(silent = false) {
     if (!userId) return;
 
     if (!settings.store.fakeBannerUrl && !await hasBadgeAuth()) return;
+
+    if (settings.store.fakeBannerUrl && !isValidHttpsUrl(settings.store.fakeBannerUrl)) {
+        if (!silent) {
+            Toasts.show({
+                id: Toasts.genId(),
+                message: "Your banner URL isn't a valid https:// link - fix or clear it in settings.",
+                type: Toasts.Type.FAILURE
+            });
+        }
+        return;
+    }
 
     const auth = await getBadgeAuthHeader();
     if (!auth) return;
