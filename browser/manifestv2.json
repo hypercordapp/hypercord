@@ -30,7 +30,7 @@
         {
             "run_at": "document_start",
             "matches": ["*://*.discord.com/*"],
-            "js": ["dist/Vencord.js"],
+            "js": ["dist/HyperCord.js"],
             "all_frames": true,
             "world": "MAIN"
         }
@@ -40,7 +40,7 @@
         "scripts": ["background.js"]
     },
 
-    "web_accessible_resources": ["dist/Vencord.js", "dist/Vencord.css"],
+    "web_accessible_resources": ["dist/HyperCord.js", "dist/HyperCord.css"],
 
     "browser_specific_settings": {
         "gecko": {
