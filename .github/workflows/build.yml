@@ -45,7 +45,7 @@ jobs:
 
             - name: Clean up obsolete files
               run: |
-                  rm -rf dist/*-unpacked dist/vendor Vencord.user.css vencordDesktopRenderer.css vencordDesktopRenderer.css.map
+                  rm -rf dist/*-unpacked dist/vendor HyperCord.user.css vencordDesktopRenderer.css vencordDesktopRenderer.css.map
 
             # Lets the desktop app's own self-updater (src/main/updater/http.ts)
             # verify the integrity of patcher.js/preload.js/renderer.js/renderer.css
