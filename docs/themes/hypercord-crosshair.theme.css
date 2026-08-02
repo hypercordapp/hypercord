@@ -150,14 +150,29 @@
     outline-color: var(--hc-red-bright) !important;
 }
 
-/* Subtle halftone/print-grain texture over the primary app background - a
-   quiet nod to the key art's screen-print look, low-opacity so it never
-   competes with message content. Pure CSS, no external image request. */
-.theme-dark [class*="app_"],
-.theme-dark [class*="base_"] {
-    background-image:
-        radial-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+/* Subtle halftone/print-grain texture, a quiet nod to the key art's
+   screen-print look. A fixed, pointer-events:none overlay on body::before
+   instead of a background-image on any [class*=...] selector - Discord
+   reuses generic prefixes like "base_"/"app_" on dozens of unrelated
+   components (activity/game-presence cards among them), and setting
+   background-image there was overwriting THEIR real background images
+   instead of layering on top - this was a real bug, confirmed against a
+   live client screenshot (Active Now cards losing their game art). A
+   pseudo-element overlay can only ever sit on top, never replace another
+   element's own background. */
+.theme-dark body {
+    position: relative;
+}
+
+.theme-dark body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 2147483647;
+    pointer-events: none;
+    background-image: radial-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px);
     background-size: 3px 3px;
+    mix-blend-mode: overlay;
 }
 
 /* Red ring around the active/hovered guild icon - closest safe equivalent of
