@@ -1,4 +1,19 @@
-//META{"name":"HyperCord Crosshair - Reborn Edition","description":"Reborn/Phoenix theme by MonsterDev, rebranded for HyperCord: crosshair key art background + HyperCord red accent","author":"MonsterDev (base theme), HyperCord Team (rebrand)","version":"1.0.0"}*//
+/**
+ * HyperCord Crosshair - Reborn Edition
+ * Reborn/Phoenix theme by MonsterDev, rebranded for HyperCord: crosshair key
+ * art background + HyperCord red accent.
+ * Author: MonsterDev (base theme), HyperCord Team (rebrand)
+ * Version: 1.0.0
+ *
+ * The BetterDiscord-style //META{...}*// header (only meaningful to BD's own
+ * theme loader) has to stay OUT of this file - HyperCord/Vencord's Online
+ * Themes loader just @imports this file straight into a real browser <style>
+ * tag, so it goes through a standards CSS parser that doesn't recognize `//`
+ * comments at all. A leading `//META` line there isn't just ignored, it
+ * corrupts the parse enough that the @import statements right after it never
+ * take effect (confirmed live: the whole Reborn/Phoenix framework this theme
+ * depends on silently failed to load with that header in place).
+ */
 @import url("https://monstrousdev.github.io/themes/phoenix-bundle/reborn.css");
 @import url("https://monstrousdev.github.io/themes/addons/user-tags.css");
 /* codedotspectra.github.io/themes/core/badges.css dropped - that GitHub Pages
