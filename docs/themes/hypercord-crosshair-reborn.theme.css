@@ -1,0 +1,16 @@
+//META{"name":"HyperCord Crosshair - Reborn Edition","description":"Reborn/Phoenix theme by MonsterDev, rebranded for HyperCord: crosshair key art background + HyperCord red accent","author":"MonsterDev (base theme), HyperCord Team (rebrand)","version":"1.0.0"}*//
+@import url("https://monstrousdev.github.io/themes/phoenix-bundle/reborn.css");
+@import url("https://monstrousdev.github.io/themes/addons/user-tags.css");
+/* codedotspectra.github.io/themes/core/badges.css dropped - that GitHub Pages
+   site returns 404 (not published), the import did nothing anyway. */
+:root {
+--roundness: 44px;
+--main-color: rgba(224,32,44,0.2);
+--hover-color: rgba(184,24,32,0.55);
+--home-color: rgba(238,238,238,0.45);
+--hover-size: 40px;
+--shadow: rgba(0,0,0,0.25);
+--background-image: url('https://raw.githubusercontent.com/hypercordapp/hypercord/main/docs/themes/hypercord-crosshair-preview.jpg');
+--background-blur: 1px;
+--popup-background: url('https://raw.githubusercontent.com/hypercordapp/hypercord/main/docs/themes/hypercord-crosshair-preview.jpg');
+}
