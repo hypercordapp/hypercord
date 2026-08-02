@@ -16,6 +16,27 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+// Captured once, at module load - before HyperCordTelemetry's plugin start()
+// (which runs much later, after the whole app has initialized) ever gets a
+// chance to monkey-patch the global console.error for crash reporting. Every
+// Logger.error() call - official plugins and third-party userplugins alike,
+// since they all share this one class - goes through this untouched
+// reference instead of the live `console.error` global. This is deliberate:
+// Logger.error() is routine, already-handled diagnostic logging (e.g. "API
+// returned 500"), not the React-error-boundary blind spot the telemetry
+// patch exists to catch (those boundaries print via console.error directly,
+// never through Logger). Routing Logger through the real console keeps that
+// fix intact while stopping every plugin's own error logs - including
+// third-party userplugins the telemetry plugin explicitly promises never to
+// report - from being silently swept into crash telemetry.
+const nativeConsole = {
+    log: console.log.bind(console),
+    info: console.info.bind(console),
+    error: console.error.bind(console),
+    warn: console.warn.bind(console),
+    debug: console.debug.bind(console),
+};
+
 export class Logger {
     /**
      * Returns the console format args for a title with the specified background colour and black text
@@ -33,11 +54,11 @@ export class Logger {
 
     private _log(level: "log" | "error" | "warn" | "info" | "debug", levelColor: string, args: any[], customFmt = "") {
         if (IS_REPORTER && IS_WEB && !IS_VESKTOP) {
-            console[level]("[HyperCord]", this.name + ":", ...args);
+            nativeConsole[level]("[HyperCord]", this.name + ":", ...args);
             return;
         }
 
-        console[level](
+        nativeConsole[level](
             `%c HyperCord %c %c ${this.name} ${customFmt}`,
             `background: ${levelColor}; color: black; font-weight: bold; border-radius: 5px;`,
             "",
