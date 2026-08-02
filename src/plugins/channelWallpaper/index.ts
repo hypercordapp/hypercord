@@ -169,7 +169,7 @@ async function applyForCurrentChannel() {
             background-image:
                 linear-gradient(rgba(0, 0, 0, ${alpha}), rgba(0, 0, 0, ${alpha})),
                 url("${url}");
-            background-size: cover;
+            background-size: cover, contain;
             background-position: center;
             background-repeat: no-repeat;
         }
