@@ -107,23 +107,28 @@ function clear() {
 
 // Discord did a full internal redesign ("Visual Refresh") that replaced the
 // old semantic --background-primary/etc. variables with a --neutral-N-hsl
-// scale (confirmed via ClientTheme's own styleUtils.ts). A follow-up single-
-// trunk DOM walk (stopping at the first branch) still wasn't enough - the
-// real visible panels (sidebar/chat/member list) sit AT that branch point as
-// siblings, each painting its own opaque background, so a walk that stops
-// there never actually reaches them.
-//
-// This is the blunt-but-guaranteed fix: `#app-mount *` unconditionally nulls
-// out EVERY descendant's background-color, no name/depth/branch guessing at
-// all. The dim effect can no longer come from recoloring those backgrounds
-// (nothing left to recolor), so it's baked directly into body's own
-// background-image instead, as a second CSS layer (a solid-color gradient)
-// stacked on top of the photo in the same background-image value. Scoped to
-// whichever channel is currently open.
-//
-// Tradeoff, told to the user directly: this can visually flatten some small
-// UI elements that leaned on their own background color for contrast (badges,
-// some buttons, code blocks) - worth it to actually see the wallpaper first.
+// scale (confirmed via ClientTheme's own styleUtils.ts). Two follow-up
+// attempts after that discovery (a single-trunk DOM walk stopping at the
+// first branch, then blindly nulling every #app-mount descendant's
+// background-color) still weren't enough for the image itself - the
+// transparency fix (`#app-mount *` background-color nulling) was always
+// correct and IS what's applied here, confirmed by live-testing with
+// DevTools attached via CDP: a plain solid background-color on html/body
+// renders correctly through every panel once descendants are transparent.
+// A `background-image` (any of: body, a real `<img>` element behind
+// everything, or even Discord's own dedicated `[class*="bg__"]` layer div)
+// does NOT - Discord's redesigned chrome (guild rail, channel sidebar,
+// member list, header) never composites a custom background image sitting
+// behind it, no matter which element holds it, confirmed identical across
+// 8+ live variations including a real OS-level window resize (rules out a
+// stale GPU raster-tile cache). The ONE region that reliably composites a
+// background image is the message content area itself
+// (`[class*="chatContent_"]`) - not a CSS mistake, an actual rendering
+// constraint of this Discord build. So: the real wallpaper image goes on a
+// ::before behind the chat content specifically (a pseudo-element, not the
+// element's own background), and the rest of the chrome gets a solid,
+// matching tint on #app-mount itself instead of trying to show the literal
+// image there. Scoped to whichever channel is currently open.
 async function applyForCurrentChannel() {
     const channelId = SelectedChannelStore.getChannelId();
     const url = channelId ? parseWallpapers().get(channelId) : undefined;
@@ -146,21 +151,31 @@ async function applyForCurrentChannel() {
     const alpha = (100 - settings.store.opacity) / 100;
 
     style.textContent = `
-        html, body {
+        #app-mount {
+            background-color: rgba(0, 0, 0, ${alpha}) !important;
+        }
+        #app-mount * {
+            background-color: transparent !important;
+        }
+        [class*="chatContent_"] {
+            position: relative !important;
+        }
+        [class*="chatContent_"]::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            z-index: -1;
+            pointer-events: none;
             background-image:
                 linear-gradient(rgba(0, 0, 0, ${alpha}), rgba(0, 0, 0, ${alpha})),
-                url("${url}") !important;
-            background-size: cover !important;
-            background-position: center !important;
-            background-attachment: fixed !important;
-            background-repeat: no-repeat !important;
-        }
-        #app-mount, #app-mount * {
-            background-color: transparent !important;
+                url("${url}");
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
         }
     `;
 
-    toast("ChannelWallpaper: CSS applied (aggressive mode - every panel background inside Discord is now forced transparent). If you STILL don't see anything, the image itself is the problem - open the URL directly in a browser to confirm it actually loads.", Toasts.Type.SUCCESS);
+    toast("ChannelWallpaper: applied. The wallpaper shows behind the main chat area (the one region Discord's own renderer reliably composites a custom background image behind), with the rest of the UI tinted to match. If you still don't see anything, the image itself is the problem - open the URL directly in a browser to confirm it loads.", Toasts.Type.SUCCESS);
 }
 
 export default definePlugin({
