@@ -147,7 +147,7 @@ async function apply() {
             background-image:
                 linear-gradient(rgba(0, 0, 0, ${alpha}), rgba(0, 0, 0, ${alpha})),
                 url("${settings.store.imageUrl}");
-            background-size: cover;
+            background-size: cover, contain;
             background-position: center;
             background-repeat: no-repeat;
         }
