@@ -1,0 +1,193 @@
+/**
+ * @name HyperCord Crosshair
+ * @description Official HyperCord theme - true black background, distressed red
+ *              crosshair accents. Built to match the HyperCord brand key art.
+ * @author HyperCord Team
+ * @website https://hypercord.pro
+ * @source https://github.com/hypercordapp/hypercord/blob/main/docs/themes/hypercord-crosshair.theme.css
+ * @version 1.0.0
+ *
+ * Install: Settings -> Themes -> Online Themes -> paste this file's raw URL,
+ * or download it and drop it into Settings -> Themes -> Local Themes.
+ *
+ * Built entirely on Discord's own CSS custom properties (--background-*,
+ * --text-*, --status-*, etc.) rather than hashed classnames, so it keeps
+ * working across normal Discord updates instead of breaking on the next
+ * client refresh. A handful of purely cosmetic touches (guild-icon ring,
+ * scrollbar) use Discord's long-stable "prefix_hash" classname convention
+ * (matched with [class^=] / [class*=] against just the stable human-readable
+ * prefix) - if Discord ever renames one of those specific prefixes, that one
+ * flourish just silently stops applying, nothing breaks.
+ */
+
+.theme-dark {
+    /* ---- Core palette ---- */
+    --hc-black: #060606;
+    --hc-black-raised: #111113;
+    --hc-black-raised-2: #17171a;
+    --hc-black-floating: #0d0d0f;
+    --hc-red: #e0202c;
+    --hc-red-bright: #ff2d3a;
+    --hc-red-dim: #7a1015;
+    --hc-red-glow: rgba(224, 32, 44, 0.45);
+    --hc-white: #f4f4f5;
+    --hc-grey: #9a9a9e;
+
+    /* ---- Backgrounds ---- */
+    --background-primary: var(--hc-black);
+    --background-secondary: var(--hc-black-raised);
+    --background-secondary-alt: var(--hc-black-raised-2);
+    --background-tertiary: #0a0a0b;
+    --background-floating: var(--hc-black-floating);
+    --background-mod-subtle: rgba(224, 32, 44, 0.06);
+    --background-mod-normal: rgba(224, 32, 44, 0.1);
+    --background-mod-strong: rgba(224, 32, 44, 0.16);
+    --background-mod-muted: rgba(255, 255, 255, 0.04);
+    --background-base-low: var(--hc-black);
+    --background-base-lower: #030303;
+    --background-base-lowest: #000000;
+    --background-surface-high: var(--hc-black-raised);
+    --background-surface-higher: var(--hc-black-raised-2);
+    --background-surface-highest: #1c1c1f;
+    --background-accent: var(--hc-red-dim);
+    --background-brand: var(--hc-red);
+    --background-modifier-hover: rgba(224, 32, 44, 0.08);
+    --background-modifier-selected: rgba(224, 32, 44, 0.14);
+    --background-modifier-accent: rgba(224, 32, 44, 0.22);
+    --channeltextarea-background: var(--hc-black-raised);
+    --input-background: var(--hc-black-raised);
+    --input-background-default: var(--hc-black-raised);
+    --modal-background: var(--hc-black-floating);
+    --modal-footer-background: var(--hc-black-raised);
+    --mention-background: rgba(224, 32, 44, 0.16);
+    --message-background-hover: rgba(255, 255, 255, 0.025);
+
+    /* ---- Brand / accent ---- */
+    --brand: var(--hc-red);
+    --brand-500: var(--hc-red);
+    --brand-experiment: var(--hc-red);
+    --brand-experiment-560: var(--hc-red-bright);
+    --brand-experiment-30a: rgba(224, 32, 44, 0.3);
+    --brand-experiment-10a: rgba(224, 32, 44, 0.1);
+    --brand-15a: rgba(224, 32, 44, 0.15);
+    --primary-400: var(--hc-red);
+    --button-danger-background: var(--hc-red);
+    --control-critical-primary-background-default: var(--hc-red);
+    --control-critical-primary-text-default: var(--hc-white);
+    --control-secondary-background-default: var(--hc-black-raised-2);
+
+    /* ---- Text ---- */
+    --text-normal: var(--hc-white);
+    --text-default: var(--hc-white);
+    --text-strong: #ffffff;
+    --text-muted: var(--hc-grey);
+    --text-subtle: #6f6f74;
+    --text-brand: var(--hc-red-bright);
+    --text-link: var(--hc-red-bright);
+    --text-link-low-saturation: #d97b81;
+    --text-danger: var(--hc-red-bright);
+    --text-feedback-critical: var(--hc-red-bright);
+    --header-primary: #ffffff;
+    --header-secondary: var(--hc-grey);
+    --interactive-normal: #c7c7ca;
+    --interactive-hover: #ffffff;
+    --interactive-active: #ffffff;
+    --interactive-muted: #57575c;
+    --interactive-text-default: var(--hc-grey);
+    --interactive-text-hover: #ffffff;
+    --interactive-icon-default: var(--hc-grey);
+    --interactive-icon-active: var(--hc-red-bright);
+    --interactive-icon-hover: #ffffff;
+    --interactive-background-hover: rgba(224, 32, 44, 0.08);
+    --channel-icon: var(--hc-grey);
+    --cmdpal-text-bright: #ffffff;
+    --cmdpal-text-muted: var(--hc-grey);
+
+    /* ---- Borders / elevation ---- */
+    --border-subtle: rgba(255, 255, 255, 0.05);
+    --border-muted: rgba(255, 255, 255, 0.08);
+    --border-normal: rgba(255, 255, 255, 0.12);
+    --border-strong: rgba(224, 32, 44, 0.4);
+    --input-border: rgba(255, 255, 255, 0.1);
+    --input-border-default: rgba(255, 255, 255, 0.1);
+    --user-profile-border: rgba(224, 32, 44, 0.35);
+    --elevation-low: 0 1px 0 rgba(0, 0, 0, 0.5);
+
+    /* ---- Status colors (kept legible, tinted slightly toward the palette) ---- */
+    --status-danger: var(--hc-red-bright);
+    --status-online: #2fbd6b;
+    --status-positive: #2fbd6b;
+    --status-positive-text: #2fbd6b;
+    --status-warning: #e0a02c;
+    --color-online: #2fbd6b;
+    --icon-status-offline: #55565c;
+    --text-status-idle: #e0a02c;
+
+    /* ---- Scrollbars ---- */
+    --scrollbar-thin-thumb: rgba(224, 32, 44, 0.35);
+    --scrollbar-thin-track: transparent;
+}
+
+/* Sharper, stencil-poster edges instead of Discord's soft rounded corners -
+   scoped to the well-known interactive surfaces, not blanket * to avoid
+   fighting with icon/avatar clipping. */
+.theme-dark button,
+.theme-dark input,
+.theme-dark textarea,
+.theme-dark [class*="card_"],
+.theme-dark [class*="modal_"],
+.theme-dark [class*="popout_"] {
+    border-radius: 3px;
+}
+
+/* Selection + focus ring in HyperCord red */
+.theme-dark ::selection {
+    background: var(--hc-red-glow);
+    color: #ffffff;
+}
+
+.theme-dark *:focus-visible {
+    outline-color: var(--hc-red-bright) !important;
+}
+
+/* Subtle halftone/print-grain texture over the primary app background - a
+   quiet nod to the key art's screen-print look, low-opacity so it never
+   competes with message content. Pure CSS, no external image request. */
+.theme-dark [class*="app_"],
+.theme-dark [class*="base_"] {
+    background-image:
+        radial-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+    background-size: 3px 3px;
+}
+
+/* Red ring around the active/hovered guild icon - closest safe equivalent of
+   the key art's crosshair-on-target motif without touching layout. */
+.theme-dark [class^="listItem_"]:hover [class*="pointer_"] [class*="childWrapper_"],
+.theme-dark [class^="selected_"] [class*="childWrapper_"] {
+    box-shadow: 0 0 0 2px var(--hc-red-bright);
+    transition: box-shadow 0.15s ease;
+}
+
+/* Unread pill glow */
+.theme-dark [class^="pill_"] {
+    background-color: var(--hc-red-bright) !important;
+    box-shadow: 0 0 6px var(--hc-red-glow);
+}
+
+/* Mentions get a hard red left border instead of the default soft tint block,
+   more "flagged" than "highlighted". */
+.theme-dark [class*="mentioned_"] {
+    border-left: 2px solid var(--hc-red-bright) !important;
+}
+
+/* Code blocks - keep them readable but on-palette */
+.theme-dark code,
+.theme-dark pre {
+    background: #000000 !important;
+    border: 1px solid rgba(224, 32, 44, 0.25) !important;
+}
+
+/* Loading spinner tint */
+.theme-dark svg[class*="spinner"] circle {
+    stroke: var(--hc-red-bright) !important;
+}
