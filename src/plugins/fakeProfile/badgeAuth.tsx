@@ -5,13 +5,15 @@
  */
 
 import * as DataStore from "@api/DataStore";
+import { openInviteModal } from "@utils/discord";
 import { Logger } from "@utils/Logger";
 import { OAuth2AuthorizeModal, openModal, Toasts, UserStore } from "@webpack/common";
 
 const logger = new Logger("FakeProfile:BadgeAuth");
 const API_BASE = "https://api.hypercord.pro";
 const SECRET_KEY = "HyperCord_badgeSecret";
-const HYPERCORD_INVITE = "https://discord.gg/hERUNb9k5b";
+const HYPERCORD_INVITE_CODE = "hERUNb9k5b";
+const HYPERCORD_INVITE = `https://discord.gg/${HYPERCORD_INVITE_CODE}`;
 
 const getUserId = () => UserStore.getCurrentUser()?.id;
 
@@ -112,15 +114,33 @@ export async function getBadgeAuthHeader(): Promise<string | undefined> {
     // server-side instead, see the badges route's guildWarning/wipe).
     if (!await isInHyperCordServer(userId)) {
         // syncOnConnect() calling multiple sync functions at once, or this
-        // firing again on every reconnect, would otherwise repeat the exact
-        // same toast in a burst - cooldown keeps it to one nudge at a time.
+        // firing again on every reconnect, would otherwise pop the invite
+        // modal repeatedly in a burst - cooldown keeps it to one prompt at a time.
         if (Date.now() - (lastBlockedToastAt.get(userId) ?? 0) > BLOCKED_TOAST_COOLDOWN_MS) {
             lastBlockedToastAt.set(userId, Date.now());
-            Toasts.show({
-                id: Toasts.genId(),
-                message: `Bu özelliği kullanmak için HyperCord Discord sunucusuna katılman gerekiyor: ${HYPERCORD_INVITE}`,
-                type: Toasts.Type.FAILURE
-            });
+            try {
+                // Same native "Join Server" dialog Discord itself shows for a
+                // clicked invite link, instead of a toast with a raw URL the
+                // user has to copy/click themselves.
+                if (await openInviteModal(HYPERCORD_INVITE_CODE)) {
+                    // Drop the cached "not a member" result so the very next
+                    // sync attempt re-checks for real instead of reusing a
+                    // stale negative for up to MEMBERSHIP_CACHE_MS.
+                    membershipCheckCache.delete(userId);
+                    Toasts.show({
+                        id: Toasts.genId(),
+                        message: "HyperCord Discord sunucusuna katıldın! Rozetleri seçmek için tekrar dene.",
+                        type: Toasts.Type.SUCCESS
+                    });
+                }
+            } catch (e) {
+                logger.error("Failed to open HyperCord invite modal", e);
+                Toasts.show({
+                    id: Toasts.genId(),
+                    message: `Bu özelliği kullanmak için HyperCord Discord sunucusuna katılman gerekiyor: ${HYPERCORD_INVITE}`,
+                    type: Toasts.Type.FAILURE
+                });
+            }
         }
         return undefined;
     }
