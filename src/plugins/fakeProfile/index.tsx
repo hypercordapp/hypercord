@@ -70,7 +70,7 @@ export async function syncBadgesToBackend() {
         .map(badge => ({ badge: badge.iconSrc, tooltip: badge.label }));
 
     try {
-        await fetch(`${SELF_PROFILES_BASE}/${userId}/badges`, {
+        const res = await fetch(`${SELF_PROFILES_BASE}/${userId}/badges`, {
             method: "PUT",
             headers: { "Content-Type": "application/json", Authorization: auth },
             body: JSON.stringify({ badges })
@@ -83,6 +83,25 @@ export async function syncBadgesToBackend() {
         // (once from that local echo, once from the synced version everyone
         // else sees) as soon as the backend sync actually landed.
         await BadgeAPIPlugin.refetchBadges();
+
+        // These catalog badges are gated on being in the HyperCord Discord
+        // server - badge-api reports it here rather than us checking guild
+        // membership client-side, since it's the one place that already
+        // tracks the grace-period countdown (see guildMembershipStore.js).
+        const { guildWarning } = await res.json().catch(() => ({}));
+        if (guildWarning?.wiped) {
+            Toasts.show({
+                id: Toasts.genId(),
+                message: `Rozetlerin silindi çünkü HyperCord Discord sunucusunda değilsin. Katılırsan tekrar seçebilirsin: ${guildWarning.inviteUrl}`,
+                type: Toasts.Type.FAILURE
+            });
+        } else if (guildWarning) {
+            Toasts.show({
+                id: Toasts.genId(),
+                message: `HyperCord Discord sunucusunda değilsin - ${guildWarning.daysRemaining} gün içinde katılmazsan rozetlerin silinecek: ${guildWarning.inviteUrl}`,
+                type: Toasts.Type.MESSAGE
+            });
+        }
     } catch (e) {
         logger.error("Failed to sync badges to HyperCord", e);
     }
