@@ -152,20 +152,19 @@ export const BADGES_BY_KEY: Record<string, CatalogBadge> = Object.fromEntries(
 // together for browsing), which isn't the same as the order real Discord
 // actually renders them in. That real order follows UserFlags bit order for
 // the achievement badges (HypeSquad Houses land between Bug Hunter 1 and 2,
-// Early Supporter before Bug Hunter 2, Active Developer near the very end),
-// with Nitro/Boost tenure always last since those come from a separate
-// subscription computation, not the flag bitfield.
+// Active Developer near the very end), except Early Supporter which sits
+// between Nitro and Boost tenure rather than with the other flag badges.
 const DISPLAY_ORDER = [
     "staff", "partner", "hypesquad",
     "bug_hunter_1",
     "house_bravery", "house_brilliance", "house_balance",
-    "early_supporter",
     "bug_hunter_2",
     "verified_developer",
     "certified_moderator",
     "active_developer",
     "quest",
     "nitro_classic", "nitro_bronze", "nitro_silver", "nitro_gold", "nitro_platinum", "nitro_diamond", "nitro_emerald", "nitro_ruby", "nitro_opal",
+    "early_supporter",
     "boost_1", "boost_2", "boost_3", "boost_6", "boost_9", "boost_12", "boost_15", "boost_18", "boost_24",
     "gifter_patron", "gifter_champion", "gifter_luminary", "gifter_icon", "gifter_hero", "gifter_legend",
 ];
