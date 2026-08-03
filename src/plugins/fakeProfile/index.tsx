@@ -26,8 +26,8 @@ const logger = new Logger("FakeProfile");
 const SELF_PROFILES_BASE = "https://api.hypercord.pro/self/profiles";
 
 // syncOnConnect() runs on every reconnect - without a cooldown, this would
-// repeat the exact same "join the server" nudge on every single one instead
-// of just periodically reminding while the grace period is still ticking.
+// repeat the exact same "your badges were wiped" toast on every single one
+// instead of just periodically reminding for as long as they're not a member.
 // Keyed by userId - Discord's account switcher can change the active account
 // without a full restart, and an unkeyed cooldown would suppress a real
 // warning for account B just because account A recently got one.
@@ -95,27 +95,18 @@ export async function syncBadgesToBackend() {
 
         // These catalog badges are gated on being in the HyperCord Discord
         // server - badge-api reports it here rather than us checking guild
-        // membership client-side, since it's the one place that already
-        // tracks the grace-period countdown (see guildMembershipStore.js).
+        // membership client-side, since it's the one place that actually
+        // enforces it (see guildMembershipStore.js). No grace period - a
+        // non-member's badges are wiped immediately, so this toast can fire
+        // on every sync attempt for as long as they're not a member, not
+        // just once - the cooldown below throttles that repetition.
         const { guildWarning } = await res.json().catch(() => ({}));
-        const canToastGuildWarning = Date.now() - (lastGuildWarningToastAt.get(userId) ?? 0) > GUILD_WARNING_TOAST_COOLDOWN_MS;
-        if (guildWarning?.wiped) {
-            // Always surface an actual wipe, even inside the cooldown window -
-            // that's a one-time, badge-changing event worth breaking through
-            // the throttle for, not a repeat of the same standing warning.
+        if (guildWarning?.wiped && Date.now() - (lastGuildWarningToastAt.get(userId) ?? 0) > GUILD_WARNING_TOAST_COOLDOWN_MS) {
             lastGuildWarningToastAt.set(userId, Date.now());
             Toasts.show({
                 id: Toasts.genId(),
                 message: `Rozetlerin silindi çünkü HyperCord Discord sunucusunda değilsin. Katılırsan tekrar seçebilirsin: ${guildWarning.inviteUrl}`,
                 type: Toasts.Type.FAILURE,
-                options: { duration: 30_000 }
-            });
-        } else if (guildWarning && canToastGuildWarning) {
-            lastGuildWarningToastAt.set(userId, Date.now());
-            Toasts.show({
-                id: Toasts.genId(),
-                message: `HyperCord Discord sunucusunda değilsin - ${guildWarning.daysRemaining} gün içinde katılmazsan rozetlerin silinecek: ${guildWarning.inviteUrl}`,
-                type: Toasts.Type.MESSAGE,
                 options: { duration: 30_000 }
             });
         }
