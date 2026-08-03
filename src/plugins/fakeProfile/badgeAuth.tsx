@@ -60,10 +60,15 @@ let authorizing: Promise<string | undefined> | null = null;
 // and, for a non-member, its own "join the server" toast at once. Cached
 // briefly (not forever) so someone who joins mid-session gets re-checked
 // reasonably soon instead of staying blocked for the rest of the session.
-let membershipCheck: Promise<boolean> | null = null;
-let membershipCheckedAt = 0;
+//
+// Keyed by userId (not a single module-level value) - Discord's account
+// switcher can change UserStore.getCurrentUser() without a full app restart,
+// and an unkeyed cache would serve account A's cached result/cooldown to
+// account B, either wrongly blocking a real member or wrongly letting a
+// non-member's OAuth prompt through.
+const membershipCheckCache = new Map<string, { promise: Promise<boolean>; at: number; }>();
 const MEMBERSHIP_CACHE_MS = 60_000;
-let lastBlockedToastAt = 0;
+const lastBlockedToastAt = new Map<string, number>();
 const BLOCKED_TOAST_COOLDOWN_MS = 5 * 60_000;
 
 // Read-only, no auth of its own needed - just checks whether this Discord
@@ -71,10 +76,10 @@ const BLOCKED_TOAST_COOLDOWN_MS = 5 * 60_000;
 // a network hiccup so a flaky connection can't lock someone out of a feature
 // they're actually entitled to use.
 async function isInHyperCordServer(userId: string): Promise<boolean> {
-    if (membershipCheck && Date.now() - membershipCheckedAt < MEMBERSHIP_CACHE_MS) return membershipCheck;
+    const cached = membershipCheckCache.get(userId);
+    if (cached && Date.now() - cached.at < MEMBERSHIP_CACHE_MS) return cached.promise;
 
-    membershipCheckedAt = Date.now();
-    membershipCheck = (async () => {
+    const promise = (async () => {
         try {
             const res = await fetch(`${API_BASE}/guild-membership/${userId}`);
             const { isMember } = await res.json();
@@ -85,7 +90,8 @@ async function isInHyperCordServer(userId: string): Promise<boolean> {
         }
     })();
 
-    return membershipCheck;
+    membershipCheckCache.set(userId, { promise, at: Date.now() });
+    return promise;
 }
 
 // Same in-client OAuth flow as Settings Sync (identify scope only, native
@@ -108,8 +114,8 @@ export async function getBadgeAuthHeader(): Promise<string | undefined> {
         // syncOnConnect() calling multiple sync functions at once, or this
         // firing again on every reconnect, would otherwise repeat the exact
         // same toast in a burst - cooldown keeps it to one nudge at a time.
-        if (Date.now() - lastBlockedToastAt > BLOCKED_TOAST_COOLDOWN_MS) {
-            lastBlockedToastAt = Date.now();
+        if (Date.now() - (lastBlockedToastAt.get(userId) ?? 0) > BLOCKED_TOAST_COOLDOWN_MS) {
+            lastBlockedToastAt.set(userId, Date.now());
             Toasts.show({
                 id: Toasts.genId(),
                 message: `Bu özelliği kullanmak için HyperCord Discord sunucusuna katılman gerekiyor: ${HYPERCORD_INVITE}`,
