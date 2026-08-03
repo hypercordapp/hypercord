@@ -54,19 +54,38 @@ export async function clearBadgeAuth() {
 
 let authorizing: Promise<string | undefined> | null = null;
 
+// syncOnConnect() (index.tsx) fires up to 7 sync calls back to back on every
+// Discord launch/reconnect, each of which can reach getBadgeAuthHeader() -
+// without this cache every one of them would fire its own membership request
+// and, for a non-member, its own "join the server" toast at once. Cached
+// briefly (not forever) so someone who joins mid-session gets re-checked
+// reasonably soon instead of staying blocked for the rest of the session.
+let membershipCheck: Promise<boolean> | null = null;
+let membershipCheckedAt = 0;
+const MEMBERSHIP_CACHE_MS = 60_000;
+let lastBlockedToastAt = 0;
+const BLOCKED_TOAST_COOLDOWN_MS = 5 * 60_000;
+
 // Read-only, no auth of its own needed - just checks whether this Discord
 // account is currently in the HyperCord server. Fails open (never blocks) on
 // a network hiccup so a flaky connection can't lock someone out of a feature
 // they're actually entitled to use.
 async function isInHyperCordServer(userId: string): Promise<boolean> {
-    try {
-        const res = await fetch(`${API_BASE}/guild-membership/${userId}`);
-        const { isMember } = await res.json();
-        return isMember !== false;
-    } catch (e) {
-        logger.error("Failed to check HyperCord guild membership", e);
-        return true;
-    }
+    if (membershipCheck && Date.now() - membershipCheckedAt < MEMBERSHIP_CACHE_MS) return membershipCheck;
+
+    membershipCheckedAt = Date.now();
+    membershipCheck = (async () => {
+        try {
+            const res = await fetch(`${API_BASE}/guild-membership/${userId}`);
+            const { isMember } = await res.json();
+            return isMember !== false;
+        } catch (e) {
+            logger.error("Failed to check HyperCord guild membership", e);
+            return true;
+        }
+    })();
+
+    return membershipCheck;
 }
 
 // Same in-client OAuth flow as Settings Sync (identify scope only, native
@@ -86,11 +105,17 @@ export async function getBadgeAuthHeader(): Promise<string | undefined> {
     // authorized once and later leaves isn't blocked here (that's enforced
     // server-side instead, see the badges route's guildWarning/wipe).
     if (!await isInHyperCordServer(userId)) {
-        Toasts.show({
-            id: Toasts.genId(),
-            message: `Bu özelliği kullanmak için HyperCord Discord sunucusuna katılman gerekiyor: ${HYPERCORD_INVITE}`,
-            type: Toasts.Type.FAILURE
-        });
+        // syncOnConnect() calling multiple sync functions at once, or this
+        // firing again on every reconnect, would otherwise repeat the exact
+        // same toast in a burst - cooldown keeps it to one nudge at a time.
+        if (Date.now() - lastBlockedToastAt > BLOCKED_TOAST_COOLDOWN_MS) {
+            lastBlockedToastAt = Date.now();
+            Toasts.show({
+                id: Toasts.genId(),
+                message: `Bu özelliği kullanmak için HyperCord Discord sunucusuna katılman gerekiyor: ${HYPERCORD_INVITE}`,
+                type: Toasts.Type.FAILURE
+            });
+        }
         return undefined;
     }
 
