@@ -28,7 +28,10 @@ const SELF_PROFILES_BASE = "https://api.hypercord.pro/self/profiles";
 // syncOnConnect() runs on every reconnect - without a cooldown, this would
 // repeat the exact same "join the server" nudge on every single one instead
 // of just periodically reminding while the grace period is still ticking.
-let lastGuildWarningToastAt = 0;
+// Keyed by userId - Discord's account switcher can change the active account
+// without a full restart, and an unkeyed cooldown would suppress a real
+// warning for account B just because account A recently got one.
+const lastGuildWarningToastAt = new Map<string, number>();
 const GUILD_WARNING_TOAST_COOLDOWN_MS = 5 * 60_000;
 
 // Guards against re-submitting a known-invalid stored URL on every reconnect -
@@ -95,19 +98,19 @@ export async function syncBadgesToBackend() {
         // membership client-side, since it's the one place that already
         // tracks the grace-period countdown (see guildMembershipStore.js).
         const { guildWarning } = await res.json().catch(() => ({}));
-        const canToastGuildWarning = Date.now() - lastGuildWarningToastAt > GUILD_WARNING_TOAST_COOLDOWN_MS;
+        const canToastGuildWarning = Date.now() - (lastGuildWarningToastAt.get(userId) ?? 0) > GUILD_WARNING_TOAST_COOLDOWN_MS;
         if (guildWarning?.wiped) {
             // Always surface an actual wipe, even inside the cooldown window -
             // that's a one-time, badge-changing event worth breaking through
             // the throttle for, not a repeat of the same standing warning.
-            lastGuildWarningToastAt = Date.now();
+            lastGuildWarningToastAt.set(userId, Date.now());
             Toasts.show({
                 id: Toasts.genId(),
                 message: `Rozetlerin silindi çünkü HyperCord Discord sunucusunda değilsin. Katılırsan tekrar seçebilirsin: ${guildWarning.inviteUrl}`,
                 type: Toasts.Type.FAILURE
             });
         } else if (guildWarning && canToastGuildWarning) {
-            lastGuildWarningToastAt = Date.now();
+            lastGuildWarningToastAt.set(userId, Date.now());
             Toasts.show({
                 id: Toasts.genId(),
                 message: `HyperCord Discord sunucusunda değilsin - ${guildWarning.daysRemaining} gün içinde katılmazsan rozetlerin silinecek: ${guildWarning.inviteUrl}`,

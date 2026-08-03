@@ -168,7 +168,7 @@ async function applyForCurrentChannel() {
             pointer-events: none;
             background-image:
                 linear-gradient(rgba(0, 0, 0, ${alpha}), rgba(0, 0, 0, ${alpha})),
-                url("${url}");
+                url("${new URL(url).href}");
             background-size: cover, contain;
             background-position: center;
             background-repeat: no-repeat;

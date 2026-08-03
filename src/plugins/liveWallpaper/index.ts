@@ -146,7 +146,7 @@ async function apply() {
             pointer-events: none;
             background-image:
                 linear-gradient(rgba(0, 0, 0, ${alpha}), rgba(0, 0, 0, ${alpha})),
-                url("${settings.store.imageUrl}");
+                url("${new URL(settings.store.imageUrl).href}");
             background-size: cover, contain;
             background-position: center;
             background-repeat: no-repeat;
