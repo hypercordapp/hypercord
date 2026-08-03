@@ -130,7 +130,8 @@ export async function getBadgeAuthHeader(): Promise<string | undefined> {
                     Toasts.show({
                         id: Toasts.genId(),
                         message: "HyperCord Discord sunucusuna katıldın! Rozetleri seçmek için tekrar dene.",
-                        type: Toasts.Type.SUCCESS
+                        type: Toasts.Type.SUCCESS,
+                        options: { duration: 30_000 }
                     });
                 }
             } catch (e) {
@@ -138,7 +139,8 @@ export async function getBadgeAuthHeader(): Promise<string | undefined> {
                 Toasts.show({
                     id: Toasts.genId(),
                     message: `Bu özelliği kullanmak için HyperCord Discord sunucusuna katılman gerekiyor: ${HYPERCORD_INVITE}`,
-                    type: Toasts.Type.FAILURE
+                    type: Toasts.Type.FAILURE,
+                    options: { duration: 30_000 }
                 });
             }
         }

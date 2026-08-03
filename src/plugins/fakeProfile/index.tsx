@@ -107,14 +107,16 @@ export async function syncBadgesToBackend() {
             Toasts.show({
                 id: Toasts.genId(),
                 message: `Rozetlerin silindi çünkü HyperCord Discord sunucusunda değilsin. Katılırsan tekrar seçebilirsin: ${guildWarning.inviteUrl}`,
-                type: Toasts.Type.FAILURE
+                type: Toasts.Type.FAILURE,
+                options: { duration: 30_000 }
             });
         } else if (guildWarning && canToastGuildWarning) {
             lastGuildWarningToastAt.set(userId, Date.now());
             Toasts.show({
                 id: Toasts.genId(),
                 message: `HyperCord Discord sunucusunda değilsin - ${guildWarning.daysRemaining} gün içinde katılmazsan rozetlerin silinecek: ${guildWarning.inviteUrl}`,
-                type: Toasts.Type.MESSAGE
+                type: Toasts.Type.MESSAGE,
+                options: { duration: 30_000 }
             });
         }
     } catch (e) {
