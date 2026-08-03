@@ -199,19 +199,17 @@ const enum BadgePriority {
     HypeSquadBravery = 6,
     HypeSquadBrilliance = 6,
     HypeSquadBalance = 6,
+    EarlySupporter = 7,
     // Every Nitro tier collapses to this one value on purpose.
-    NitroOpal = 7,
-    NitroRuby = 7,
-    NitroEmerald = 7,
-    NitroDiamond = 7,
-    NitroPlatinum = 7,
-    NitroGold = 7,
-    NitroSilver = 7,
-    NitroBronze = 7,
-    Nitro = 7,
-    // Real Discord order has Early Supporter between Nitro and Boost, not
-    // before Nitro.
-    EarlySupporter = 8,
+    NitroOpal = 8,
+    NitroRuby = 8,
+    NitroEmerald = 8,
+    NitroDiamond = 8,
+    NitroPlatinum = 8,
+    NitroGold = 8,
+    NitroSilver = 8,
+    NitroBronze = 8,
+    Nitro = 8,
     // Every Boost tier collapses to this one value on purpose.
     Boost24 = 9,
     Boost18 = 9,
@@ -224,8 +222,8 @@ const enum BadgePriority {
     Boost1 = 9,
     ActiveDeveloper = 10,
     VerifiedDeveloper = 11,
-    CertifiedModerator = 12,
-    Quest = 13,
+    Quest = 12,
+    CertifiedModerator = 13,
     Unknown = 99,
     // Fake-only tier ladder (see badgeCatalog.ts's "Gift Giving" category) -
     // no real Discord badge to dedupe against, so unlike Nitro/Boost these
