@@ -114,8 +114,13 @@ function NitroSinceHoverCard({ iconSrc, tierName, description, glowColor }: { ic
                 padding: "0 12px 16px",
                 width: 200,
                 textAlign: "center",
-                borderRadius: "var(--radius-sm)",
-                background: `radial-gradient(circle at 50% 32%, ${glowColor}59 0%, transparent 65%)`
+                borderRadius: 12,
+                // Tints the WHOLE card, not just a glow that fades to
+                // nothing near the edges/corners (a first attempt at this
+                // faded to fully transparent by 65%, leaving the plain dark
+                // tooltip background showing at the corners - a clearer
+                // reference screenshot showed the tint reaching every edge).
+                background: `radial-gradient(circle at 50% 22%, ${glowColor}80 0%, ${glowColor}33 55%, rgba(15,10,20,0.92) 100%)`
             }}
         >
             <div style={{ display: "flex", height: 64, justifyContent: "center", margin: "16px auto 0" }}>
