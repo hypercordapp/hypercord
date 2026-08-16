@@ -13,7 +13,7 @@ import { Devs } from "@utils/constants";
 import { fetchUserProfile } from "@utils/discord";
 import { Logger } from "@utils/Logger";
 import definePlugin, { OptionType } from "@utils/types";
-import { Button, FluxDispatcher, Forms, GuildMemberStore, Toasts, UserProfileStore, UserStore } from "@webpack/common";
+import { FluxDispatcher, Forms, GuildMemberStore, Toasts, UserProfileStore, UserStore } from "@webpack/common";
 import virtualMerge from "virtual-merge";
 
 import { AvatarUploadButton } from "./AvatarUpload";
@@ -527,75 +527,6 @@ export function clearBoostSinceIfTierPicked() {
     syncBoostSinceToBackend();
 }
 
-// A hand-typed date defaults to today, which looks obviously fake on a
-// "since" badge. A fully random day count (e.g. "1 month and 4 days ago")
-// looked equally fake too - real tenure always lands close to an actual
-// tier threshold, never some arbitrary in-between count, so this jitters
-// only the day within a given tier's month, never the month count itself.
-const DAY_MS = 24 * 60 * 60 * 1000;
-
-function dateMonthsAgo(months: number): string {
-    const jitterDays = Math.floor(Math.random() * 27);
-    const date = new Date();
-    date.setMonth(date.getMonth() - months);
-    date.setTime(date.getTime() - jitterDays * DAY_MS);
-    return date.toISOString().slice(0, 10);
-}
-
-// key -> real tier length in months, so a randomized date can match
-// whichever tier is actually picked (e.g. the 24-month Boost badge gets a
-// ~24-month-old date) instead of a random unrelated tier length.
-const BOOST_KEY_MONTHS: Record<string, number> = {
-    boost_1: 1, boost_2: 2, boost_3: 3, boost_6: 6, boost_9: 9,
-    boost_12: 12, boost_15: 15, boost_18: 18, boost_24: 24
-};
-const NITRO_KEY_MONTHS: Record<string, number> = {
-    nitro_bronze: 1, nitro_silver: 3, nitro_gold: 6, nitro_platinum: 12,
-    nitro_diamond: 24, nitro_emerald: 36, nitro_ruby: 60, nitro_opal: 72
-};
-
-// If the matching tier category currently has something picked, use THAT
-// tier's real length - otherwise (nothing picked yet) fall back to a
-// random real tier length, still never an arbitrary in-between count.
-function randomSinceDateForSelection(keyMonths: Record<string, number>): string {
-    const selected = settings.store.selectedBadges.find(k => keyMonths[k] !== undefined);
-    const months = selected ? keyMonths[selected] : Object.values(keyMonths)[Math.floor(Math.random() * Object.values(keyMonths).length)];
-    return dateMonthsAgo(months);
-}
-
-function RandomizeBoostSinceButton() {
-    return (
-        <Button
-            size={Button.Sizes.SMALL}
-            onClick={() => {
-                // fakeBoostSince's onChange only fires from the text input's
-                // own change event, not from a programmatic store write (hit
-                // this exact gotcha: setting settings.store.fakeBoostSince
-                // here alone silently did nothing) - call the same two
-                // effects onChange would have triggered directly instead.
-                settings.store.fakeBoostSince = randomSinceDateForSelection(BOOST_KEY_MONTHS);
-                clearBoostTierIfBoostSinceSet();
-                syncBoostSinceToBackend();
-            }}
-        >
-            🎲 Randomize date
-        </Button>
-    );
-}
-
-function RandomizeNitroSinceButton() {
-    return (
-        <Button
-            size={Button.Sizes.SMALL}
-            onClick={() => {
-                settings.store.fakeNitroSince = randomSinceDateForSelection(NITRO_KEY_MONTHS);
-                syncNitroSinceToBackend();
-            }}
-        >
-            🎲 Randomize date
-        </Button>
-    );
-}
 
 interface FormerNameEntry { name: string; until: string; }
 interface UsernameHistoryState { currentName: string; history: FormerNameEntry[]; }
@@ -779,19 +710,11 @@ export const settings = definePluginSettings({
             syncBoostSinceToBackend();
         }
     },
-    randomizeBoostSinceButton: {
-        type: OptionType.COMPONENT,
-        component: RandomizeBoostSinceButton
-    },
     fakeNitroSince: {
         type: OptionType.STRING,
         description: "Fake \"Nitro since <date>\" shown on your picked Nitro tier badge below, format YYYY-MM-DD (leave empty to disable) - synced to HyperCord's backend and shown to every HyperCord user viewing your profile. Only affects display if you've also picked a Nitro tier badge below.",
         default: "",
         onChange: () => syncNitroSinceToBackend()
-    },
-    randomizeNitroSinceButton: {
-        type: OptionType.COMPONENT,
-        component: RandomizeNitroSinceButton
     },
     trackFormerUsernames: {
         type: OptionType.BOOLEAN,
