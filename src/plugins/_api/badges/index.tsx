@@ -54,7 +54,7 @@ function BoostSinceHoverCard({ iconSrc, description }: { iconSrc: string | undef
         >
             {iconSrc && <img src={iconSrc} alt="" style={{ width: 48, height: 48, objectFit: "cover" }} />}
             <div style={{ fontSize: 15, fontWeight: 700, color: "var(--header-primary)", textTransform: "uppercase", letterSpacing: 0.5 }}>
-                {Settings.language === "tr" ? "Sunucu Takviyecisi" : "Server Booster"}
+                {Settings.language === "tr" ? "Takviyeci" : "Server Booster"}
             </div>
             <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
                 {description}
@@ -225,12 +225,18 @@ function unpatchIdentity() {
 
 let intervalId: any;
 
-// User-specified render order (not Discord's own raw flag-bit order anymore -
-// a deliberate simplified scheme): every Nitro tier shares one slot and every
-// Boost tier shares one slot (a profile only ever has ONE of each active
-// anyway, see REAL_BADGE_ID_PRIORITY's comment below), unlike the old
-// per-tier-distinct scheme. Unrecognized badges land last (Unknown) rather
-// than guessed into some other slot.
+// Explicit render order given directly by the user (Staff -> Partnered
+// Server Owner -> HypeSquad Events -> Bug Hunter -> Early Verified Bot
+// Developer -> Nitro -> Early Supporter -> Server Booster -> Moderator
+// Programs Alumni -> HypeSquad Houses -> Legacy Username -> Quest -> Last
+// Meadow Online -> Orbs Apprentice -> Gift Giving), not Discord's own raw
+// flag-bit order. Every Nitro tier shares one slot and every Boost tier
+// shares one slot (a profile only ever has ONE of each active anyway, see
+// REAL_BADGE_ID_PRIORITY's comment below); same for the three HypeSquad
+// Houses. Unrecognized badges land last (Unknown) rather than guessed into
+// some other slot. active_developer isn't part of the requested order
+// (hidden/retired) - tucked in right after Quest since nothing depends on
+// exactly where a hidden badge falls.
 const enum BadgePriority {
     HyperCord = 1,
     Staff = 2,
@@ -238,9 +244,7 @@ const enum BadgePriority {
     HypeSquadEvents = 4,
     BugHunterLevel1 = 5,
     BugHunterLevel2 = 5,
-    HypeSquadBravery = 6,
-    HypeSquadBrilliance = 6,
-    HypeSquadBalance = 6,
+    VerifiedDeveloper = 6,
     // Every Nitro tier collapses to this one value on purpose.
     NitroOpal = 7,
     NitroRuby = 7,
@@ -262,15 +266,21 @@ const enum BadgePriority {
     Boost3 = 9,
     Boost2 = 9,
     Boost1 = 9,
-    ActiveDeveloper = 10,
-    VerifiedDeveloper = 11,
-    Quest = 12,
-    CertifiedModerator = 13,
+    CertifiedModerator = 10,
+    // Every HypeSquad House collapses to this one value on purpose.
+    HypeSquadBravery = 11,
+    HypeSquadBrilliance = 11,
+    HypeSquadBalance = 11,
+    LegacyUsername = 12,
+    Quest = 13,
+    ActiveDeveloper = 14,
+    LastMeadowOnline = 15,
+    OrbsApprentice = 16,
     Unknown = 99,
     // Fake-only tier ladder (see badgeCatalog.ts's "Gift Giving" category) -
     // no real Discord badge to dedupe against, so unlike Nitro/Boost these
     // never need REAL_BADGE_ID_PRIORITY entries or isX() range helpers.
-    // Shows AFTER Quest AND Unknown on purpose (confirmed explicitly) -
+    // Shows AFTER everything above on purpose (confirmed explicitly) -
     // Legend is the top tier (shows first among the six), Patron the entry
     // tier (last of the six).
     GifterLegend = 100,
@@ -323,6 +333,9 @@ const CATALOG_KEY_PRIORITY: Record<string, BadgePriority> = {
     verified_developer: BadgePriority.VerifiedDeveloper,
     quest: BadgePriority.Quest,
     certified_moderator: BadgePriority.CertifiedModerator,
+    legacy_username: BadgePriority.LegacyUsername,
+    last_meadow_online: BadgePriority.LastMeadowOnline,
+    orbs_apprentice: BadgePriority.OrbsApprentice,
 };
 // Strips Object.prototype - this gets indexed by a catalogKey extracted from
 // a donor badge's id (see getFakeBadgePriority below), which ultimately

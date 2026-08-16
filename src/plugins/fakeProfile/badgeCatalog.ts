@@ -109,6 +109,35 @@ export const BADGE_CATALOG: CatalogCategory[] = [
         ]
     },
     {
+        // A real (if now grandfathered-only) badge - anyone who hadn't
+        // migrated off the old username#0000 system still shows this.
+        // Not hidden: unlike Active Developer/Nitro Classic/boost_15, this
+        // still matches something real current profiles can show.
+        title: "Legacy Username",
+        badges: [
+            { key: "legacy_username", label: "Legacy Username", iconSrc: "https://cdn.discordapp.com/badge-icons/6de6d34650760ba5551a79732e98ed60.png" },
+        ]
+    },
+    {
+        // Time-limited April 2026 event badge, no longer newly obtainable,
+        // but same as Legacy Username/Early Supporter - real accounts that
+        // earned it during the window still show it, so not hidden.
+        title: "Last Meadow Online",
+        badges: [
+            { key: "last_meadow_online", label: "Last Meadow Online", iconSrc: "https://cdn.discordapp.com/badge-icons/ca105ad9cfc8580c765101d17bbb2323.png" },
+        ]
+    },
+    {
+        // Paid (120 Orbs) shop badge - couldn't find a verified real
+        // badge-icons.<hash>.png for this one specifically (unlike every
+        // other badge here), so this uses the Fandom-hosted copy of the
+        // real image instead of guessing a Discord CDN hash.
+        title: "Orbs Apprentice",
+        badges: [
+            { key: "orbs_apprentice", label: "Orbs Apprentice", iconSrc: "https://static.wikia.nocookie.net/discord/images/f/fa/OrbsApprentice.png/revision/latest?cb=20250529140649" },
+        ]
+    },
+    {
         title: "Nitro",
         exclusive: true,
         badges: [
@@ -187,23 +216,29 @@ export const BADGES_BY_KEY: Record<string, CatalogBadge> = BADGE_CATALOG.flatMap
 );
 
 // The catalog above is grouped for the picker UI (related badges kept
-// together for browsing), which isn't the same as the order real Discord
-// actually renders them in. That real order follows UserFlags bit order for
-// the achievement badges (HypeSquad Houses land between Bug Hunter 1 and 2),
-// with Early Supporter between Nitro and Boost tenure rather than with the
-// other flag badges.
+// together for browsing), which isn't the same as the order they actually
+// render in. Explicit order given directly by the user (both TR and EN
+// requested the same sequence): Staff -> Partnered Server Owner -> HypeSquad
+// Events -> Bug Hunter -> Early Verified Bot Developer -> Nitro -> Early
+// Supporter -> Server Booster -> Moderator Programs Alumni -> HypeSquad
+// Houses -> Legacy Username -> Quest -> Last Meadow Online -> Orbs
+// Apprentice -> Gift Giving. active_developer isn't in that list (hidden/
+// retired, see badgeCatalog.ts's own comment) - tucked in right after Quest
+// rather than left in its old slot, since nothing in the requested order
+// depends on exactly where a hidden badge falls.
 const DISPLAY_ORDER = [
     "staff", "partner", "hypesquad",
-    "bug_hunter_1",
-    "house_bravery", "house_brilliance", "house_balance",
-    "bug_hunter_2",
+    "bug_hunter_1", "bug_hunter_2",
     "verified_developer",
-    "active_developer",
-    "quest",
-    "certified_moderator",
     "nitro_classic", "nitro_bronze", "nitro_silver", "nitro_gold", "nitro_platinum", "nitro_diamond", "nitro_emerald", "nitro_ruby", "nitro_opal",
     "early_supporter",
     "boost_1", "boost_2", "boost_3", "boost_6", "boost_9", "boost_12", "boost_15", "boost_18", "boost_24",
+    "certified_moderator",
+    "house_bravery", "house_brilliance", "house_balance",
+    "legacy_username",
+    "quest", "active_developer",
+    "last_meadow_online",
+    "orbs_apprentice",
     "gifter_patron", "gifter_champion", "gifter_luminary", "gifter_icon", "gifter_hero", "gifter_legend",
 ];
 
