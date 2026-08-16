@@ -19,6 +19,7 @@
 import "./fixDiscordBadgePadding.css";
 
 import { _getBadges, BadgePosition, BadgeUserArgs, ProfileBadge } from "@api/Badges";
+import { Settings } from "@api/Settings";
 import ErrorBoundary from "@components/ErrorBoundary";
 import { openContributorModal } from "@components/settings/tabs";
 import { t } from "@i18n";
@@ -60,6 +61,12 @@ interface ProfileOverride {
     profileEffect: Record<string, unknown> | null;
     displayNameStyle: Record<string, unknown> | null;
     createdAt: string | null;
+    // Same "just a typed ISO date, no real one to capture" shape as
+    // createdAt - rendered as its own "Server Booster since <date>" badge
+    // (see getBoostSinceBadge) rather than overriding anything, meant to
+    // replace a picked Server Boost tier client-side (FakeProfile clears
+    // one when the other is set) rather than show alongside it.
+    boostSince: string | null;
     // A real, client-observed log of the user's own past usernames - never
     // hand-typed, see FakeProfile's recordUsernameChange(). Only entries
     // within the last 12 months are meant to be here at all (the client
@@ -355,6 +362,11 @@ function isBoostTier(priority: BadgePriority) {
 const DONOR_BADGE_ID_PATTERN = /^hypercord_donor_badge_(.+)_\d+$/;
 
 function getFakeBadgePriority(badge: { id?: string; description?: string; }): BadgePriority {
+    // Not a catalog pick (see getBoostSinceBadge) - same Boost tier slot as
+    // boost_1..boost_24 regardless, since it's just a more precise way to
+    // show the identical real badge.
+    if (badge.id === "hypercord_boost_since_badge") return BadgePriority.Boost1;
+
     const catalogKey = DONOR_BADGE_ID_PATTERN.exec(badge.id ?? "")?.[1];
     if (catalogKey) {
         const priority = CATALOG_KEY_PRIORITY[catalogKey];
@@ -723,6 +735,36 @@ export default definePlugin({
                     📛
                 </span>
             ),
+        };
+    },
+
+    // Real "Server Booster since <date>" badges (the whole reason FakeProfile's
+    // discrete boost_1..boost_24 tiers exist as a lookalike) always show the
+    // exact date, not a rounded-off month count - reuses boost_1's real
+    // Discord badge-icons asset (any tier's icon is visually identical, see
+    // CATALOG_KEY_PRIORITY's Boost* comment) rather than needing its own.
+    getBoostSinceBadge(userId: string): ProfileBadge | undefined {
+        const boostSince = ProfileOverrides[userId]?.boostSince;
+        if (!boostSince) return undefined;
+
+        const date = new Date(boostSince);
+        if (isNaN(date.getTime())) return undefined;
+
+        const dd = String(date.getDate()).padStart(2, "0");
+        const mm = String(date.getMonth() + 1).padStart(2, "0");
+        const yyyy = date.getFullYear();
+        const description = Settings.language === "tr"
+            ? `${dd}-${mm}-${yyyy} tarihinden beri sunucu takviyesi yapıyor`
+            : `Server Booster since ${mm}/${dd}/${yyyy}`;
+
+        return {
+            id: "hypercord_boost_since_badge",
+            iconSrc: BADGES_BY_KEY.boost_1?.iconSrc,
+            description,
+            position: BadgePosition.START,
+            props: {
+                style: { objectFit: "cover" }
+            },
         };
     },
 

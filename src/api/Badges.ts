@@ -146,6 +146,11 @@ export function _getBadges(args: BadgeUserArgs) {
         badges.push({ ...args, ...formerUsernameBadge });
     }
 
+    const boostSinceBadge = BadgeAPIPlugin.getBoostSinceBadge(args.userId);
+    if (boostSinceBadge) {
+        badges.push({ ...args, ...boostSinceBadge });
+    }
+
     return badges;
 }
 
