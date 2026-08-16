@@ -72,11 +72,16 @@ const NITRO_TIER_CARD_ICON: Record<string, string> = {
     nitro_opal: "https://static.wikia.nocookie.net/discord/images/d/dd/Nitro_Badge_Opal.png/revision/latest?cb=20250125143043",
 };
 
-// Matches the reference "NITRO YAKUT / 03.01.21 tarihinden beri abone" card
-// style a user screenshotted - own inline-styled component (not real
-// Discord CSS classes, which would need live introspection to get right and
-// could silently drift on any Discord update) wrapped in the real Tooltip
-// component for floating/positioning.
+// Matches real Discord's own Nitro tenure tooltip - confirmed live via CDP
+// against the actual running client (not guessed): Discord's own badge
+// renderer really does use a distinct "nitro" variant (vs "default" for
+// every other badge, including Server Boost) for exactly this case, and the
+// real component is `padding:16px 8px 4px` column-flex, badge image, a
+// heading-xl/extrabold title, then a text-xs/muted description with
+// margin-top:4px - own inline-styled equivalent of that real structure
+// (not the real hashed CSS classes themselves, which are build-specific and
+// would drift on any Discord update) wrapped in the real Tooltip component
+// for floating/positioning.
 function NitroSinceHoverCard({ iconSrc, tierName, description }: { iconSrc: string; tierName: string; description: string; }) {
     return (
         <div
@@ -84,17 +89,17 @@ function NitroSinceHoverCard({ iconSrc, tierName, description }: { iconSrc: stri
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
-                gap: 8,
-                padding: "16px 20px",
+                justifyContent: "center",
+                padding: "16px 8px 4px",
                 minWidth: 180,
                 textAlign: "center"
             }}
         >
             <img src={iconSrc} alt="" style={{ width: 64, height: 64, objectFit: "cover" }} />
-            <div style={{ fontSize: 15, fontWeight: 700, color: "var(--header-primary)", textTransform: "uppercase", letterSpacing: 0.5 }}>
+            <div style={{ marginTop: 8, fontSize: 20, fontWeight: 800, color: "var(--header-primary)", textTransform: "uppercase", letterSpacing: 0.5 }}>
                 {tierName}
             </div>
-            <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
+            <div style={{ marginTop: 4, fontSize: 12, color: "var(--text-muted)" }}>
                 {description}
             </div>
         </div>
@@ -737,11 +742,18 @@ export default definePlugin({
             if (tierName && nitroSince) {
                 const date = new Date(nitroSince);
                 if (!isNaN(date.getTime())) {
-                    const day = date.getDate();
-                    const year = date.getFullYear();
+                    // Compact numeric date, not the month-name format Boost
+                    // uses - confirmed against a real captured Nitro tenure
+                    // badge object ({ id: "premium_tenure_3_month_v2",
+                    // description: "12.03.26 tarihinden beri abone" }, see
+                    // REAL_BADGE_ID_PRIORITY's comment below) that this is
+                    // Nitro's real own format, distinct from Boost's.
+                    const dd = String(date.getDate()).padStart(2, "0");
+                    const mm = String(date.getMonth() + 1).padStart(2, "0");
+                    const yy = String(date.getFullYear()).slice(-2);
                     const description = isDiscordLocaleTurkish()
-                        ? `${day} ${TR_MONTH_ABBR[date.getMonth()]} ${year} tarihinden beri abone`
-                        : `Nitro member since ${EN_MONTH_ABBR[date.getMonth()]} ${day}, ${year}`;
+                        ? `${dd}.${mm}.${yy} tarihinden beri abone`
+                        : `Subscriber since ${mm}/${dd}/${yy}`;
                     const title = `Nitro ${isDiscordLocaleTurkish() ? tierName.tr : tierName.en}`;
 
                     // Card gets the real ornate art; the actual small badge
