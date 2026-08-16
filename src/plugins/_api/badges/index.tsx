@@ -30,9 +30,38 @@ import { copyWithToast } from "@utils/discord";
 import { Logger } from "@utils/Logger";
 import { shouldShowContributorBadge } from "@utils/misc";
 import definePlugin from "@utils/types";
-import { ContextMenuApi, Menu, SnowflakeUtils, Toasts, UserStore } from "@webpack/common";
+import { ContextMenuApi, Menu, SnowflakeUtils, Toasts, Tooltip, UserStore } from "@webpack/common";
 
 const CONTRIBUTOR_BADGE = "https://raw.githubusercontent.com/hypercordapp/hypercord/main/docs/hcanim.png";
+
+// Matches the reference "NITRO YAKUT / 03.01.21 tarihinden beri abone" style
+// hover card real Discord shows for Nitro/Boost tenure badges - own inline-
+// styled component (not real Discord CSS classes, which would need live
+// introspection to get right and could silently drift on any Discord
+// update) wrapped in the real Tooltip component for floating/positioning.
+function BoostSinceHoverCard({ iconSrc, description }: { iconSrc: string | undefined; description: string; }) {
+    return (
+        <div
+            style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 8,
+                padding: "16px 20px",
+                minWidth: 180,
+                textAlign: "center"
+            }}
+        >
+            {iconSrc && <img src={iconSrc} alt="" style={{ width: 48, height: 48, objectFit: "cover" }} />}
+            <div style={{ fontSize: 15, fontWeight: 700, color: "var(--header-primary)", textTransform: "uppercase", letterSpacing: 0.5 }}>
+                {Settings.language === "tr" ? "Sunucu Takviyecisi" : "Server Booster"}
+            </div>
+            <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
+                {description}
+            </div>
+        </div>
+    );
+}
 
 const ContributorBadge: ProfileBadge = {
     id: "hypercord_contributor_badge",
@@ -226,6 +255,7 @@ const enum BadgePriority {
     // Every Boost tier collapses to this one value on purpose.
     Boost24 = 9,
     Boost18 = 9,
+    Boost15 = 9,
     Boost12 = 9,
     Boost9 = 9,
     Boost6 = 9,
@@ -234,14 +264,15 @@ const enum BadgePriority {
     Boost1 = 9,
     ActiveDeveloper = 10,
     VerifiedDeveloper = 11,
+    Quest = 12,
     CertifiedModerator = 13,
     Unknown = 99,
     // Fake-only tier ladder (see badgeCatalog.ts's "Gift Giving" category) -
     // no real Discord badge to dedupe against, so unlike Nitro/Boost these
     // never need REAL_BADGE_ID_PRIORITY entries or isX() range helpers.
-    // Shows AFTER Unknown on purpose (confirmed explicitly) - Legend is the
-    // top tier (shows first among the six), Patron the entry tier (last of
-    // the six).
+    // Shows AFTER Quest AND Unknown on purpose (confirmed explicitly) -
+    // Legend is the top tier (shows first among the six), Patron the entry
+    // tier (last of the six).
     GifterLegend = 100,
     GifterHero = 101,
     GifterIcon = 102,
@@ -272,8 +303,10 @@ const CATALOG_KEY_PRIORITY: Record<string, BadgePriority> = {
     nitro_gold: BadgePriority.NitroGold,
     nitro_silver: BadgePriority.NitroSilver,
     nitro_bronze: BadgePriority.NitroBronze,
+    nitro_classic: BadgePriority.Nitro,
     boost_24: BadgePriority.Boost24,
     boost_18: BadgePriority.Boost18,
+    boost_15: BadgePriority.Boost15,
     boost_12: BadgePriority.Boost12,
     boost_9: BadgePriority.Boost9,
     boost_6: BadgePriority.Boost6,
@@ -286,7 +319,9 @@ const CATALOG_KEY_PRIORITY: Record<string, BadgePriority> = {
     gifter_luminary: BadgePriority.GifterLuminary,
     gifter_champion: BadgePriority.GifterChampion,
     gifter_patron: BadgePriority.GifterPatron,
+    active_developer: BadgePriority.ActiveDeveloper,
     verified_developer: BadgePriority.VerifiedDeveloper,
+    quest: BadgePriority.Quest,
     certified_moderator: BadgePriority.CertifiedModerator,
 };
 // Strips Object.prototype - this gets indexed by a catalogKey extracted from
@@ -754,15 +789,35 @@ export default definePlugin({
         const description = Settings.language === "tr"
             ? `${dd}-${mm}-${yyyy} tarihinden beri sunucu takviyesi yapıyor`
             : `Server Booster since ${mm}/${dd}/${yyyy}`;
+        const iconSrc = BADGES_BY_KEY.boost_1?.iconSrc;
 
         return {
             id: "hypercord_boost_since_badge",
-            iconSrc: BADGES_BY_KEY.boost_1?.iconSrc,
-            description,
             position: BadgePosition.START,
-            props: {
-                style: { objectFit: "cover" }
-            },
+            // Rendered as a component (not the plain iconSrc+description
+            // every other catalog badge uses) so hovering it shows a big
+            // styled card - real Discord's own Nitro/Boost tenure hover
+            // card, requested to be matched - instead of Discord's default
+            // one-line text tooltip. Built on Tooltip (real Discord
+            // component, already proven elsewhere in this codebase to
+            // accept arbitrary JSX as its `text`) rather than patching
+            // Discord's own badge-hover internals to reuse whatever
+            // component it uses for its native cards - same visual result,
+            // without depending on undocumented internal structure that
+            // could silently break on any Discord update.
+            component: () => (
+                <Tooltip text={<BoostSinceHoverCard iconSrc={iconSrc} description={description} />}>
+                    {({ onMouseEnter, onMouseLeave }) => (
+                        <img
+                            src={iconSrc}
+                            alt=""
+                            onMouseEnter={onMouseEnter}
+                            onMouseLeave={onMouseLeave}
+                            style={{ width: 20, height: 20, objectFit: "cover" }}
+                        />
+                    )}
+                </Tooltip>
+            ),
         };
     },
 
