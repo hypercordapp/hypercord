@@ -18,7 +18,7 @@ import virtualMerge from "virtual-merge";
 
 import { AvatarUploadButton } from "./AvatarUpload";
 import { clearBadgeAuth, getBadgeAuthHeader, hasBadgeAuth } from "./badgeAuth";
-import { BADGE_CATALOG, BADGES_BY_KEY, sortByDisplayOrder } from "./badgeCatalog";
+import { BADGES_BY_KEY, sortByDisplayOrder } from "./badgeCatalog";
 import { BadgePicker } from "./BadgePicker";
 import { ProfileColorPickers } from "./ColorPickers";
 
@@ -423,11 +423,11 @@ export async function syncCreatedAtToBackend(silent = false) {
 }
 
 // Same shape as syncCreatedAtToBackend - a typed ISO date, no real one to
-// capture. Rendered as its own "Server Booster since <date>" badge (see
-// _api/badges' getBoostSinceBadge) rather than overriding anything, so it's
-// meant to replace a picked Server Boost tier rather than sit alongside one
-// - see clearBoostTierIfBoostSinceSet/clearBoostSinceIfTierPicked below,
-// real Discord only ever shows one boost badge at a time.
+// capture. Doesn't replace anything: combines with whatever Server Boost
+// tier is already picked (see _api/badges' getDonorBadges boost special
+// case) to swap that badge's description to the real "since <date>" wording
+// instead of the tier label - a tier with no date set still renders exactly
+// as before.
 export async function syncBoostSinceToBackend(silent = false) {
     const userId = UserStore.getCurrentUser()?.id;
     if (!userId) return;
@@ -503,28 +503,6 @@ export async function syncNitroSinceToBackend(silent = false) {
     } catch (e) {
         logger.error("Failed to sync nitro-since date to HyperCord", e);
     }
-}
-
-// A picked Server Boost tier (BadgePicker) and a typed boost-since date are
-// two different ways to represent the exact same real badge - real Discord
-// only ever shows one, so picking one clears the other instead of letting
-// both accumulate into two boost badges on the same profile.
-function clearBoostTierIfBoostSinceSet() {
-    if (!settings.store.fakeBoostSince) return;
-
-    const boostKeys = new Set(
-        BADGE_CATALOG.find(c => c.title === "Server Boost")?.badges.map(b => b.key) ?? []
-    );
-    if (settings.store.selectedBadges.some(k => boostKeys.has(k))) {
-        settings.store.selectedBadges = settings.store.selectedBadges.filter(k => !boostKeys.has(k));
-        syncBadgesToBackend();
-    }
-}
-
-export function clearBoostSinceIfTierPicked() {
-    if (!settings.store.fakeBoostSince) return;
-    settings.store.fakeBoostSince = "";
-    syncBoostSinceToBackend();
 }
 
 
@@ -703,12 +681,9 @@ export const settings = definePluginSettings({
     },
     fakeBoostSince: {
         type: OptionType.STRING,
-        description: "Fake \"Server Booster since <date>\" badge, format YYYY-MM-DD (leave empty to disable) - synced to HyperCord's backend and shown to every HyperCord user viewing your profile. Setting this clears any picked Server Boost tier badge below, since real Discord only ever shows one boost badge.",
+        description: "Fake \"Server Booster since <date>\" text on your picked Server Boost tier badge below, format YYYY-MM-DD (leave empty to disable) - synced to HyperCord's backend and shown to every HyperCord user viewing your profile. Only affects display if you've also picked a Server Boost tier badge below.",
         default: "",
-        onChange: () => {
-            clearBoostTierIfBoostSinceSet();
-            syncBoostSinceToBackend();
-        }
+        onChange: () => syncBoostSinceToBackend()
     },
     fakeNitroSince: {
         type: OptionType.STRING,

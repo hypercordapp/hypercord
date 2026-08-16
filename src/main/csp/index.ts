@@ -42,6 +42,7 @@ export const CspPolicies: PolicyMap = {
     "i.ibb.co": ImageSrc, // ImgBB, used by some themes
     "i.pinimg.com": ImageSrc, // Pinterest, used by some themes
     "files.catbox.moe": ImageAndCssSrc, // Catbox, used by some themes
+    "static.wikia.nocookie.net": ImageSrc, // Fandom-hosted badge art, used by FakeProfile's Nitro-since hover card and the Orbs Apprentice catalog badge
 
     "cdn.discordapp.com": ImageAndCssSrc, // Discord CDN, used by Vencord and some themes to load media
     "media.discordapp.net": ImageSrc, // Discord media CDN, possible alternative to Discord CDN

@@ -8,7 +8,7 @@ import { t } from "@i18n";
 import { classNameFactory } from "@utils/css";
 import { Checkbox, Forms, Text } from "@webpack/common";
 
-import { clearBoostSinceIfTierPicked, settings, syncBadgesToBackend } from ".";
+import { settings, syncBadgesToBackend } from ".";
 import { BADGE_CATALOG, CatalogCategory } from "./badgeCatalog";
 
 const cl = classNameFactory("vc-fakeprofile-");
@@ -25,11 +25,6 @@ function toggle(category: CatalogCategory, key: string, checked: boolean) {
         // category was selected, not just add another checkbox on top of it.
         const categoryKeys = new Set(category.badges.map(b => b.key));
         settings.store.selectedBadges = [...current.filter(k => !categoryKeys.has(k)), key];
-
-        // Server Boost is the one exclusive category with a second way to
-        // represent the same badge (a typed boost-since date) - picking a
-        // fixed tier here should clear that, not leave both set.
-        if (category.title === "Server Boost") clearBoostSinceIfTierPicked();
     } else {
         settings.store.selectedBadges = [...current, key];
     }

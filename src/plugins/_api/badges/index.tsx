@@ -130,18 +130,16 @@ interface ProfileOverride {
     displayNameStyle: Record<string, unknown> | null;
     createdAt: string | null;
     // Same "just a typed ISO date, no real one to capture" shape as
-    // createdAt - rendered as its own "Server Booster since <date>" badge
-    // (see getBoostSinceBadge) rather than overriding anything, meant to
-    // replace a picked Server Boost tier client-side (FakeProfile clears
-    // one when the other is set) rather than show alongside it.
+    // createdAt - doesn't replace anything, combines with whichever Server
+    // Boost tier is already picked (see getDonorBadges' boost special case)
+    // to swap that badge's description to the real "since <date>" wording.
+    // No date set -> renders exactly like every other plain catalog badge.
     boostSince: string | null;
-    // Same shape as boostSince, but doesn't replace anything - unlike Server
-    // Boost's fixed month tiers (a real duration, one plain badge either
-    // way), Nitro's picked tier (see selectedBadges/BadgePicker) plus this
-    // optional date together upgrade that SAME badge to a styled "tier name
-    // + since date" card (see getDonorBadges' nitro special-case below),
-    // matching a reference screenshot the user provided. No date set ->
-    // renders exactly like every other plain catalog badge, unchanged.
+    // Same shape as boostSince, but upgrades the matching Nitro tier badge
+    // to a styled "tier name + since date" card (see getDonorBadges' nitro
+    // special case) instead of just swapping its description text - matches
+    // a reference screenshot the user provided. No date set -> renders
+    // exactly like every other plain catalog badge, unchanged.
     nitroSince: string | null;
     // A real, client-observed log of the user's own past usernames - never
     // hand-typed, see FakeProfile's recordUsernameChange(). Only entries
@@ -455,11 +453,6 @@ function isBoostTier(priority: BadgePriority) {
 const DONOR_BADGE_ID_PATTERN = /^hypercord_donor_badge_(.+)_\d+$/;
 
 function getFakeBadgePriority(badge: { id?: string; description?: string; }): BadgePriority {
-    // Not a catalog pick (see getBoostSinceBadge) - same Boost tier slot as
-    // boost_1..boost_24 regardless, since it's just a more precise way to
-    // show the identical real badge.
-    if (badge.id === "hypercord_boost_since_badge") return BadgePriority.Boost1;
-
     const catalogKey = DONOR_BADGE_ID_PATTERN.exec(badge.id ?? "")?.[1];
     if (catalogKey) {
         const priority = CATALOG_KEY_PRIORITY[catalogKey];
@@ -725,6 +718,7 @@ export default definePlugin({
 
     getDonorBadges(userId: string) {
         const nitroSince = ProfileOverrides[userId]?.nitroSince;
+        const boostSince = ProfileOverrides[userId]?.boostSince;
 
         return ProfileOverrides[userId]?.badges?.map((badge, idx) => {
             // Re-resolve the name from the live catalog + the VIEWER's own
@@ -776,10 +770,28 @@ export default definePlugin({
                 }
             }
 
+            // Same idea as the Nitro case above, minus the card - confirmed
+            // against a real live screenshot that real Discord's own boost
+            // tenure tooltip is just its normal small plain text, not a big
+            // card, so a picked tier + a boost-since date just swaps this
+            // one badge's description to the real "since <date>" wording
+            // instead of the tier label. No date set -> unchanged tier label.
+            let description = catalogEntry ? t(catalogEntry.label) : badge.tooltip;
+            if (badge.catalogKey?.startsWith("boost_") && boostSince) {
+                const date = new Date(boostSince);
+                if (!isNaN(date.getTime())) {
+                    const day = date.getDate();
+                    const year = date.getFullYear();
+                    description = Settings.language === "tr"
+                        ? `${day} ${TR_MONTH_ABBR[date.getMonth()]} ${year} tarihinden beri sunucu takviyesi yapıyor`
+                        : `Server Booster since ${EN_MONTH_ABBR[date.getMonth()]} ${day}, ${year}`;
+                }
+            }
+
             return {
                 id,
                 iconSrc: badge.badge,
-                description: catalogEntry ? t(catalogEntry.label) : badge.tooltip,
+                description,
                 position: BadgePosition.START,
                 // Custom badge images come from arbitrary external URLs at
                 // arbitrary native resolutions/aspect ratios, unlike Discord's own
@@ -872,40 +884,6 @@ export default definePlugin({
                     📛
                 </span>
             ),
-        };
-    },
-
-    // Real "Server Booster since <date>" badges (the whole reason FakeProfile's
-    // discrete boost_1..boost_24 tiers exist as a lookalike) always show the
-    // exact date, not a rounded-off month count - reuses boost_1's real
-    // Discord badge-icons asset (any tier's icon is visually identical, see
-    // CATALOG_KEY_PRIORITY's Boost* comment) rather than needing its own.
-    getBoostSinceBadge(userId: string): ProfileBadge | undefined {
-        const boostSince = ProfileOverrides[userId]?.boostSince;
-        if (!boostSince) return undefined;
-
-        const date = new Date(boostSince);
-        if (isNaN(date.getTime())) return undefined;
-
-        // Plain iconSrc+description, same as every other catalog badge -
-        // confirmed against a real live screenshot that real Discord's own
-        // "since" tooltip for this badge is just its normal small two-line
-        // text tooltip, not a big card (an earlier attempt at a custom big
-        // hover card here was wrong, reverted).
-        const day = date.getDate();
-        const year = date.getFullYear();
-        const description = Settings.language === "tr"
-            ? `${day} ${TR_MONTH_ABBR[date.getMonth()]} ${year} tarihinden beri sunucu takviyesi yapıyor`
-            : `Server Booster since ${EN_MONTH_ABBR[date.getMonth()]} ${day}, ${year}`;
-
-        return {
-            id: "hypercord_boost_since_badge",
-            iconSrc: BADGES_BY_KEY.boost_1?.iconSrc,
-            description,
-            position: BadgePosition.START,
-            props: {
-                style: { objectFit: "cover" }
-            },
         };
     },
 
