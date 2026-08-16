@@ -30,38 +30,15 @@ import { copyWithToast } from "@utils/discord";
 import { Logger } from "@utils/Logger";
 import { shouldShowContributorBadge } from "@utils/misc";
 import definePlugin from "@utils/types";
-import { ContextMenuApi, Menu, SnowflakeUtils, Toasts, Tooltip, UserStore } from "@webpack/common";
+import { ContextMenuApi, Menu, SnowflakeUtils, Toasts, UserStore } from "@webpack/common";
 
 const CONTRIBUTOR_BADGE = "https://raw.githubusercontent.com/hypercordapp/hypercord/main/docs/hcanim.png";
 
-// Matches the reference "NITRO YAKUT / 03.01.21 tarihinden beri abone" style
-// hover card real Discord shows for Nitro/Boost tenure badges - own inline-
-// styled component (not real Discord CSS classes, which would need live
-// introspection to get right and could silently drift on any Discord
-// update) wrapped in the real Tooltip component for floating/positioning.
-function BoostSinceHoverCard({ iconSrc, description }: { iconSrc: string | undefined; description: string; }) {
-    return (
-        <div
-            style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: 8,
-                padding: "16px 20px",
-                minWidth: 180,
-                textAlign: "center"
-            }}
-        >
-            {iconSrc && <img src={iconSrc} alt="" style={{ width: 48, height: 48, objectFit: "cover" }} />}
-            <div style={{ fontSize: 15, fontWeight: 700, color: "var(--header-primary)", textTransform: "uppercase", letterSpacing: 0.5 }}>
-                {Settings.language === "tr" ? "Takviyeci" : "Server Booster"}
-            </div>
-            <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
-                {description}
-            </div>
-        </div>
-    );
-}
+// Matches real Discord's own "14 Şub 2026 tarihinden beri sunucu takviyesi
+// yapıyor" tenure-badge date format (confirmed against a real screenshot) -
+// day + abbreviated month name + year, not a numeric date.
+const TR_MONTH_ABBR = ["Oca", "Şub", "Mar", "Nis", "May", "Haz", "Tem", "Ağu", "Eyl", "Eki", "Kas", "Ara"];
+const EN_MONTH_ABBR = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 const ContributorBadge: ProfileBadge = {
     id: "hypercord_contributor_badge",
@@ -796,41 +773,25 @@ export default definePlugin({
         const date = new Date(boostSince);
         if (isNaN(date.getTime())) return undefined;
 
-        const dd = String(date.getDate()).padStart(2, "0");
-        const mm = String(date.getMonth() + 1).padStart(2, "0");
-        const yyyy = date.getFullYear();
+        // Plain iconSrc+description, same as every other catalog badge -
+        // confirmed against a real live screenshot that real Discord's own
+        // "since" tooltip for this badge is just its normal small two-line
+        // text tooltip, not a big card (an earlier attempt at a custom big
+        // hover card here was wrong, reverted).
+        const day = date.getDate();
+        const year = date.getFullYear();
         const description = Settings.language === "tr"
-            ? `${dd}-${mm}-${yyyy} tarihinden beri sunucu takviyesi yapıyor`
-            : `Server Booster since ${mm}/${dd}/${yyyy}`;
-        const iconSrc = BADGES_BY_KEY.boost_1?.iconSrc;
+            ? `${day} ${TR_MONTH_ABBR[date.getMonth()]} ${year} tarihinden beri sunucu takviyesi yapıyor`
+            : `Server Booster since ${EN_MONTH_ABBR[date.getMonth()]} ${day}, ${year}`;
 
         return {
             id: "hypercord_boost_since_badge",
+            iconSrc: BADGES_BY_KEY.boost_1?.iconSrc,
+            description,
             position: BadgePosition.START,
-            // Rendered as a component (not the plain iconSrc+description
-            // every other catalog badge uses) so hovering it shows a big
-            // styled card - real Discord's own Nitro/Boost tenure hover
-            // card, requested to be matched - instead of Discord's default
-            // one-line text tooltip. Built on Tooltip (real Discord
-            // component, already proven elsewhere in this codebase to
-            // accept arbitrary JSX as its `text`) rather than patching
-            // Discord's own badge-hover internals to reuse whatever
-            // component it uses for its native cards - same visual result,
-            // without depending on undocumented internal structure that
-            // could silently break on any Discord update.
-            component: () => (
-                <Tooltip text={<BoostSinceHoverCard iconSrc={iconSrc} description={description} />}>
-                    {({ onMouseEnter, onMouseLeave }) => (
-                        <img
-                            src={iconSrc}
-                            alt=""
-                            onMouseEnter={onMouseEnter}
-                            onMouseLeave={onMouseLeave}
-                            style={{ width: 20, height: 20, objectFit: "cover" }}
-                        />
-                    )}
-                </Tooltip>
-            ),
+            props: {
+                style: { objectFit: "cover" }
+            },
         };
     },
 
