@@ -76,19 +76,34 @@ const NITRO_TIER_CARD_ICON: Record<string, string> = {
     nitro_opal: `${NITRO_BADGES_BASE}/nitro-opal.webp`,
 };
 
-// Real Discord's own Nitro tenure tooltip, byte-for-byte from its actual
-// loaded CSS (pulled live via CDP against the real running client, not
-// guessed - a previous pass here had mistakenly pulled these numbers from
-// an unrelated component, the badge-shop/collectibles gallery card, which
-// looks similar but isn't what renders on a profile). The REAL component
-// (`content__45458`/`graphic__45458`/`titleGroup__45458`/`title__45458`/
-// `titleNitro__45458`) has NO background gradient or glow at all - the
-// entire "nitro" variant is exactly one thing: the title becomes italic.
-// Real rules: .content{padding:0 12px 16px;width:200px} .graphic{height:
-// 64px;margin:16px auto 0} .titleGroup{margin-top:16px} .title{font-size:
-// 16px;font-weight:900;line-height:16px;text-transform:uppercase}
-// .titleNitro{font-style:italic}.
-function NitroSinceHoverCard({ iconSrc, tierName, description }: { iconSrc: string; tierName: string; description: string; }) {
+// Gem-accurate per-tier glow color - explicitly requested to match a
+// reference screenshot even after directly inspecting Discord's own live
+// CSS three separate ways (inner content, outer tooltip container, rich-
+// tooltip modifier) found a flat background with no gradient anywhere on
+// the actual profile-hover tooltip component. Can't claim this glow is
+// verified real hover behavior - it may come from a different Discord
+// surface (the badge shop/collectibles gallery card does take a real
+// gradientColor prop) - but it's the deliberate look asked for, so it
+// stays even though the "real" component doesn't have it.
+const NITRO_TIER_GLOW: Record<string, string> = {
+    nitro_bronze: "#cd7f32",
+    nitro_silver: "#c0c0c0",
+    nitro_gold: "#ffd700",
+    nitro_platinum: "#8fb2c9",
+    nitro_diamond: "#8c6fd1",
+    nitro_emerald: "#3fbf7f",
+    nitro_ruby: "#c93756",
+    nitro_opal: "#d98cc9",
+};
+
+// Text sizing/spacing/italic here IS the real Discord component's actual
+// loaded CSS (pulled live via CDP, not guessed): `.content{padding:0 12px
+// 16px;width:200px} .graphic{height:64px;margin:16px auto 0}
+// .titleGroup{margin-top:16px} .title{font-size:16px;font-weight:900;
+// line-height:16px;text-transform:uppercase} .titleNitro{font-style:
+// italic}`. The background glow is NOT part of that real CSS - see
+// NITRO_TIER_GLOW's comment above.
+function NitroSinceHoverCard({ iconSrc, tierName, description, glowColor }: { iconSrc: string; tierName: string; description: string; glowColor: string; }) {
     return (
         <div
             style={{
@@ -98,7 +113,9 @@ function NitroSinceHoverCard({ iconSrc, tierName, description }: { iconSrc: stri
                 boxSizing: "border-box",
                 padding: "0 12px 16px",
                 width: 200,
-                textAlign: "center"
+                textAlign: "center",
+                borderRadius: "var(--radius-sm)",
+                background: `radial-gradient(circle at 50% 32%, ${glowColor}59 0%, transparent 65%)`
             }}
         >
             <div style={{ display: "flex", height: 64, justifyContent: "center", margin: "16px auto 0" }}>
@@ -773,12 +790,13 @@ export default definePlugin({
                     // shown in the tray (the Tooltip's trigger) stays on
                     // badge.badge (the plain small icon) - never the card art.
                     const cardIconSrc = NITRO_TIER_CARD_ICON[badge.catalogKey!] ?? badge.badge;
+                    const glowColor = NITRO_TIER_GLOW[badge.catalogKey!] ?? "#8c6fd1";
 
                     return {
                         id,
                         position: BadgePosition.START,
                         component: () => (
-                            <Tooltip text={<NitroSinceHoverCard iconSrc={cardIconSrc} tierName={title} description={description} />}>
+                            <Tooltip text={<NitroSinceHoverCard iconSrc={cardIconSrc} tierName={title} description={description} glowColor={glowColor} />}>
                                 {({ onMouseEnter, onMouseLeave }) => (
                                     <img
                                         src={badge.badge}
