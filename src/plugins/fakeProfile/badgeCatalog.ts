@@ -46,12 +46,15 @@ function emojiUrl(id: string, animated = false) {
 // don't assume a discord.com/assets URL will keep working on every channel.
 export const BADGE_CATALOG: CatalogCategory[] = [
     {
+        // Active Developer used to live here too - dropped from the catalog
+        // (real Discord removed the ability to earn/hold this badge
+        // entirely, so offering it as a fake pick no longer matches
+        // anything a real profile could show).
         title: "General",
         badges: [
             { key: "staff", label: "Discord Staff", iconSrc: "https://cdn.discordapp.com/badge-icons/5e74e9b61934fc1f67c65515d1f7e60d.png" },
             { key: "partner", label: "Partner", iconSrc: "https://cdn.discordapp.com/badge-icons/3f9748e53446a137a052f3454e2de41e.png" },
             { key: "hypesquad", label: "HypeSquad Events", iconSrc: "https://cdn.discordapp.com/badge-icons/bf01d1073931f921909045f3a39fd264.png" },
-            { key: "active_developer", label: "Active Developer", iconSrc: "https://cdn.discordapp.com/badge-icons/6bdc42827a38498929a4920da12695d9.png" },
         ]
     },
     {
@@ -85,13 +88,13 @@ export const BADGE_CATALOG: CatalogCategory[] = [
         ]
     },
     {
-        // "Classic" isn't a tenure tier like the rest - it's just the plain
-        // Nitro badge with no subscription-length decoration yet, which is
-        // what a real Nitro Classic subscriber's badge actually looks like.
+        // Nitro Classic used to have a "plain badge, no tenure decoration"
+        // entry here too - dropped from the catalog (real Discord retired
+        // Nitro Classic as a purchasable tier, so it no longer matches
+        // anything a new real subscriber's profile could show).
         title: "Nitro",
         exclusive: true,
         badges: [
-            { key: "nitro_classic", label: "Nitro Classic", iconSrc: emojiUrl("1528737728894734548") },
             { key: "nitro_bronze", label: "Nitro — Bronze (1 Month)", iconSrc: emojiUrl("1365454925357645994") },
             { key: "nitro_silver", label: "Nitro — Silver (3 Months)", iconSrc: emojiUrl("1365454972962996254") },
             { key: "nitro_gold", label: "Nitro — Gold (6 Months)", iconSrc: emojiUrl("1365454994337435739") },
@@ -151,19 +154,18 @@ export const BADGES_BY_KEY: Record<string, CatalogBadge> = Object.fromEntries(
 // The catalog above is grouped for the picker UI (related badges kept
 // together for browsing), which isn't the same as the order real Discord
 // actually renders them in. That real order follows UserFlags bit order for
-// the achievement badges (HypeSquad Houses land between Bug Hunter 1 and 2,
-// Active Developer near the very end), with Early Supporter between Nitro
-// and Boost tenure rather than with the other flag badges.
+// the achievement badges (HypeSquad Houses land between Bug Hunter 1 and 2),
+// with Early Supporter between Nitro and Boost tenure rather than with the
+// other flag badges.
 const DISPLAY_ORDER = [
     "staff", "partner", "hypesquad",
     "bug_hunter_1",
     "house_bravery", "house_brilliance", "house_balance",
     "bug_hunter_2",
     "verified_developer",
-    "active_developer",
     "quest",
     "certified_moderator",
-    "nitro_classic", "nitro_bronze", "nitro_silver", "nitro_gold", "nitro_platinum", "nitro_diamond", "nitro_emerald", "nitro_ruby", "nitro_opal",
+    "nitro_bronze", "nitro_silver", "nitro_gold", "nitro_platinum", "nitro_diamond", "nitro_emerald", "nitro_ruby", "nitro_opal",
     "early_supporter",
     "boost_1", "boost_2", "boost_3", "boost_6", "boost_9", "boost_12", "boost_15", "boost_18", "boost_24",
     "gifter_patron", "gifter_champion", "gifter_luminary", "gifter_icon", "gifter_hero", "gifter_legend",
