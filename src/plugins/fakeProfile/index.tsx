@@ -529,16 +529,12 @@ export function clearBoostSinceIfTierPicked() {
 
 // A hand-typed date defaults to today, which looks obviously fake on a
 // "since" badge. A fully random day count (e.g. "1 month and 4 days ago")
-// looked equally fake - real tenure always lands close to an actual tier
-// threshold (1/2/3/6/9/12/18/24 months boosting, 1/3/6/12/24/36/60/72+
-// months Nitro), never some arbitrary in-between count, so this picks a
-// real tier length and jitters only the day within that month for realism,
-// instead of picking uniformly across the whole range (which kept landing
-// close to the 1-month floor far more often than it should have).
+// looked equally fake too - real tenure always lands close to an actual
+// tier threshold, never some arbitrary in-between count, so this jitters
+// only the day within a given tier's month, never the month count itself.
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-function randomSinceDate(tierMonths: number[]): string {
-    const months = tierMonths[Math.floor(Math.random() * tierMonths.length)];
+function dateMonthsAgo(months: number): string {
     const jitterDays = Math.floor(Math.random() * 27);
     const date = new Date();
     date.setMonth(date.getMonth() - months);
@@ -546,8 +542,26 @@ function randomSinceDate(tierMonths: number[]): string {
     return date.toISOString().slice(0, 10);
 }
 
-const BOOST_TIER_MONTHS = [1, 2, 3, 6, 9, 12, 18, 24];
-const NITRO_TIER_MONTHS = [1, 3, 6, 12, 24, 36, 60, 72];
+// key -> real tier length in months, so a randomized date can match
+// whichever tier is actually picked (e.g. the 24-month Boost badge gets a
+// ~24-month-old date) instead of a random unrelated tier length.
+const BOOST_KEY_MONTHS: Record<string, number> = {
+    boost_1: 1, boost_2: 2, boost_3: 3, boost_6: 6, boost_9: 9,
+    boost_12: 12, boost_15: 15, boost_18: 18, boost_24: 24
+};
+const NITRO_KEY_MONTHS: Record<string, number> = {
+    nitro_bronze: 1, nitro_silver: 3, nitro_gold: 6, nitro_platinum: 12,
+    nitro_diamond: 24, nitro_emerald: 36, nitro_ruby: 60, nitro_opal: 72
+};
+
+// If the matching tier category currently has something picked, use THAT
+// tier's real length - otherwise (nothing picked yet) fall back to a
+// random real tier length, still never an arbitrary in-between count.
+function randomSinceDateForSelection(keyMonths: Record<string, number>): string {
+    const selected = settings.store.selectedBadges.find(k => keyMonths[k] !== undefined);
+    const months = selected ? keyMonths[selected] : Object.values(keyMonths)[Math.floor(Math.random() * Object.values(keyMonths).length)];
+    return dateMonthsAgo(months);
+}
 
 function RandomizeBoostSinceButton() {
     return (
@@ -559,7 +573,7 @@ function RandomizeBoostSinceButton() {
                 // this exact gotcha: setting settings.store.fakeBoostSince
                 // here alone silently did nothing) - call the same two
                 // effects onChange would have triggered directly instead.
-                settings.store.fakeBoostSince = randomSinceDate(BOOST_TIER_MONTHS);
+                settings.store.fakeBoostSince = randomSinceDateForSelection(BOOST_KEY_MONTHS);
                 clearBoostTierIfBoostSinceSet();
                 syncBoostSinceToBackend();
             }}
@@ -574,7 +588,7 @@ function RandomizeNitroSinceButton() {
         <Button
             size={Button.Sizes.SMALL}
             onClick={() => {
-                settings.store.fakeNitroSince = randomSinceDate(NITRO_TIER_MONTHS);
+                settings.store.fakeNitroSince = randomSinceDateForSelection(NITRO_KEY_MONTHS);
                 syncNitroSinceToBackend();
             }}
         >
