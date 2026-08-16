@@ -18,7 +18,7 @@ import virtualMerge from "virtual-merge";
 
 import { AvatarUploadButton } from "./AvatarUpload";
 import { clearBadgeAuth, getBadgeAuthHeader, hasBadgeAuth } from "./badgeAuth";
-import { BADGES_BY_KEY, sortByDisplayOrder } from "./badgeCatalog";
+import { BADGE_CATALOG, BADGES_BY_KEY, sortByDisplayOrder } from "./badgeCatalog";
 import { BadgePicker } from "./BadgePicker";
 import { ProfileColorPickers } from "./ColorPickers";
 
@@ -422,6 +422,70 @@ export async function syncCreatedAtToBackend(silent = false) {
     }
 }
 
+// Same shape as syncCreatedAtToBackend - a typed ISO date, no real one to
+// capture. Rendered as its own "Server Booster since <date>" badge (see
+// _api/badges' getBoostSinceBadge) rather than overriding anything, so it's
+// meant to replace a picked Server Boost tier rather than sit alongside one
+// - see clearBoostTierIfBoostSinceSet/clearBoostSinceIfTierPicked below,
+// real Discord only ever shows one boost badge at a time.
+export async function syncBoostSinceToBackend(silent = false) {
+    const userId = UserStore.getCurrentUser()?.id;
+    if (!userId) return;
+
+    if (!settings.store.fakeBoostSince && !await hasBadgeAuth()) return;
+
+    const auth = await getBadgeAuthHeader();
+    if (!auth) return;
+
+    let data: string | null = null;
+    if (settings.store.fakeBoostSince) {
+        const date = new Date(settings.store.fakeBoostSince);
+        if (!isNaN(date.getTime())) data = date.toISOString();
+    }
+
+    try {
+        const res = await fetch(`${SELF_PROFILES_BASE}/${userId}/boost-since`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json", Authorization: auth },
+            body: JSON.stringify({ data })
+        });
+
+        if (res.status === 409 && !silent) {
+            Toasts.show({
+                id: Toasts.genId(),
+                message: "Can't sync your boost-since date - HyperCord staff already set one for you.",
+                type: Toasts.Type.FAILURE
+            });
+        } else if (res.ok) {
+            await BadgeAPIPlugin.refetchBadges();
+        }
+    } catch (e) {
+        logger.error("Failed to sync boost-since date to HyperCord", e);
+    }
+}
+
+// A picked Server Boost tier (BadgePicker) and a typed boost-since date are
+// two different ways to represent the exact same real badge - real Discord
+// only ever shows one, so picking one clears the other instead of letting
+// both accumulate into two boost badges on the same profile.
+function clearBoostTierIfBoostSinceSet() {
+    if (!settings.store.fakeBoostSince) return;
+
+    const boostKeys = new Set(
+        BADGE_CATALOG.find(c => c.title === "Server Boost")?.badges.map(b => b.key) ?? []
+    );
+    if (settings.store.selectedBadges.some(k => boostKeys.has(k))) {
+        settings.store.selectedBadges = settings.store.selectedBadges.filter(k => !boostKeys.has(k));
+        syncBadgesToBackend();
+    }
+}
+
+export function clearBoostSinceIfTierPicked() {
+    if (!settings.store.fakeBoostSince) return;
+    settings.store.fakeBoostSince = "";
+    syncBoostSinceToBackend();
+}
+
 interface FormerNameEntry { name: string; until: string; }
 interface UsernameHistoryState { currentName: string; history: FormerNameEntry[]; }
 
@@ -550,6 +614,7 @@ function syncOnConnect() {
     syncBannerToBackend(true);
     syncAllCosmeticsFromUser(true);
     syncCreatedAtToBackend(true);
+    syncBoostSinceToBackend(true);
     syncFormerUsernameToBackend(true);
     syncFakeIdentityToBackend(true);
 }
@@ -592,6 +657,15 @@ export const settings = definePluginSettings({
         type: OptionType.STRING,
         description: "Override the account creation date on your own profile popout, format YYYY-MM-DD (leave empty to disable)",
         default: ""
+    },
+    fakeBoostSince: {
+        type: OptionType.STRING,
+        description: "Fake \"Server Booster since <date>\" badge, format YYYY-MM-DD (leave empty to disable) - synced to HyperCord's backend and shown to every HyperCord user viewing your profile. Setting this clears any picked Server Boost tier badge below, since real Discord only ever shows one boost badge.",
+        default: "",
+        onChange: () => {
+            clearBoostTierIfBoostSinceSet();
+            syncBoostSinceToBackend();
+        }
     },
     trackFormerUsernames: {
         type: OptionType.BOOLEAN,
