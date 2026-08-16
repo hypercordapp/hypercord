@@ -19,10 +19,9 @@
 import "./fixDiscordBadgePadding.css";
 
 import { _getBadges, BadgePosition, BadgeUserArgs, ProfileBadge } from "@api/Badges";
-import { Settings } from "@api/Settings";
 import ErrorBoundary from "@components/ErrorBoundary";
 import { openContributorModal } from "@components/settings/tabs";
-import { t } from "@i18n";
+import { isDiscordLocaleTurkish, tBadge } from "@i18n";
 import { openSettingsPage } from "@plugins/commandPalette/commands/openSettings";
 import { BADGE_CATALOG, BADGES_BY_KEY } from "@plugins/fakeProfile/badgeCatalog";
 import { Devs } from "@utils/constants";
@@ -740,10 +739,10 @@ export default definePlugin({
                 if (!isNaN(date.getTime())) {
                     const day = date.getDate();
                     const year = date.getFullYear();
-                    const description = Settings.language === "tr"
+                    const description = isDiscordLocaleTurkish()
                         ? `${day} ${TR_MONTH_ABBR[date.getMonth()]} ${year} tarihinden beri abone`
                         : `Nitro member since ${EN_MONTH_ABBR[date.getMonth()]} ${day}, ${year}`;
-                    const title = `Nitro ${Settings.language === "tr" ? tierName.tr : tierName.en}`;
+                    const title = `Nitro ${isDiscordLocaleTurkish() ? tierName.tr : tierName.en}`;
 
                     // Card gets the real ornate art; the actual small badge
                     // shown in the tray (the Tooltip's trigger) stays on
@@ -776,13 +775,13 @@ export default definePlugin({
             // card, so a picked tier + a boost-since date just swaps this
             // one badge's description to the real "since <date>" wording
             // instead of the tier label. No date set -> unchanged tier label.
-            let description = catalogEntry ? t(catalogEntry.label) : badge.tooltip;
+            let description = catalogEntry ? tBadge(catalogEntry.label) : badge.tooltip;
             if (badge.catalogKey?.startsWith("boost_") && boostSince) {
                 const date = new Date(boostSince);
                 if (!isNaN(date.getTime())) {
                     const day = date.getDate();
                     const year = date.getFullYear();
-                    description = Settings.language === "tr"
+                    description = isDiscordLocaleTurkish()
                         ? `${day} ${TR_MONTH_ABBR[date.getMonth()]} ${year} tarihinden beri sunucu takviyesi yapıyor`
                         : `Server Booster since ${EN_MONTH_ABBR[date.getMonth()]} ${day}, ${year}`;
                 }
