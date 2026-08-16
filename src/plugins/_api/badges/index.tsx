@@ -226,7 +226,6 @@ const enum BadgePriority {
     // Every Boost tier collapses to this one value on purpose.
     Boost24 = 9,
     Boost18 = 9,
-    Boost15 = 9,
     Boost12 = 9,
     Boost9 = 9,
     Boost6 = 9,
@@ -275,7 +274,6 @@ const CATALOG_KEY_PRIORITY: Record<string, BadgePriority> = {
     nitro_bronze: BadgePriority.NitroBronze,
     boost_24: BadgePriority.Boost24,
     boost_18: BadgePriority.Boost18,
-    boost_15: BadgePriority.Boost15,
     boost_12: BadgePriority.Boost12,
     boost_9: BadgePriority.Boost9,
     boost_6: BadgePriority.Boost6,
