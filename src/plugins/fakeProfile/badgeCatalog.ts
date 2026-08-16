@@ -53,7 +53,7 @@ export const BADGE_CATALOG: CatalogCategory[] = [
         title: "General",
         badges: [
             { key: "staff", label: "Discord Staff", iconSrc: "https://cdn.discordapp.com/badge-icons/5e74e9b61934fc1f67c65515d1f7e60d.png" },
-            { key: "partner", label: "Partner", iconSrc: "https://cdn.discordapp.com/badge-icons/3f9748e53446a137a052f3454e2de41e.png" },
+            { key: "partner", label: "Partnered Server Owner", iconSrc: "https://cdn.discordapp.com/badge-icons/3f9748e53446a137a052f3454e2de41e.png" },
             { key: "hypesquad", label: "HypeSquad Events", iconSrc: "https://cdn.discordapp.com/badge-icons/bf01d1073931f921909045f3a39fd264.png" },
         ]
     },
@@ -114,7 +114,6 @@ export const BADGE_CATALOG: CatalogCategory[] = [
             { key: "boost_6", label: "Server Booster — 6 Months", iconSrc: "https://cdn.discordapp.com/badge-icons/df199d2050d3ed4ebf84d64ae83989f8.png" },
             { key: "boost_9", label: "Server Booster — 9 Months", iconSrc: "https://cdn.discordapp.com/badge-icons/996b3e870e8a22ce519b3a50e6bdd52f.png" },
             { key: "boost_12", label: "Server Booster — 12 Months", iconSrc: "https://cdn.discordapp.com/badge-icons/991c9f39ee33d7537d9f408c3e53141e.png" },
-            { key: "boost_15", label: "Server Booster — 15 Months", iconSrc: "https://cdn.discordapp.com/badge-icons/cb3ae83c15e970e8f3d410bc62cb8b99.png" },
             { key: "boost_18", label: "Server Booster — 18 Months", iconSrc: "https://cdn.discordapp.com/badge-icons/7142225d31238f6387d9f09efaa02759.png" },
             { key: "boost_24", label: "Server Booster — 24 Months", iconSrc: "https://cdn.discordapp.com/badge-icons/ec92202290b48d0879b7413d2dde3bab.png" },
         ]
@@ -177,7 +176,7 @@ const DISPLAY_ORDER = [
     "certified_moderator",
     "nitro_bronze", "nitro_silver", "nitro_gold", "nitro_platinum", "nitro_diamond", "nitro_emerald", "nitro_ruby", "nitro_opal",
     "early_supporter",
-    "boost_1", "boost_2", "boost_3", "boost_6", "boost_9", "boost_12", "boost_15", "boost_18", "boost_24",
+    "boost_1", "boost_2", "boost_3", "boost_6", "boost_9", "boost_12", "boost_18", "boost_24",
     "gifter_patron", "gifter_champion", "gifter_luminary", "gifter_icon", "gifter_hero", "gifter_legend",
 ];
 

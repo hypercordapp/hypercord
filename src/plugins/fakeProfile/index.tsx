@@ -13,7 +13,7 @@ import { Devs } from "@utils/constants";
 import { fetchUserProfile } from "@utils/discord";
 import { Logger } from "@utils/Logger";
 import definePlugin, { OptionType } from "@utils/types";
-import { FluxDispatcher, Forms, GuildMemberStore, Toasts, UserProfileStore, UserStore } from "@webpack/common";
+import { Button, FluxDispatcher, Forms, GuildMemberStore, Toasts, UserProfileStore, UserStore } from "@webpack/common";
 import virtualMerge from "virtual-merge";
 
 import { AvatarUploadButton } from "./AvatarUpload";
@@ -486,6 +486,31 @@ export function clearBoostSinceIfTierPicked() {
     syncBoostSinceToBackend();
 }
 
+// A hand-typed date defaults to today, which looks obviously fake on a
+// "since" badge - picks something between 1 month and 4 years back instead,
+// the same realistic range real long-tenure boosters actually fall in.
+// Setting settings.store.fakeBoostSince below fires fakeBoostSince's own
+// onChange (Vencord's settings store is a reactive proxy, a programmatic
+// write behaves the same as the user typing), so this reuses the existing
+// clear-the-picked-tier + sync-to-backend logic for free.
+function randomBoostSinceDate(): string {
+    const ONE_MONTH_MS = 30 * 24 * 60 * 60 * 1000;
+    const FOUR_YEARS_MS = 4 * 365 * 24 * 60 * 60 * 1000;
+    const agoMs = ONE_MONTH_MS + Math.random() * (FOUR_YEARS_MS - ONE_MONTH_MS);
+    return new Date(Date.now() - agoMs).toISOString().slice(0, 10);
+}
+
+function RandomizeBoostSinceButton() {
+    return (
+        <Button
+            size={Button.Sizes.SMALL}
+            onClick={() => { settings.store.fakeBoostSince = randomBoostSinceDate(); }}
+        >
+            🎲 Randomize date
+        </Button>
+    );
+}
+
 interface FormerNameEntry { name: string; until: string; }
 interface UsernameHistoryState { currentName: string; history: FormerNameEntry[]; }
 
@@ -666,6 +691,10 @@ export const settings = definePluginSettings({
             clearBoostTierIfBoostSinceSet();
             syncBoostSinceToBackend();
         }
+    },
+    randomizeBoostSinceButton: {
+        type: OptionType.COMPONENT,
+        component: RandomizeBoostSinceButton
     },
     trackFormerUsernames: {
         type: OptionType.BOOLEAN,
