@@ -489,10 +489,6 @@ export function clearBoostSinceIfTierPicked() {
 // A hand-typed date defaults to today, which looks obviously fake on a
 // "since" badge - picks something between 1 month and 4 years back instead,
 // the same realistic range real long-tenure boosters actually fall in.
-// Setting settings.store.fakeBoostSince below fires fakeBoostSince's own
-// onChange (Vencord's settings store is a reactive proxy, a programmatic
-// write behaves the same as the user typing), so this reuses the existing
-// clear-the-picked-tier + sync-to-backend logic for free.
 function randomBoostSinceDate(): string {
     const ONE_MONTH_MS = 30 * 24 * 60 * 60 * 1000;
     const FOUR_YEARS_MS = 4 * 365 * 24 * 60 * 60 * 1000;
@@ -504,7 +500,16 @@ function RandomizeBoostSinceButton() {
     return (
         <Button
             size={Button.Sizes.SMALL}
-            onClick={() => { settings.store.fakeBoostSince = randomBoostSinceDate(); }}
+            onClick={() => {
+                // fakeBoostSince's onChange only fires from the text input's
+                // own change event, not from a programmatic store write (hit
+                // this exact gotcha: setting settings.store.fakeBoostSince
+                // here alone silently did nothing) - call the same two
+                // effects onChange would have triggered directly instead.
+                settings.store.fakeBoostSince = randomBoostSinceDate();
+                clearBoostTierIfBoostSinceSet();
+                syncBoostSinceToBackend();
+            }}
         >
             🎲 Randomize date
         </Button>
