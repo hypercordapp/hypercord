@@ -8,6 +8,17 @@ export interface CatalogBadge {
     key: string;
     label: string;
     iconSrc: string;
+    /**
+     * Kept resolvable (BADGES_BY_KEY, priority, sorting) but hidden from the
+     * BadgePicker UI - for a badge that no longer matches anything a real
+     * profile could show (removed/retired on real Discord) so it shouldn't
+     * be newly pickable, WITHOUT retroactively stripping it from anyone who
+     * already had it picked. A full delete instead of this flag silently
+     * un-syncs an existing pick on that user's very next resync (their
+     * client can no longer resolve the key to push it), which is a real bug
+     * this once caused, not a hypothetical.
+     */
+    hidden?: boolean;
 }
 
 export interface CatalogCategory {
@@ -46,15 +57,15 @@ function emojiUrl(id: string, animated = false) {
 // don't assume a discord.com/assets URL will keep working on every channel.
 export const BADGE_CATALOG: CatalogCategory[] = [
     {
-        // Active Developer used to live here too - dropped from the catalog
-        // (real Discord removed the ability to earn/hold this badge
-        // entirely, so offering it as a fake pick no longer matches
-        // anything a real profile could show).
         title: "General",
         badges: [
             { key: "staff", label: "Discord Staff", iconSrc: "https://cdn.discordapp.com/badge-icons/5e74e9b61934fc1f67c65515d1f7e60d.png" },
             { key: "partner", label: "Partnered Server Owner", iconSrc: "https://cdn.discordapp.com/badge-icons/3f9748e53446a137a052f3454e2de41e.png" },
             { key: "hypesquad", label: "HypeSquad Events", iconSrc: "https://cdn.discordapp.com/badge-icons/bf01d1073931f921909045f3a39fd264.png" },
+            // Real Discord removed the ability to earn/hold this badge
+            // entirely - hidden (not deleted) so it no longer offers as a
+            // fresh pick, but anyone who already had it keeps it.
+            { key: "active_developer", label: "Active Developer", iconSrc: "https://cdn.discordapp.com/badge-icons/6bdc42827a38498929a4920da12695d9.png", hidden: true },
         ]
     },
     {
@@ -87,13 +98,23 @@ export const BADGE_CATALOG: CatalogCategory[] = [
         ]
     },
     {
-        // Nitro Classic used to have a "plain badge, no tenure decoration"
-        // entry here too - dropped from the catalog (real Discord retired
-        // Nitro Classic as a purchasable tier, so it no longer matches
-        // anything a new real subscriber's profile could show).
+        // Hidden by our own product decision (a 2-click quest completion
+        // doesn't fit the "something non-trivial" bar the rest of this
+        // catalog holds to) rather than because it stopped being real -
+        // existing holders keep it, same reasoning as the hidden flag
+        // elsewhere in this file.
+        title: "Quest",
+        badges: [
+            { key: "quest", label: "Quest Completed", iconSrc: "https://cdn.discordapp.com/badge-icons/7d9ae358c8c5e118768335dbe68b4fb8.png", hidden: true },
+        ]
+    },
+    {
         title: "Nitro",
         exclusive: true,
         badges: [
+            // Real Discord retired Nitro Classic as a purchasable tier -
+            // hidden (not deleted), same reasoning as Active Developer above.
+            { key: "nitro_classic", label: "Nitro Classic", iconSrc: emojiUrl("1528737728894734548"), hidden: true },
             { key: "nitro_bronze", label: "Nitro — Bronze (1 Month)", iconSrc: emojiUrl("1365454925357645994") },
             { key: "nitro_silver", label: "Nitro — Silver (3 Months)", iconSrc: emojiUrl("1365454972962996254") },
             { key: "nitro_gold", label: "Nitro — Gold (6 Months)", iconSrc: emojiUrl("1365454994337435739") },
@@ -114,6 +135,10 @@ export const BADGE_CATALOG: CatalogCategory[] = [
             { key: "boost_6", label: "Server Booster — 6 Months", iconSrc: "https://cdn.discordapp.com/badge-icons/df199d2050d3ed4ebf84d64ae83989f8.png" },
             { key: "boost_9", label: "Server Booster — 9 Months", iconSrc: "https://cdn.discordapp.com/badge-icons/996b3e870e8a22ce519b3a50e6bdd52f.png" },
             { key: "boost_12", label: "Server Booster — 12 Months", iconSrc: "https://cdn.discordapp.com/badge-icons/991c9f39ee33d7537d9f408c3e53141e.png" },
+            // Not a real tier (real Discord's boost badges only exist at
+            // 1/2/3/6/9/12/18/24 months) - hidden rather than deleted, same
+            // reasoning as Active Developer/Nitro Classic/Quest above.
+            { key: "boost_15", label: "Server Booster — 15 Months", iconSrc: "https://cdn.discordapp.com/badge-icons/cb3ae83c15e970e8f3d410bc62cb8b99.png", hidden: true },
             { key: "boost_18", label: "Server Booster — 18 Months", iconSrc: "https://cdn.discordapp.com/badge-icons/7142225d31238f6387d9f09efaa02759.png" },
             { key: "boost_24", label: "Server Booster — 24 Months", iconSrc: "https://cdn.discordapp.com/badge-icons/ec92202290b48d0879b7413d2dde3bab.png" },
         ]
@@ -173,10 +198,12 @@ const DISPLAY_ORDER = [
     "house_bravery", "house_brilliance", "house_balance",
     "bug_hunter_2",
     "verified_developer",
+    "active_developer",
+    "quest",
     "certified_moderator",
-    "nitro_bronze", "nitro_silver", "nitro_gold", "nitro_platinum", "nitro_diamond", "nitro_emerald", "nitro_ruby", "nitro_opal",
+    "nitro_classic", "nitro_bronze", "nitro_silver", "nitro_gold", "nitro_platinum", "nitro_diamond", "nitro_emerald", "nitro_ruby", "nitro_opal",
     "early_supporter",
-    "boost_1", "boost_2", "boost_3", "boost_6", "boost_9", "boost_12", "boost_18", "boost_24",
+    "boost_1", "boost_2", "boost_3", "boost_6", "boost_9", "boost_12", "boost_15", "boost_18", "boost_24",
     "gifter_patron", "gifter_champion", "gifter_luminary", "gifter_icon", "gifter_hero", "gifter_legend",
 ];
 

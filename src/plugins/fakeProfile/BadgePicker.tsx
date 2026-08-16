@@ -47,28 +47,38 @@ export function BadgePicker() {
                 Pick any badges to show on your profile. Synced to HyperCord's backend and shown to every HyperCord user viewing your profile.
             </Forms.FormText>
 
-            {BADGE_CATALOG.map(category => (
-                <div key={category.title} className={cl("category")}>
-                    <Text variant="text-xs/semibold" className={cl("category-title")}>
-                        {category.title}
-                    </Text>
-                    <div className={cl("grid")}>
-                        {category.badges.map(badge => (
-                            <Checkbox
-                                key={badge.key}
-                                value={selected.has(badge.key)}
-                                onChange={(_, checked) => toggle(category, badge.key, checked)}
-                                size={18}
-                            >
-                                <span className={cl("badge-label")}>
-                                    <img src={badge.iconSrc} alt="" className={cl("badge-icon")} />
-                                    {t(badge.label)}
-                                </span>
-                            </Checkbox>
-                        ))}
+            {BADGE_CATALOG.map(category => {
+                // A hidden badge (no longer matches anything real, see
+                // CatalogBadge.hidden) is only worth showing here at all for
+                // someone who already has it picked - otherwise it'd be
+                // offering something nobody should newly pick, or an empty
+                // category (e.g. Quest) with nothing visible in it.
+                const visibleBadges = category.badges.filter(b => !b.hidden || selected.has(b.key));
+                if (!visibleBadges.length) return null;
+
+                return (
+                    <div key={category.title} className={cl("category")}>
+                        <Text variant="text-xs/semibold" className={cl("category-title")}>
+                            {category.title}
+                        </Text>
+                        <div className={cl("grid")}>
+                            {visibleBadges.map(badge => (
+                                <Checkbox
+                                    key={badge.key}
+                                    value={selected.has(badge.key)}
+                                    onChange={(_, checked) => toggle(category, badge.key, checked)}
+                                    size={18}
+                                >
+                                    <span className={cl("badge-label")}>
+                                        <img src={badge.iconSrc} alt="" className={cl("badge-icon")} />
+                                        {t(badge.label)}
+                                    </span>
+                                </Checkbox>
+                            ))}
+                        </div>
                     </div>
-                </div>
-            ))}
+                );
+            })}
         </div>
     );
 }
