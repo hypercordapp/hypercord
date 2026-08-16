@@ -76,6 +76,23 @@ const NITRO_TIER_CARD_ICON: Record<string, string> = {
     nitro_opal: `${NITRO_BADGES_BASE}/nitro-opal.webp`,
 };
 
+// Real Discord's own card passes a per-tier gradientColor prop (confirmed
+// live via CDP - saw `let p={gradientColor:h,...}` in the actual component)
+// that glows behind the badge - a real, verified detail this card was
+// missing (a plain flat background), not just a guessed decoration.
+// Couldn't extract the exact hex values live, so these are gem-accurate
+// approximations per tier.
+const NITRO_TIER_GRADIENT: Record<string, string> = {
+    nitro_bronze: "#cd7f32",
+    nitro_silver: "#c0c0c0",
+    nitro_gold: "#ffd700",
+    nitro_platinum: "#8fb2c9",
+    nitro_diamond: "#8c6fd1",
+    nitro_emerald: "#3fbf7f",
+    nitro_ruby: "#c93756",
+    nitro_opal: "#d98cc9",
+};
+
 // Matches real Discord's own Nitro tenure tooltip - confirmed live via CDP
 // against the actual running client (not guessed): Discord's own badge
 // renderer really does use a distinct "nitro" variant (vs "default" for
@@ -86,7 +103,7 @@ const NITRO_TIER_CARD_ICON: Record<string, string> = {
 // (not the real hashed CSS classes themselves, which are build-specific and
 // would drift on any Discord update) wrapped in the real Tooltip component
 // for floating/positioning.
-function NitroSinceHoverCard({ iconSrc, tierName, description }: { iconSrc: string; tierName: string; description: string; }) {
+function NitroSinceHoverCard({ iconSrc, tierName, description, gradientColor }: { iconSrc: string; tierName: string; description: string; gradientColor: string; }) {
     return (
         <div
             style={{
@@ -96,7 +113,9 @@ function NitroSinceHoverCard({ iconSrc, tierName, description }: { iconSrc: stri
                 justifyContent: "center",
                 padding: "16px 8px 4px",
                 minWidth: 180,
-                textAlign: "center"
+                textAlign: "center",
+                borderRadius: 8,
+                background: `radial-gradient(circle at 50% 28%, ${gradientColor}4d 0%, transparent 70%)`
             }}
         >
             <img src={iconSrc} alt="" style={{ width: 64, height: 64, objectFit: "cover" }} />
@@ -751,25 +770,29 @@ export default definePlugin({
                     // badge object ({ id: "premium_tenure_3_month_v2",
                     // description: "12.03.26 tarihinden beri abone" }, see
                     // REAL_BADGE_ID_PRIORITY's comment below) that this is
-                    // Nitro's real own format, distinct from Boost's.
-                    const dd = String(date.getDate()).padStart(2, "0");
-                    const mm = String(date.getMonth() + 1).padStart(2, "0");
+                    // Nitro's real own format, distinct from Boost's. TR
+                    // zero-pads (that captured example did); EN doesn't -
+                    // confirmed against a real screenshot reading "5/4/21",
+                    // not "05/04/21".
+                    const ddPadded = String(date.getDate()).padStart(2, "0");
+                    const mmPadded = String(date.getMonth() + 1).padStart(2, "0");
                     const yy = String(date.getFullYear()).slice(-2);
                     const description = isDiscordLocaleTurkish()
-                        ? `${dd}.${mm}.${yy} tarihinden beri abone`
-                        : `Subscriber since ${mm}/${dd}/${yy}`;
+                        ? `${ddPadded}.${mmPadded}.${yy} tarihinden beri abone`
+                        : `Subscriber since ${date.getMonth() + 1}/${date.getDate()}/${yy}`;
                     const title = `Nitro ${isDiscordLocaleTurkish() ? tierName.tr : tierName.en}`;
 
                     // Card gets the real ornate art; the actual small badge
                     // shown in the tray (the Tooltip's trigger) stays on
                     // badge.badge (the plain small icon) - never the card art.
                     const cardIconSrc = NITRO_TIER_CARD_ICON[badge.catalogKey!] ?? badge.badge;
+                    const gradientColor = NITRO_TIER_GRADIENT[badge.catalogKey!] ?? "#8c6fd1";
 
                     return {
                         id,
                         position: BadgePosition.START,
                         component: () => (
-                            <Tooltip text={<NitroSinceHoverCard iconSrc={cardIconSrc} tierName={title} description={description} />}>
+                            <Tooltip text={<NitroSinceHoverCard iconSrc={cardIconSrc} tierName={title} description={description} gradientColor={gradientColor} />}>
                                 {({ onMouseEnter, onMouseLeave }) => (
                                     <img
                                         src={badge.badge}
