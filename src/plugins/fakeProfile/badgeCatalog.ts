@@ -146,8 +146,20 @@ export const BADGE_CATALOG: CatalogCategory[] = [
     },
 ];
 
-export const BADGES_BY_KEY: Record<string, CatalogBadge> = Object.fromEntries(
-    BADGE_CATALOG.flatMap(c => c.badges).map(b => [b.key, b])
+// Object.create(null) (no Object.prototype) rather than a plain {} - this
+// gets indexed by a catalogKey that arrived over the network (see
+// _api/badges' getDonorBadges), and a plain object would resolve
+// BADGES_BY_KEY["__proto__"]/["constructor"]/["toString"] etc. to a real
+// (if useless) inherited value instead of undefined, since those aren't
+// actual own properties. Not exploitable for RCE/pollution here (nothing
+// ever writes through this lookup), but callers relying on a falsy/absent
+// result to fall back safely would silently misbehave instead.
+export const BADGES_BY_KEY: Record<string, CatalogBadge> = BADGE_CATALOG.flatMap(c => c.badges).reduce(
+    (map, b) => {
+        map[b.key] = b;
+        return map;
+    },
+    Object.create(null) as Record<string, CatalogBadge>
 );
 
 // The catalog above is grouped for the picker UI (related badges kept
