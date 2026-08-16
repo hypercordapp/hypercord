@@ -76,34 +76,36 @@ const NITRO_TIER_CARD_ICON: Record<string, string> = {
     nitro_opal: `${NITRO_BADGES_BASE}/nitro-opal.webp`,
 };
 
-// Gem-accurate per-tier glow color - explicitly requested to match a
-// reference screenshot even after directly inspecting Discord's own live
-// CSS three separate ways (inner content, outer tooltip container, rich-
-// tooltip modifier) found a flat background with no gradient anywhere on
-// the actual profile-hover tooltip component. Can't claim this glow is
-// verified real hover behavior - it may come from a different Discord
-// surface (the badge shop/collectibles gallery card does take a real
-// gradientColor prop) - but it's the deliberate look asked for, so it
-// stays even though the "real" component doesn't have it.
-const NITRO_TIER_GLOW: Record<string, string> = {
-    nitro_bronze: "#cd7f32",
-    nitro_silver: "#c0c0c0",
-    nitro_gold: "#ffd700",
-    nitro_platinum: "#8fb2c9",
-    nitro_diamond: "#8c6fd1",
-    nitro_emerald: "#3fbf7f",
-    nitro_ruby: "#c93756",
-    nitro_opal: "#d98cc9",
+// Per-tier gradient overlay colors - now CONFIRMED real (corrects the
+// earlier comment here): live-inspected an actual Nitro-tenure-holding
+// account's real hover card via CDP and walked the DOM up from the
+// tooltip's own <h2>. The real card is `.popoverGradientWrapper_d6f39b`
+// (`background: var(--background-surface-high); border-radius: var(
+// --radius-md); box-shadow: inset 0 0 0 1px var(--border-subtle),
+// var(--shadow-high);`) with a `::before` overlay set via inline custom
+// properties (`--custom-gradient-color-start/-end`) rendering
+// `linear-gradient(270deg, {start}/0.3 0%, {end}/0.3 100%)`. Discord names
+// these `--expressive-gradient-tenure-badge-{tier}-start/-end`; values
+// below are those tokens' final resolved oklab colors (getComputedStyle,
+// same 30% alpha Discord itself uses) for each of our 8 tiers.
+const NITRO_TIER_GRADIENT: Record<string, { start: string; end: string; }> = {
+    nitro_bronze: { start: "oklab(0.761956 0.0940579 0.128548 / 0.3)", end: "oklab(0.58824 0.162483 0.116043 / 0.3)" },
+    nitro_silver: { start: "oklab(0.707365 0.0000321865 0.0000141263 / 0.3)", end: "oklab(0.182216 0.00000828505 0.00000365078 / 0.3)" },
+    nitro_gold: { start: "oklab(0.819432 0.0158098 0.155322 / 0.3)", end: "oklab(0.809381 0.0378224 0.16191 / 0.3)" },
+    nitro_platinum: { start: "oklab(0.798265 -0.0751702 -0.0342426 / 0.3)", end: "oklab(0.481981 -0.0740651 -0.0362231 / 0.3)" },
+    nitro_diamond: { start: "oklab(0.615888 0.118784 -0.190369 / 0.3)", end: "oklab(0.443459 0.0842985 -0.173615 / 0.3)" },
+    nitro_emerald: { start: "oklab(0.833539 -0.18288 0.100645 / 0.3)", end: "oklab(0.568826 -0.126217 0.0636948 / 0.3)" },
+    nitro_ruby: { start: "oklab(0.611551 0.173128 0.0744966 / 0.3)", end: "oklab(0.318162 0.113704 0.0432772 / 0.3)" },
+    nitro_opal: { start: "oklab(0.716154 -0.0883016 -0.0391186 / 0.3)", end: "oklab(0.569336 -0.0479867 -0.183657 / 0.3)" },
 };
 
-// Text sizing/spacing/italic here IS the real Discord component's actual
-// loaded CSS (pulled live via CDP, not guessed): `.content{padding:0 12px
-// 16px;width:200px} .graphic{height:64px;margin:16px auto 0}
-// .titleGroup{margin-top:16px} .title{font-size:16px;font-weight:900;
-// line-height:16px;text-transform:uppercase} .titleNitro{font-style:
-// italic}`. The background glow is NOT part of that real CSS - see
-// NITRO_TIER_GLOW's comment above.
-function NitroSinceHoverCard({ iconSrc, tierName, description, glowColor }: { iconSrc: string; tierName: string; description: string; glowColor: string; }) {
+// Every value here is now CONFIRMED real (live-captured from an actual
+// Nitro tenure badge's own DOM/computed styles via CDP, not guessed):
+// card width 208px, `--radius-md` corners, `--space-16` (16px) padding,
+// title 21px/900 weight/italic/uppercase, description 14px/400 in
+// `var(--text-muted)`. See NITRO_TIER_GRADIENT's comment for the
+// background gradient's own source.
+function NitroSinceHoverCard({ iconSrc, tierName, description, gradient }: { iconSrc: string; tierName: string; description: string; gradient: { start: string; end: string; }; }) {
     return (
         <div
             style={{
@@ -111,23 +113,19 @@ function NitroSinceHoverCard({ iconSrc, tierName, description, glowColor }: { ic
                 flexDirection: "column",
                 alignItems: "center",
                 boxSizing: "border-box",
-                padding: "0 12px 16px",
-                width: 200,
+                padding: 16,
+                width: 208,
                 textAlign: "center",
-                borderRadius: 12,
-                // Tints the WHOLE card, not just a glow that fades to
-                // nothing near the edges/corners (a first attempt at this
-                // faded to fully transparent by 65%, leaving the plain dark
-                // tooltip background showing at the corners - a clearer
-                // reference screenshot showed the tint reaching every edge).
-                background: `radial-gradient(circle at 50% 22%, ${glowColor}80 0%, ${glowColor}33 55%, rgba(15,10,20,0.92) 100%)`
+                borderRadius: "var(--radius-md)",
+                boxShadow: "inset 0 0 0 1px var(--border-subtle), var(--shadow-high)",
+                background: `linear-gradient(270deg, ${gradient.start} 0%, ${gradient.end} 100%), var(--background-surface-high)`
             }}
         >
-            <div style={{ display: "flex", height: 64, justifyContent: "center", margin: "16px auto 0" }}>
+            <div style={{ display: "flex", height: 64, justifyContent: "center" }}>
                 <img src={iconSrc} alt="" style={{ height: 64, width: "auto", objectFit: "cover" }} />
             </div>
             <div style={{ marginTop: 16 }}>
-                <div style={{ fontSize: 16, fontWeight: 900, lineHeight: "16px", textTransform: "uppercase", fontStyle: "italic", color: "var(--header-primary)" }}>
+                <div style={{ fontSize: 21, fontWeight: 900, lineHeight: "24px", textTransform: "uppercase", fontStyle: "italic", color: "var(--header-primary)" }}>
                     {tierName}
                 </div>
                 <div style={{ marginTop: 4, fontSize: 14, color: "var(--text-muted)" }}>
@@ -795,13 +793,13 @@ export default definePlugin({
                     // shown in the tray (the Tooltip's trigger) stays on
                     // badge.badge (the plain small icon) - never the card art.
                     const cardIconSrc = NITRO_TIER_CARD_ICON[badge.catalogKey!] ?? badge.badge;
-                    const glowColor = NITRO_TIER_GLOW[badge.catalogKey!] ?? "#8c6fd1";
+                    const gradient = NITRO_TIER_GRADIENT[badge.catalogKey!] ?? NITRO_TIER_GRADIENT.nitro_diamond;
 
                     return {
                         id,
                         position: BadgePosition.START,
                         component: () => (
-                            <Tooltip text={<NitroSinceHoverCard iconSrc={cardIconSrc} tierName={title} description={description} glowColor={glowColor} />}>
+                            <Tooltip text={<NitroSinceHoverCard iconSrc={cardIconSrc} tierName={title} description={description} gradient={gradient} />}>
                                 {({ onMouseEnter, onMouseLeave }) => (
                                     <img
                                         src={badge.badge}
@@ -823,6 +821,9 @@ export default definePlugin({
             // card, so a picked tier + a boost-since date just swaps this
             // one badge's description to the real "since <date>" wording
             // instead of the tier label. No date set -> unchanged tier label.
+            // EN wording live-verified via CDP (a real account's actual
+            // tooltip): "Server boosting since Nov 12, 2023" - lowercase
+            // "boosting", not "Booster".
             let description = catalogEntry ? tBadge(catalogEntry.label) : badge.tooltip;
             if (badge.catalogKey?.startsWith("boost_") && boostSince) {
                 const date = new Date(boostSince);
@@ -831,7 +832,7 @@ export default definePlugin({
                     const year = date.getFullYear();
                     description = isDiscordLocaleTurkish()
                         ? `${day} ${TR_MONTH_ABBR[date.getMonth()]} ${year} tarihinden beri sunucu takviyesi yapıyor`
-                        : `Server Booster since ${EN_MONTH_ABBR[date.getMonth()]} ${day}, ${year}`;
+                        : `Server boosting since ${EN_MONTH_ABBR[date.getMonth()]} ${day}, ${year}`;
                 }
             }
 
