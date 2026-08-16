@@ -76,54 +76,41 @@ const NITRO_TIER_CARD_ICON: Record<string, string> = {
     nitro_opal: `${NITRO_BADGES_BASE}/nitro-opal.webp`,
 };
 
-// Real Discord's own card passes a per-tier gradientColor prop (confirmed
-// live via CDP - saw `let p={gradientColor:h,...}` in the actual component)
-// that glows behind the badge - a real, verified detail this card was
-// missing (a plain flat background), not just a guessed decoration.
-// Couldn't extract the exact hex values live, so these are gem-accurate
-// approximations per tier.
-const NITRO_TIER_GRADIENT: Record<string, string> = {
-    nitro_bronze: "#cd7f32",
-    nitro_silver: "#c0c0c0",
-    nitro_gold: "#ffd700",
-    nitro_platinum: "#8fb2c9",
-    nitro_diamond: "#8c6fd1",
-    nitro_emerald: "#3fbf7f",
-    nitro_ruby: "#c93756",
-    nitro_opal: "#d98cc9",
-};
-
-// Matches real Discord's own Nitro tenure tooltip - confirmed live via CDP
-// against the actual running client (not guessed): Discord's own badge
-// renderer really does use a distinct "nitro" variant (vs "default" for
-// every other badge, including Server Boost) for exactly this case, and the
-// real component is `padding:16px 8px 4px` column-flex, badge image, a
-// heading-xl/extrabold title, then a text-xs/muted description with
-// margin-top:4px - own inline-styled equivalent of that real structure
-// (not the real hashed CSS classes themselves, which are build-specific and
-// would drift on any Discord update) wrapped in the real Tooltip component
-// for floating/positioning.
-function NitroSinceHoverCard({ iconSrc, tierName, description, gradientColor }: { iconSrc: string; tierName: string; description: string; gradientColor: string; }) {
+// Real Discord's own Nitro tenure tooltip, byte-for-byte from its actual
+// loaded CSS (pulled live via CDP against the real running client, not
+// guessed - a previous pass here had mistakenly pulled these numbers from
+// an unrelated component, the badge-shop/collectibles gallery card, which
+// looks similar but isn't what renders on a profile). The REAL component
+// (`content__45458`/`graphic__45458`/`titleGroup__45458`/`title__45458`/
+// `titleNitro__45458`) has NO background gradient or glow at all - the
+// entire "nitro" variant is exactly one thing: the title becomes italic.
+// Real rules: .content{padding:0 12px 16px;width:200px} .graphic{height:
+// 64px;margin:16px auto 0} .titleGroup{margin-top:16px} .title{font-size:
+// 16px;font-weight:900;line-height:16px;text-transform:uppercase}
+// .titleNitro{font-style:italic}.
+function NitroSinceHoverCard({ iconSrc, tierName, description }: { iconSrc: string; tierName: string; description: string; }) {
     return (
         <div
             style={{
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
-                justifyContent: "center",
-                padding: "16px 8px 4px",
-                minWidth: 180,
-                textAlign: "center",
-                borderRadius: 8,
-                background: `radial-gradient(circle at 50% 28%, ${gradientColor}4d 0%, transparent 70%)`
+                boxSizing: "border-box",
+                padding: "0 12px 16px",
+                width: 200,
+                textAlign: "center"
             }}
         >
-            <img src={iconSrc} alt="" style={{ width: 64, height: 64, objectFit: "cover" }} />
-            <div style={{ marginTop: 8, fontSize: 20, fontWeight: 800, color: "var(--header-primary)", textTransform: "uppercase", letterSpacing: 0.5 }}>
-                {tierName}
+            <div style={{ display: "flex", height: 64, justifyContent: "center", margin: "16px auto 0" }}>
+                <img src={iconSrc} alt="" style={{ height: 64, width: "auto", objectFit: "cover" }} />
             </div>
-            <div style={{ marginTop: 4, fontSize: 12, color: "var(--text-muted)" }}>
-                {description}
+            <div style={{ marginTop: 16 }}>
+                <div style={{ fontSize: 16, fontWeight: 900, lineHeight: "16px", textTransform: "uppercase", fontStyle: "italic", color: "var(--header-primary)" }}>
+                    {tierName}
+                </div>
+                <div style={{ marginTop: 4, fontSize: 14, color: "var(--text-muted)" }}>
+                    {description}
+                </div>
             </div>
         </div>
     );
@@ -786,13 +773,12 @@ export default definePlugin({
                     // shown in the tray (the Tooltip's trigger) stays on
                     // badge.badge (the plain small icon) - never the card art.
                     const cardIconSrc = NITRO_TIER_CARD_ICON[badge.catalogKey!] ?? badge.badge;
-                    const gradientColor = NITRO_TIER_GRADIENT[badge.catalogKey!] ?? "#8c6fd1";
 
                     return {
                         id,
                         position: BadgePosition.START,
                         component: () => (
-                            <Tooltip text={<NitroSinceHoverCard iconSrc={cardIconSrc} tierName={title} description={description} gradientColor={gradientColor} />}>
+                            <Tooltip text={<NitroSinceHoverCard iconSrc={cardIconSrc} tierName={title} description={description} />}>
                                 {({ onMouseEnter, onMouseLeave }) => (
                                     <img
                                         src={badge.badge}
