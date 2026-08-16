@@ -164,8 +164,17 @@ async function init() {
     if (!IS_WEB && !IS_UPDATER_DISABLED) {
         runUpdateCheck();
 
-        // this tends to get really annoying, so only do this if the user has auto-update without notification enabled
-        if (Settings.autoUpdate && !Settings.autoUpdateNotification) {
+        // Only ever ran once per launch before (gated behind
+        // !autoUpdateNotification, which is false by default) - anyone who
+        // just leaves Discord open for days/weeks (the common case, closing
+        // the window doesn't kill the tray-resident process) never got
+        // rechecked again until they did a genuine full quit+relaunch.
+        // runUpdateCheck's own notifiedForUpdatesThisSession flag already
+        // caps the actual notification to once per session, so widening
+        // this to fire for anyone with autoUpdate on - not just the
+        // no-notification case - doesn't reintroduce repeat-notification
+        // spam, it just means a long-lived session actually gets checked.
+        if (Settings.autoUpdate) {
             setInterval(runUpdateCheck, 1000 * 60 * 30); // 30 minutes
         }
     }
