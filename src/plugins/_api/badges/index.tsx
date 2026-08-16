@@ -56,6 +56,23 @@ const NITRO_TIER_SHORT_NAME: Record<string, { en: string; tr: string; }> = {
     nitro_opal: { en: "Opal", tr: "Opal" },
 };
 
+// The real ornate winged-crest badge art (user-provided, HTTP-verified
+// Fandom-hosted copies of the actual Discord assets) - used ONLY inside the
+// hover card below, never as the small picker/tray icon (badgeCatalog.ts's
+// own iconSrc stays on the plain emoji lookalikes for that - using this art
+// there too was tried and explicitly reported wrong, it's sized/composed
+// for a big card, not a small badge).
+const NITRO_TIER_CARD_ICON: Record<string, string> = {
+    nitro_bronze: "https://static.wikia.nocookie.net/discord/images/4/4b/Nitro_Badge_Bronze.png/revision/latest?cb=20250125142910",
+    nitro_silver: "https://static.wikia.nocookie.net/discord/images/7/7d/Nitro_Badge_Silver.png/revision/latest?cb=20250125142948",
+    nitro_gold: "https://static.wikia.nocookie.net/discord/images/0/09/Nitro_Badge_Gold.png/revision/latest?cb=20250125143017",
+    nitro_platinum: "https://static.wikia.nocookie.net/discord/images/1/16/Nitro_Badge_Platinum.png/revision/latest?cb=20250125143201",
+    nitro_diamond: "https://static.wikia.nocookie.net/discord/images/6/63/Nitro_Badge_Diamond.png/revision/latest?cb=20250125143404",
+    nitro_emerald: "https://static.wikia.nocookie.net/discord/images/0/0a/Nitro_Badge_Emerald.png/revision/latest?cb=20250125143136",
+    nitro_ruby: "https://static.wikia.nocookie.net/discord/images/3/3a/Nitro_Badge_Ruby.png/revision/latest?cb=20250125143106",
+    nitro_opal: "https://static.wikia.nocookie.net/discord/images/d/dd/Nitro_Badge_Opal.png/revision/latest?cb=20250125143043",
+};
+
 // Matches the reference "NITRO YAKUT / 03.01.21 tarihinden beri abone" card
 // style a user screenshotted - own inline-styled component (not real
 // Discord CSS classes, which would need live introspection to get right and
@@ -734,11 +751,16 @@ export default definePlugin({
                         : `Nitro member since ${EN_MONTH_ABBR[date.getMonth()]} ${day}, ${year}`;
                     const title = `Nitro ${Settings.language === "tr" ? tierName.tr : tierName.en}`;
 
+                    // Card gets the real ornate art; the actual small badge
+                    // shown in the tray (the Tooltip's trigger) stays on
+                    // badge.badge (the plain small icon) - never the card art.
+                    const cardIconSrc = NITRO_TIER_CARD_ICON[badge.catalogKey!] ?? badge.badge;
+
                     return {
                         id,
                         position: BadgePosition.START,
                         component: () => (
-                            <Tooltip text={<NitroSinceHoverCard iconSrc={badge.badge} tierName={title} description={description} />}>
+                            <Tooltip text={<NitroSinceHoverCard iconSrc={cardIconSrc} tierName={title} description={description} />}>
                                 {({ onMouseEnter, onMouseLeave }) => (
                                     <img
                                         src={badge.badge}

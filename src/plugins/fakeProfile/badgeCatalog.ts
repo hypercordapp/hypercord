@@ -28,11 +28,13 @@ export interface CatalogCategory {
     exclusive?: boolean;
 }
 
-// Only still used for the hidden nitro_classic entry below - every
-// *pickable* Nitro tier moved off this emoji-lookalike set onto the real
-// ornate badge art (static.wikia.nocookie.net, user-provided + HTTP-
-// verified) once that was actually found. Kept for nitro_classic since no
-// equivalent real asset was sourced for it and it's hidden anyway.
+// Kept for every Nitro tier badge specifically - the real discord.com/assets
+// tenure SVGs looked worse here than this existing emoji set, so those stay
+// on the old lookalike images for the small picker/tray icon while every
+// other category uses the real ones. (The real ornate winged-crest art does
+// exist and is used, but only inside the Nitro-since hover card - see
+// _api/badges' NITRO_TIER_CARD_ICON - using it here too as the small icon
+// was tried and explicitly reported wrong.)
 function emojiUrl(id: string, animated = false) {
     return `https://cdn.discordapp.com/emojis/${id}.${animated ? "gif" : "png"}?size=64`;
 }
@@ -143,19 +145,20 @@ export const BADGE_CATALOG: CatalogCategory[] = [
             // Real Discord retired Nitro Classic as a purchasable tier -
             // hidden (not deleted), same reasoning as Active Developer above.
             { key: "nitro_classic", label: "Nitro Classic", iconSrc: emojiUrl("1528737728894734548"), hidden: true },
-            // Switched from the old emoji-lookalike set to the real ornate
-            // winged-crest badge art (Fandom-hosted copies of the actual
-            // Discord assets, user-provided + HTTP-verified) - the emoji set
-            // was picked as a stand-in before these were found; matches the
-            // reference screenshot exactly now.
-            { key: "nitro_bronze", label: "Nitro — Bronze (1 Month)", iconSrc: "https://static.wikia.nocookie.net/discord/images/4/4b/Nitro_Badge_Bronze.png/revision/latest?cb=20250125142910" },
-            { key: "nitro_silver", label: "Nitro — Silver (3 Months)", iconSrc: "https://static.wikia.nocookie.net/discord/images/7/7d/Nitro_Badge_Silver.png/revision/latest?cb=20250125142948" },
-            { key: "nitro_gold", label: "Nitro — Gold (6 Months)", iconSrc: "https://static.wikia.nocookie.net/discord/images/0/09/Nitro_Badge_Gold.png/revision/latest?cb=20250125143017" },
-            { key: "nitro_platinum", label: "Nitro — Platinum (12 Months)", iconSrc: "https://static.wikia.nocookie.net/discord/images/1/16/Nitro_Badge_Platinum.png/revision/latest?cb=20250125143201" },
-            { key: "nitro_diamond", label: "Nitro — Diamond (24 Months)", iconSrc: "https://static.wikia.nocookie.net/discord/images/6/63/Nitro_Badge_Diamond.png/revision/latest?cb=20250125143404" },
-            { key: "nitro_emerald", label: "Nitro — Emerald (36 Months)", iconSrc: "https://static.wikia.nocookie.net/discord/images/0/0a/Nitro_Badge_Emerald.png/revision/latest?cb=20250125143136" },
-            { key: "nitro_ruby", label: "Nitro — Ruby (60 Months)", iconSrc: "https://static.wikia.nocookie.net/discord/images/3/3a/Nitro_Badge_Ruby.png/revision/latest?cb=20250125143106" },
-            { key: "nitro_opal", label: "Nitro — Opal (72+ Months)", iconSrc: "https://static.wikia.nocookie.net/discord/images/d/dd/Nitro_Badge_Opal.png/revision/latest?cb=20250125143043" },
+            // Plain small badge icon everywhere (picker checkbox list, the
+            // normal in-tray badge) - the real ornate winged-crest art the
+            // user provided is deliberately NOT used here, only inside the
+            // Nitro-since hover card (see _api/badges' NITRO_TIER_CARD_ICON)
+            // - that's a big card image, not a small tray icon, and using
+            // it here too was explicitly reported wrong.
+            { key: "nitro_bronze", label: "Nitro — Bronze (1 Month)", iconSrc: emojiUrl("1365454925357645994") },
+            { key: "nitro_silver", label: "Nitro — Silver (3 Months)", iconSrc: emojiUrl("1365454972962996254") },
+            { key: "nitro_gold", label: "Nitro — Gold (6 Months)", iconSrc: emojiUrl("1365454994337435739") },
+            { key: "nitro_platinum", label: "Nitro — Platinum (12 Months)", iconSrc: emojiUrl("1436738175509987378") },
+            { key: "nitro_diamond", label: "Nitro — Diamond (24 Months)", iconSrc: emojiUrl("1365455075937488967") },
+            { key: "nitro_emerald", label: "Nitro — Emerald (36 Months)", iconSrc: emojiUrl("1365455096296509524") },
+            { key: "nitro_ruby", label: "Nitro — Ruby (60 Months)", iconSrc: emojiUrl("1365455125187137536") },
+            { key: "nitro_opal", label: "Nitro — Opal (72+ Months)", iconSrc: emojiUrl("1365455150260551740") },
         ]
     },
     {
