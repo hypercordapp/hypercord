@@ -284,6 +284,14 @@ const CATALOG_KEY_PRIORITY: Record<string, BadgePriority> = {
     verified_developer: BadgePriority.VerifiedDeveloper,
     certified_moderator: BadgePriority.CertifiedModerator,
 };
+// Strips Object.prototype - this gets indexed by a catalogKey extracted from
+// a donor badge's id (see getFakeBadgePriority below), which ultimately
+// traces back to a value a user's own client PUT to badge-api's self-badges
+// route. Without this, CATALOG_KEY_PRIORITY["__proto__"] (or "constructor"/
+// "toString"/etc.) would resolve to a real inherited object instead of
+// undefined, silently corrupting this badge's sort position instead of
+// falling through to LABEL_PRIORITY as intended.
+Object.setPrototypeOf(CATALOG_KEY_PRIORITY, null);
 
 // FakeProfile's catalog (badgeCatalog.ts) is the exact, known set of labels a
 // synced badge can have when it's a tier pick rather than an arbitrary donor/
