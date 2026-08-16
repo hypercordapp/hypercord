@@ -21,8 +21,9 @@ import "./fixDiscordBadgePadding.css";
 import { _getBadges, BadgePosition, BadgeUserArgs, ProfileBadge } from "@api/Badges";
 import ErrorBoundary from "@components/ErrorBoundary";
 import { openContributorModal } from "@components/settings/tabs";
+import { t } from "@i18n";
 import { openSettingsPage } from "@plugins/commandPalette/commands/openSettings";
-import { BADGE_CATALOG } from "@plugins/fakeProfile/badgeCatalog";
+import { BADGE_CATALOG, BADGES_BY_KEY } from "@plugins/fakeProfile/badgeCatalog";
 import { Devs } from "@utils/constants";
 import { copyWithToast } from "@utils/discord";
 import { Logger } from "@utils/Logger";
@@ -46,7 +47,12 @@ const ContributorBadge: ProfileBadge = {
 // `skuId`) captured live off another real user's profile by FakeProfile - not
 // something we host ourselves, unlike banner.
 interface ProfileOverride {
-    badges: Array<Record<"tooltip" | "badge", string>>;
+    // catalogKey is the FakeProfile badgeCatalog.ts key this badge was
+    // picked from (e.g. "bug_hunter_1") - optional since custom/admin badges
+    // and pre-catalogKey synced data don't have one, in which case the raw
+    // tooltip (baked in whatever language the owner had selected) is used as
+    // a fallback, see getDonorBadges below.
+    badges: Array<Record<"tooltip" | "badge", string> & { catalogKey?: string }>;
     avatar: string | null;
     banner: string | null;
     decoration: Record<string, unknown> | null;
@@ -339,7 +345,17 @@ function isBoostTier(priority: BadgePriority) {
     return priority >= BOOST_TIER_RANGE[0] && priority <= BOOST_TIER_RANGE[1];
 }
 
-function getFakeBadgePriority(badge: { description?: string; }): BadgePriority {
+// hypercord_donor_badge_<catalogKey>_<idx> (see getDonorBadges) - matched
+// before falling back to LABEL_PRIORITY so a localized (non-English)
+// tooltip, which LABEL_PRIORITY can never match, still sorts correctly.
+const DONOR_BADGE_ID_PATTERN = /^hypercord_donor_badge_(.+)_\d+$/;
+
+function getFakeBadgePriority(badge: { id?: string; description?: string; }): BadgePriority {
+    const catalogKey = DONOR_BADGE_ID_PATTERN.exec(badge.id ?? "")?.[1];
+    if (catalogKey) {
+        const priority = CATALOG_KEY_PRIORITY[catalogKey];
+        if (priority !== undefined) return priority;
+    }
     return LABEL_PRIORITY.get(badge.description ?? "") ?? BadgePriority.HyperCord;
 }
 
@@ -600,10 +616,17 @@ export default definePlugin({
 
     getDonorBadges(userId: string) {
         return ProfileOverrides[userId]?.badges?.map((badge, idx) => {
+            // Re-resolve the name from the live catalog + the VIEWER's own
+            // language setting, rather than trusting the tooltip string that
+            // got baked in (in whatever language the badge owner had
+            // selected) at sync time - see syncBadgesToBackend's comment.
+            // Falls back to the raw tooltip for custom/admin badges or data
+            // synced before catalogKey existed.
+            const catalogEntry = badge.catalogKey ? BADGES_BY_KEY[badge.catalogKey] : undefined;
             return {
-                id: `hypercord_donor_badge_${idx}`,
+                id: `hypercord_donor_badge_${badge.catalogKey ?? "custom"}_${idx}`,
                 iconSrc: badge.badge,
-                description: badge.tooltip,
+                description: catalogEntry ? t(catalogEntry.label) : badge.tooltip,
                 position: BadgePosition.START,
                 // Custom badge images come from arbitrary external URLs at
                 // arbitrary native resolutions/aspect ratios, unlike Discord's own

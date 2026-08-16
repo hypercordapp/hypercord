@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+import { t } from "@i18n";
 import { classNameFactory } from "@utils/css";
 import { Checkbox, Forms, Text } from "@webpack/common";
 
@@ -56,7 +57,7 @@ export function BadgePicker() {
                             >
                                 <span className={cl("badge-label")}>
                                     <img src={badge.iconSrc} alt="" className={cl("badge-icon")} />
-                                    {badge.label}
+                                    {t(badge.label)}
                                 </span>
                             </Checkbox>
                         ))}
