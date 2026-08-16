@@ -30,7 +30,7 @@ import { copyWithToast } from "@utils/discord";
 import { Logger } from "@utils/Logger";
 import { shouldShowContributorBadge } from "@utils/misc";
 import definePlugin from "@utils/types";
-import { ContextMenuApi, Menu, SnowflakeUtils, Toasts, UserStore } from "@webpack/common";
+import { ContextMenuApi, Menu, SnowflakeUtils, Toasts, Tooltip, UserStore } from "@webpack/common";
 
 const CONTRIBUTOR_BADGE = "https://raw.githubusercontent.com/hypercordapp/hypercord/main/docs/hcanim.png";
 
@@ -39,6 +39,51 @@ const CONTRIBUTOR_BADGE = "https://raw.githubusercontent.com/hypercordapp/hyperc
 // day + abbreviated month name + year, not a numeric date.
 const TR_MONTH_ABBR = ["Oca", "Şub", "Mar", "Nis", "May", "Haz", "Tem", "Ağu", "Eyl", "Eki", "Kas", "Ara"];
 const EN_MONTH_ABBR = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+// Short tier name for the Nitro hover card title ("NITRO YAKUT") - unlike
+// boost's tooltip (confirmed to be real Discord's own plain small tooltip),
+// a user-provided screenshot specifically showed Nitro tenure rendered as a
+// big styled card with just the tier color name, not the full catalog label
+// ("Nitro — Ruby (60 Months)").
+const NITRO_TIER_SHORT_NAME: Record<string, { en: string; tr: string; }> = {
+    nitro_bronze: { en: "Bronze", tr: "Bronz" },
+    nitro_silver: { en: "Silver", tr: "Gümüş" },
+    nitro_gold: { en: "Gold", tr: "Altın" },
+    nitro_platinum: { en: "Platinum", tr: "Platin" },
+    nitro_diamond: { en: "Diamond", tr: "Elmas" },
+    nitro_emerald: { en: "Emerald", tr: "Zümrüt" },
+    nitro_ruby: { en: "Ruby", tr: "Yakut" },
+    nitro_opal: { en: "Opal", tr: "Opal" },
+};
+
+// Matches the reference "NITRO YAKUT / 03.01.21 tarihinden beri abone" card
+// style a user screenshotted - own inline-styled component (not real
+// Discord CSS classes, which would need live introspection to get right and
+// could silently drift on any Discord update) wrapped in the real Tooltip
+// component for floating/positioning.
+function NitroSinceHoverCard({ iconSrc, tierName, description }: { iconSrc: string; tierName: string; description: string; }) {
+    return (
+        <div
+            style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 8,
+                padding: "16px 20px",
+                minWidth: 180,
+                textAlign: "center"
+            }}
+        >
+            <img src={iconSrc} alt="" style={{ width: 64, height: 64, objectFit: "cover" }} />
+            <div style={{ fontSize: 15, fontWeight: 700, color: "var(--header-primary)", textTransform: "uppercase", letterSpacing: 0.5 }}>
+                {tierName}
+            </div>
+            <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
+                {description}
+            </div>
+        </div>
+    );
+}
 
 const ContributorBadge: ProfileBadge = {
     id: "hypercord_contributor_badge",
@@ -73,6 +118,14 @@ interface ProfileOverride {
     // replace a picked Server Boost tier client-side (FakeProfile clears
     // one when the other is set) rather than show alongside it.
     boostSince: string | null;
+    // Same shape as boostSince, but doesn't replace anything - unlike Server
+    // Boost's fixed month tiers (a real duration, one plain badge either
+    // way), Nitro's picked tier (see selectedBadges/BadgePicker) plus this
+    // optional date together upgrade that SAME badge to a styled "tier name
+    // + since date" card (see getDonorBadges' nitro special-case below),
+    // matching a reference screenshot the user provided. No date set ->
+    // renders exactly like every other plain catalog badge, unchanged.
+    nitroSince: string | null;
     // A real, client-observed log of the user's own past usernames - never
     // hand-typed, see FakeProfile's recordUsernameChange(). Only entries
     // within the last 12 months are meant to be here at all (the client
@@ -654,6 +707,8 @@ export default definePlugin({
     },
 
     getDonorBadges(userId: string) {
+        const nitroSince = ProfileOverrides[userId]?.nitroSince;
+
         return ProfileOverrides[userId]?.badges?.map((badge, idx) => {
             // Re-resolve the name from the live catalog + the VIEWER's own
             // language setting, rather than trusting the tooltip string that
@@ -662,8 +717,45 @@ export default definePlugin({
             // Falls back to the raw tooltip for custom/admin badges or data
             // synced before catalogKey existed.
             const catalogEntry = badge.catalogKey ? BADGES_BY_KEY[badge.catalogKey] : undefined;
+            const id = `hypercord_donor_badge_${badge.catalogKey ?? "custom"}_${idx}`;
+
+            // Upgrades a picked Nitro tier badge to the styled hover card
+            // (see NitroSinceHoverCard) when a nitro-since date is also set
+            // - a plain badge like every other one below when it isn't, no
+            // behavior change for anyone not using this optional field.
+            const tierName = badge.catalogKey && NITRO_TIER_SHORT_NAME[badge.catalogKey];
+            if (tierName && nitroSince) {
+                const date = new Date(nitroSince);
+                if (!isNaN(date.getTime())) {
+                    const day = date.getDate();
+                    const year = date.getFullYear();
+                    const description = Settings.language === "tr"
+                        ? `${day} ${TR_MONTH_ABBR[date.getMonth()]} ${year} tarihinden beri abone`
+                        : `Nitro member since ${EN_MONTH_ABBR[date.getMonth()]} ${day}, ${year}`;
+                    const title = `Nitro ${Settings.language === "tr" ? tierName.tr : tierName.en}`;
+
+                    return {
+                        id,
+                        position: BadgePosition.START,
+                        component: () => (
+                            <Tooltip text={<NitroSinceHoverCard iconSrc={badge.badge} tierName={title} description={description} />}>
+                                {({ onMouseEnter, onMouseLeave }) => (
+                                    <img
+                                        src={badge.badge}
+                                        alt=""
+                                        onMouseEnter={onMouseEnter}
+                                        onMouseLeave={onMouseLeave}
+                                        style={{ width: 20, height: 20, objectFit: "cover" }}
+                                    />
+                                )}
+                            </Tooltip>
+                        ),
+                    };
+                }
+            }
+
             return {
-                id: `hypercord_donor_badge_${badge.catalogKey ?? "custom"}_${idx}`,
+                id,
                 iconSrc: badge.badge,
                 description: catalogEntry ? t(catalogEntry.label) : badge.tooltip,
                 position: BadgePosition.START,
