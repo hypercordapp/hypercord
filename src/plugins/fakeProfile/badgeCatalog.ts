@@ -128,13 +128,12 @@ export const BADGE_CATALOG: CatalogCategory[] = [
         ]
     },
     {
-        // Paid (120 Orbs) shop badge - couldn't find a verified real
-        // badge-icons.<hash>.png for this one specifically (unlike every
-        // other badge here), so this uses the Fandom-hosted copy of the
-        // real image instead of guessing a Discord CDN hash.
+        // Added then un-requested minutes later - hidden (not deleted) on
+        // the off chance anyone already picked it in that window, same
+        // reasoning as every other hidden flag in this file.
         title: "Orbs Apprentice",
         badges: [
-            { key: "orbs_apprentice", label: "Orbs Apprentice", iconSrc: "https://static.wikia.nocookie.net/discord/images/f/fa/OrbsApprentice.png/revision/latest?cb=20250529140649" },
+            { key: "orbs_apprentice", label: "Orbs Apprentice", iconSrc: "https://static.wikia.nocookie.net/discord/images/f/fa/OrbsApprentice.png/revision/latest?cb=20250529140649", hidden: true },
         ]
     },
     {

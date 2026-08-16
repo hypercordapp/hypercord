@@ -464,6 +464,47 @@ export async function syncBoostSinceToBackend(silent = false) {
     }
 }
 
+// Same shape as syncBoostSinceToBackend, but doesn't clear/get cleared by
+// anything - unlike Server Boost, a Nitro tier pick and this date aren't
+// alternatives, they combine (see _api/badges' getDonorBadges nitro
+// special-case: a picked tier badge renders as a styled "tier + since date"
+// card when this is set, and as a plain badge like before when it isn't).
+export async function syncNitroSinceToBackend(silent = false) {
+    const userId = UserStore.getCurrentUser()?.id;
+    if (!userId) return;
+
+    if (!settings.store.fakeNitroSince && !await hasBadgeAuth()) return;
+
+    const auth = await getBadgeAuthHeader();
+    if (!auth) return;
+
+    let data: string | null = null;
+    if (settings.store.fakeNitroSince) {
+        const date = new Date(settings.store.fakeNitroSince);
+        if (!isNaN(date.getTime())) data = date.toISOString();
+    }
+
+    try {
+        const res = await fetch(`${SELF_PROFILES_BASE}/${userId}/nitro-since`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json", Authorization: auth },
+            body: JSON.stringify({ data })
+        });
+
+        if (res.status === 409 && !silent) {
+            Toasts.show({
+                id: Toasts.genId(),
+                message: "Can't sync your nitro-since date - HyperCord staff already set one for you.",
+                type: Toasts.Type.FAILURE
+            });
+        } else if (res.ok) {
+            await BadgeAPIPlugin.refetchBadges();
+        }
+    } catch (e) {
+        logger.error("Failed to sync nitro-since date to HyperCord", e);
+    }
+}
+
 // A picked Server Boost tier (BadgePicker) and a typed boost-since date are
 // two different ways to represent the exact same real badge - real Discord
 // only ever shows one, so picking one clears the other instead of letting
@@ -487,14 +528,26 @@ export function clearBoostSinceIfTierPicked() {
 }
 
 // A hand-typed date defaults to today, which looks obviously fake on a
-// "since" badge - picks something between 1 month and 4 years back instead,
-// the same realistic range real long-tenure boosters actually fall in.
-function randomBoostSinceDate(): string {
-    const ONE_MONTH_MS = 30 * 24 * 60 * 60 * 1000;
-    const FOUR_YEARS_MS = 4 * 365 * 24 * 60 * 60 * 1000;
-    const agoMs = ONE_MONTH_MS + Math.random() * (FOUR_YEARS_MS - ONE_MONTH_MS);
-    return new Date(Date.now() - agoMs).toISOString().slice(0, 10);
+// "since" badge. A fully random day count (e.g. "1 month and 4 days ago")
+// looked equally fake - real tenure always lands close to an actual tier
+// threshold (1/2/3/6/9/12/18/24 months boosting, 1/3/6/12/24/36/60/72+
+// months Nitro), never some arbitrary in-between count, so this picks a
+// real tier length and jitters only the day within that month for realism,
+// instead of picking uniformly across the whole range (which kept landing
+// close to the 1-month floor far more often than it should have).
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+function randomSinceDate(tierMonths: number[]): string {
+    const months = tierMonths[Math.floor(Math.random() * tierMonths.length)];
+    const jitterDays = Math.floor(Math.random() * 27);
+    const date = new Date();
+    date.setMonth(date.getMonth() - months);
+    date.setTime(date.getTime() - jitterDays * DAY_MS);
+    return date.toISOString().slice(0, 10);
 }
+
+const BOOST_TIER_MONTHS = [1, 2, 3, 6, 9, 12, 18, 24];
+const NITRO_TIER_MONTHS = [1, 3, 6, 12, 24, 36, 60, 72];
 
 function RandomizeBoostSinceButton() {
     return (
@@ -506,9 +559,23 @@ function RandomizeBoostSinceButton() {
                 // this exact gotcha: setting settings.store.fakeBoostSince
                 // here alone silently did nothing) - call the same two
                 // effects onChange would have triggered directly instead.
-                settings.store.fakeBoostSince = randomBoostSinceDate();
+                settings.store.fakeBoostSince = randomSinceDate(BOOST_TIER_MONTHS);
                 clearBoostTierIfBoostSinceSet();
                 syncBoostSinceToBackend();
+            }}
+        >
+            🎲 Randomize date
+        </Button>
+    );
+}
+
+function RandomizeNitroSinceButton() {
+    return (
+        <Button
+            size={Button.Sizes.SMALL}
+            onClick={() => {
+                settings.store.fakeNitroSince = randomSinceDate(NITRO_TIER_MONTHS);
+                syncNitroSinceToBackend();
             }}
         >
             🎲 Randomize date
@@ -645,6 +712,7 @@ function syncOnConnect() {
     syncAllCosmeticsFromUser(true);
     syncCreatedAtToBackend(true);
     syncBoostSinceToBackend(true);
+    syncNitroSinceToBackend(true);
     syncFormerUsernameToBackend(true);
     syncFakeIdentityToBackend(true);
 }
@@ -700,6 +768,16 @@ export const settings = definePluginSettings({
     randomizeBoostSinceButton: {
         type: OptionType.COMPONENT,
         component: RandomizeBoostSinceButton
+    },
+    fakeNitroSince: {
+        type: OptionType.STRING,
+        description: "Fake \"Nitro since <date>\" shown on your picked Nitro tier badge below, format YYYY-MM-DD (leave empty to disable) - synced to HyperCord's backend and shown to every HyperCord user viewing your profile. Only affects display if you've also picked a Nitro tier badge below.",
+        default: "",
+        onChange: () => syncNitroSinceToBackend()
+    },
+    randomizeNitroSinceButton: {
+        type: OptionType.COMPONENT,
+        component: RandomizeNitroSinceButton
     },
     trackFormerUsernames: {
         type: OptionType.BOOLEAN,
