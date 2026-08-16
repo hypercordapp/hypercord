@@ -5,6 +5,7 @@
  */
 
 import { Settings } from "@api/Settings";
+import { LocaleStore } from "@webpack/common";
 
 import { tr } from "./tr";
 
@@ -26,4 +27,28 @@ export function t<T extends string | undefined | null>(text: T): T {
 
 export function toggleLanguage() {
     Settings.language = Settings.language === "tr" ? "en" : "tr";
+}
+
+/**
+ * True if DISCORD's own UI language (not our separate TR/EN toggle above) is
+ * Turkish - LocaleStore.locale is Discord's real locale string ("tr", "en-US",
+ * "de", ...), set from Discord's own Language setting.
+ */
+export function isDiscordLocaleTurkish(): boolean {
+    return LocaleStore.locale?.toLowerCase().startsWith("tr") ?? false;
+}
+
+/**
+ * Same as t(), but follows DISCORD's own UI language instead of our separate
+ * TR/EN toggle - for badge names/tooltips specifically, so a badge only
+ * reads in Turkish for a viewer whose Discord itself is already in Turkish
+ * (matches every other real Discord badge, which is localized the same way),
+ * regardless of what that viewer has our own toggle set to.
+ */
+export function tBadge<T extends string | undefined | null>(text: T): T {
+    if (!text) return text;
+    if (!isDiscordLocaleTurkish()) return text;
+
+    const translated = tr[text];
+    return (translated ?? text) as T;
 }
