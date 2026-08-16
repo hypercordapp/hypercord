@@ -55,21 +55,25 @@ const NITRO_TIER_SHORT_NAME: Record<string, { en: string; tr: string; }> = {
     nitro_opal: { en: "Opal", tr: "Opal" },
 };
 
-// The real ornate winged-crest badge art (user-provided, HTTP-verified
-// Fandom-hosted copies of the actual Discord assets) - used ONLY inside the
-// hover card below, never as the small picker/tray icon (badgeCatalog.ts's
-// own iconSrc stays on the plain emoji lookalikes for that - using this art
-// there too was tried and explicitly reported wrong, it's sized/composed
-// for a big card, not a small badge).
+// The real ornate winged-crest badge art (originally sourced from Fandom,
+// re-hosted in docs/nitro-badges/ - Fandom's static.wikia.nocookie.net
+// revision/latest redirect turned out unreliable, caught a live 404 on the
+// exact same URL that had 200'd moments earlier - same proven
+// raw.githubusercontent.com pattern already used for Gift Giving) - used
+// ONLY inside the hover card below, never as the small picker/tray icon
+// (badgeCatalog.ts's own iconSrc stays on the plain emoji lookalikes for
+// that - using this art there too was tried and explicitly reported wrong,
+// it's sized/composed for a big card, not a small badge).
+const NITRO_BADGES_BASE = "https://raw.githubusercontent.com/hypercordapp/hypercord/main/docs/nitro-badges";
 const NITRO_TIER_CARD_ICON: Record<string, string> = {
-    nitro_bronze: "https://static.wikia.nocookie.net/discord/images/4/4b/Nitro_Badge_Bronze.png/revision/latest?cb=20250125142910",
-    nitro_silver: "https://static.wikia.nocookie.net/discord/images/7/7d/Nitro_Badge_Silver.png/revision/latest?cb=20250125142948",
-    nitro_gold: "https://static.wikia.nocookie.net/discord/images/0/09/Nitro_Badge_Gold.png/revision/latest?cb=20250125143017",
-    nitro_platinum: "https://static.wikia.nocookie.net/discord/images/1/16/Nitro_Badge_Platinum.png/revision/latest?cb=20250125143201",
-    nitro_diamond: "https://static.wikia.nocookie.net/discord/images/6/63/Nitro_Badge_Diamond.png/revision/latest?cb=20250125143404",
-    nitro_emerald: "https://static.wikia.nocookie.net/discord/images/0/0a/Nitro_Badge_Emerald.png/revision/latest?cb=20250125143136",
-    nitro_ruby: "https://static.wikia.nocookie.net/discord/images/3/3a/Nitro_Badge_Ruby.png/revision/latest?cb=20250125143106",
-    nitro_opal: "https://static.wikia.nocookie.net/discord/images/d/dd/Nitro_Badge_Opal.png/revision/latest?cb=20250125143043",
+    nitro_bronze: `${NITRO_BADGES_BASE}/nitro-bronze.webp`,
+    nitro_silver: `${NITRO_BADGES_BASE}/nitro-silver.webp`,
+    nitro_gold: `${NITRO_BADGES_BASE}/nitro-gold.webp`,
+    nitro_platinum: `${NITRO_BADGES_BASE}/nitro-platinum.webp`,
+    nitro_diamond: `${NITRO_BADGES_BASE}/nitro-diamond.webp`,
+    nitro_emerald: `${NITRO_BADGES_BASE}/nitro-emerald.webp`,
+    nitro_ruby: `${NITRO_BADGES_BASE}/nitro-ruby.webp`,
+    nitro_opal: `${NITRO_BADGES_BASE}/nitro-opal.webp`,
 };
 
 // Matches real Discord's own Nitro tenure tooltip - confirmed live via CDP

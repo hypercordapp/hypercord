@@ -132,10 +132,12 @@ export const BADGE_CATALOG: CatalogCategory[] = [
     {
         // Added then un-requested minutes later - hidden (not deleted) on
         // the off chance anyone already picked it in that window, same
-        // reasoning as every other hidden flag in this file.
+        // reasoning as every other hidden flag in this file. Re-hosted (was
+        // Fandom-linked, that CDN's revision/latest redirect turned out
+        // unreliable) same as the Nitro tier art in _api/badges.
         title: "Orbs Apprentice",
         badges: [
-            { key: "orbs_apprentice", label: "Orbs Apprentice", iconSrc: "https://static.wikia.nocookie.net/discord/images/f/fa/OrbsApprentice.png/revision/latest?cb=20250529140649", hidden: true },
+            { key: "orbs_apprentice", label: "Orbs Apprentice", iconSrc: "https://raw.githubusercontent.com/hypercordapp/hypercord/main/docs/nitro-badges/orbs-apprentice.webp", hidden: true },
         ]
     },
     {
