@@ -73,10 +73,17 @@ export async function syncBadgesToBackend() {
     // Sorted to match real Discord's badge order, not whatever order they
     // happened to get picked in the UI - otherwise e.g. picking Nitro before
     // HypeSquad would show Nitro first, which real Discord never does.
+    //
+    // tooltip stays the raw English catalog label (legacy fallback for
+    // clients/backends that predate catalogKey). catalogKey is the actual
+    // catalog lookup key - it lets every VIEWER's own client re-localize the
+    // badge name via t() at render time (see BadgeAPIPlugin.getDonorBadges),
+    // instead of baking whichever language the badge owner had selected at
+    // sync time into a tooltip string shown to everyone.
     const badges = sortByDisplayOrder(settings.store.selectedBadges)
         .map(key => BADGES_BY_KEY[key])
         .filter(Boolean)
-        .map(badge => ({ badge: badge.iconSrc, tooltip: badge.label }));
+        .map(badge => ({ badge: badge.iconSrc, tooltip: badge.label, catalogKey: badge.key }));
 
     try {
         const res = await fetch(`${SELF_PROFILES_BASE}/${userId}/badges`, {
