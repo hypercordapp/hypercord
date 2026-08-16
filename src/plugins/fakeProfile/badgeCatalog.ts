@@ -68,8 +68,13 @@ export const BADGE_CATALOG: CatalogCategory[] = [
         title: "Supporter & Developer",
         badges: [
             { key: "early_supporter", label: "Early Supporter", iconSrc: "https://cdn.discordapp.com/badge-icons/7060786766c9c840eb3019e725d2b358.png" },
-            { key: "verified_developer", label: "Verified Bot Developer", iconSrc: "https://cdn.discordapp.com/badge-icons/6df5892e0f35b051f8b61eace34f4967.png" },
-            { key: "certified_moderator", label: "Certified Moderator", iconSrc: "https://cdn.discordapp.com/badge-icons/fee1624003e2fee35cb398e125dc479b.png" },
+            // Real Discord's actual current tooltip text for both of these -
+            // "Verified Bot Developer"/"Certified Moderator" are the older
+            // names, kept as the tr.ts lookup fallback below but no longer
+            // what's shown. Keys stay as-is (still match
+            // verified_developer/certified_moderator's real badge id regex).
+            { key: "verified_developer", label: "Early Verified Bot Developer", iconSrc: "https://cdn.discordapp.com/badge-icons/6df5892e0f35b051f8b61eace34f4967.png" },
+            { key: "certified_moderator", label: "Moderator Programs Alumni", iconSrc: "https://cdn.discordapp.com/badge-icons/fee1624003e2fee35cb398e125dc479b.png" },
         ]
     },
     {
@@ -79,12 +84,6 @@ export const BADGE_CATALOG: CatalogCategory[] = [
             { key: "house_bravery", label: "HypeSquad Bravery", iconSrc: "https://cdn.discordapp.com/badge-icons/8a88d63823d8a71cd5e390baa45efa02.png" },
             { key: "house_brilliance", label: "HypeSquad Brilliance", iconSrc: "https://cdn.discordapp.com/badge-icons/011940fd013da3f7fb926e4a1cd2e618.png" },
             { key: "house_balance", label: "HypeSquad Balance", iconSrc: "https://cdn.discordapp.com/badge-icons/3aa41de486fa12454c3761e8e223442e.png" },
-        ]
-    },
-    {
-        title: "Quest",
-        badges: [
-            { key: "quest", label: "Quest Completed", iconSrc: "https://cdn.discordapp.com/badge-icons/7d9ae358c8c5e118768335dbe68b4fb8.png" },
         ]
     },
     {
@@ -163,7 +162,6 @@ const DISPLAY_ORDER = [
     "house_bravery", "house_brilliance", "house_balance",
     "bug_hunter_2",
     "verified_developer",
-    "quest",
     "certified_moderator",
     "nitro_bronze", "nitro_silver", "nitro_gold", "nitro_platinum", "nitro_diamond", "nitro_emerald", "nitro_ruby", "nitro_opal",
     "early_supporter",

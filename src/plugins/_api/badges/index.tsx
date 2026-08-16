@@ -228,15 +228,14 @@ const enum BadgePriority {
     Boost1 = 9,
     ActiveDeveloper = 10,
     VerifiedDeveloper = 11,
-    Quest = 12,
     CertifiedModerator = 13,
     Unknown = 99,
     // Fake-only tier ladder (see badgeCatalog.ts's "Gift Giving" category) -
     // no real Discord badge to dedupe against, so unlike Nitro/Boost these
     // never need REAL_BADGE_ID_PRIORITY entries or isX() range helpers.
-    // Shows AFTER Quest AND Unknown on purpose (confirmed explicitly) -
-    // Legend is the top tier (shows first among the six), Patron the entry
-    // tier (last of the six).
+    // Shows AFTER Unknown on purpose (confirmed explicitly) - Legend is the
+    // top tier (shows first among the six), Patron the entry tier (last of
+    // the six).
     GifterLegend = 100,
     GifterHero = 101,
     GifterIcon = 102,
@@ -283,7 +282,6 @@ const CATALOG_KEY_PRIORITY: Record<string, BadgePriority> = {
     gifter_champion: BadgePriority.GifterChampion,
     gifter_patron: BadgePriority.GifterPatron,
     verified_developer: BadgePriority.VerifiedDeveloper,
-    quest: BadgePriority.Quest,
     certified_moderator: BadgePriority.CertifiedModerator,
 };
 
@@ -650,9 +648,13 @@ export default definePlugin({
                 onContextMenu(event, badge) {
                     ContextMenuApi.openContextMenu(event, () => <BadgeContextMenu badge={badge} />);
                 },
-                onClick() {
-                    openSettingsPage("equicord_plugins", "Plugins");
-                },
+                // Matches real Discord's own behavior for the Staff badge
+                // specifically (opens discord.com/company on click) - every
+                // other badge falls back to the existing "open plugin
+                // settings" shortcut.
+                onClick: badge.catalogKey === "staff"
+                    ? () => VencordNative.native.openExternal("https://discord.com/company")
+                    : () => openSettingsPage("equicord_plugins", "Plugins"),
             } satisfies ProfileBadge;
         });
     },
