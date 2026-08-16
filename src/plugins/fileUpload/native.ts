@@ -5,8 +5,78 @@
  */
 
 import { IpcMainInvokeEvent } from "electron";
+import { isIP } from "net";
 
 import { NativeUploadResult, NestUploadResponse } from "./types";
+
+// fetchFile below runs an unrestricted network fetch from the Electron MAIN
+// process on behalf of a URL that (via the message/image context menu path
+// in index.tsx -> getMediaUrl) can come straight from another Discord user's
+// message content (an embedded image or a masked link ending in a supported
+// extension) - not just from something the local user typed themselves. It's
+// also reachable directly by any renderer-side script at all via
+// VencordNative.pluginHelpers.FileUpload.fetchFile(url), since plugin native
+// IPC methods are exposed generically regardless of whether FileUpload is
+// even enabled. Unlike a renderer fetch(), a main-process fetch is not
+// subject to the app's CSP allowlist (src/main/csp) at all, so without this
+// check this handler is a full SSRF primitive - a crafted message link could
+// make a victim's client (via one context-menu click, or instantly via any
+// malicious theme/userplugin) reach internal-only network resources
+// (localhost services, cloud metadata endpoints, LAN admin panels, etc.) that
+// the CSP is specifically there to keep the renderer away from. Blocking
+// loopback/private/link-local/CGNAT literal IPs (and the usual localhost
+// hostname aliases) closes the actually-reachable exploit path; this can't
+// catch a DNS-rebinding attack against a public hostname that later resolves
+// to a private IP, but that's a much higher-effort attack than the trivial
+// "paste an internal IP as an image link" one this stops.
+const BLOCKED_HOSTNAMES = new Set(["localhost", "localhost.localdomain", "ip6-localhost", "ip6-loopback"]);
+
+function isPrivateOrLoopbackIPv4(ip: string): boolean {
+    const parts = ip.split(".").map(Number);
+    if (parts.length !== 4 || parts.some(p => Number.isNaN(p))) return true;
+
+    const [a, b] = parts;
+    if (a === 127) return true; // loopback
+    if (a === 10) return true; // private
+    if (a === 172 && b >= 16 && b <= 31) return true; // private
+    if (a === 192 && b === 168) return true; // private
+    if (a === 169 && b === 254) return true; // link-local, incl. cloud metadata 169.254.169.254
+    if (a === 100 && b >= 64 && b <= 127) return true; // CGNAT
+    if (a === 0) return true; // "this network"
+    return false;
+}
+
+function isPrivateOrLoopbackIPv6(ip: string): boolean {
+    const normalized = ip.toLowerCase();
+    if (normalized === "::1" || normalized === "::") return true;
+    if (normalized.startsWith("fc") || normalized.startsWith("fd")) return true; // unique local fc00::/7
+    if (/^fe[89ab]/.test(normalized)) return true; // link-local fe80::/10
+
+    const mapped = /^::ffff:(\d+\.\d+\.\d+\.\d+)$/.exec(normalized);
+    if (mapped) return isPrivateOrLoopbackIPv4(mapped[1]);
+
+    return false;
+}
+
+function isSafeExternalUrl(url: string): boolean {
+    let parsed: URL;
+    try {
+        parsed = new URL(url);
+    } catch {
+        return false;
+    }
+
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return false;
+
+    const hostname = parsed.hostname.toLowerCase();
+    if (BLOCKED_HOSTNAMES.has(hostname)) return false;
+
+    const ipVersion = isIP(hostname);
+    if (ipVersion === 4) return !isPrivateOrLoopbackIPv4(hostname);
+    if (ipVersion === 6) return !isPrivateOrLoopbackIPv6(hostname);
+
+    return true;
+}
 
 export async function uploadToNest(
     _: IpcMainInvokeEvent,
@@ -543,6 +613,10 @@ export async function fetchFile(
     url: string
 
 ): Promise<{ success: boolean; data?: ArrayBuffer; contentType?: string; error?: string; }> {
+
+    if (!isSafeExternalUrl(url)) {
+        return { success: false, error: "Refusing to fetch that URL" };
+    }
 
     try {
 

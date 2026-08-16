@@ -29,6 +29,20 @@ export function openDevTools(event: IpcMainInvokeEvent): boolean {
 }
 
 export async function complete(_: IpcMainInvokeEvent, appId: string, authCode: string, questTarget: number, questId: string, activityReferrer?: string): Promise<{ success: boolean; error: string | null; }> {
+    // appId is normally a real Discord application snowflake (see
+    // completion.ts's entry.task.applications[0].id) interpolated straight
+    // into a request host below (`${appId}.discordsays.com`) - but this
+    // native method, like every plugin native method, is exposed generically
+    // to ANY renderer script via VencordNative.pluginHelpers regardless of
+    // this plugin's own call site. An appId containing "#", "/", "@" etc.
+    // (e.g. "evil.tld#") would let a caller that isn't going through the
+    // normal quest-completion flow redirect this main-process request to an
+    // arbitrary host instead of *.discordsays.com. Snowflakes are always
+    // digits only, so reject anything else before it ever reaches a URL.
+    if (!/^\d+$/.test(appId)) {
+        return { success: false, error: "AUTH: invalid appId" };
+    }
+
     const authorization = await authorize(appId, authCode, questId, activityReferrer);
 
     if (authorization.error || !authorization.token) {
