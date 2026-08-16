@@ -28,33 +28,33 @@ export interface CatalogCategory {
     exclusive?: boolean;
 }
 
-// Kept for the Nitro tier badges specifically - the real discord.com/assets
-// tenure SVGs looked worse here than this existing emoji set, so those stay
-// on the old lookalike images while every other category uses the real ones.
+// Only still used for the hidden nitro_classic entry below - every
+// *pickable* Nitro tier moved off this emoji-lookalike set onto the real
+// ornate badge art (static.wikia.nocookie.net, user-provided + HTTP-
+// verified) once that was actually found. Kept for nitro_classic since no
+// equivalent real asset was sourced for it and it's hidden anyway.
 function emojiUrl(id: string, animated = false) {
     return `https://cdn.discordapp.com/emojis/${id}.${animated ? "gif" : "png"}?size=64`;
 }
 
-// Most of these are Discord's own real badge assets (discord.com/assets/<hash>.svg
-// and cdn.discordapp.com/badge-icons/<hash>.png) - the same files the real badges
-// use, not lookalike emoji - cross-checked against multiple independent public
-// badge-hash references before use. The Nitro tier badges are the exception: see
-// emojiUrl below.
+// Most of these are Discord's own real badge assets (discord.com/assets/<hash>.svg,
+// cdn.discordapp.com/badge-icons/<hash>.png, or static.wikia.nocookie.net Fandom-
+// hosted copies for the ones no direct Discord CDN hash could be found for) - the
+// same files/images the real badges use, not guessed lookalikes - cross-checked
+// against multiple independent public badge-hash references before use.
 //
 // discord.com/assets/<hash>.svg is Discord's WEBPACK BUNDLE asset output, tied to
 // a specific frontend build - Canary/PTB run different (usually newer) bundles
 // than Stable, so a hash captured against one channel can 404 on another (same
 // risk class already called out for regex patches elsewhere in this repo).
 // cdn.discordapp.com/badge-icons/<hash>.png is Discord's actual stable, channel-
-// independent badge CDN - every non-Nitro-tier badge in this catalog was moved
-// to it 2026-07-29 after Canary/PTB reports of missing images (Nitro tiers stay
-// on the emoji lookalikes below on purpose, see a399a50). Hashes cross-checked
-// against showBadgesInChat/index.tsx (staff/hypesquad/bug hunter/early
-// supporter) and turkwr/badge-scraper's public badge hash map (partner/
-// active_developer/verified_developer/certified_moderator/all boost_* tiers) -
-// every hash HTTP-verified (200) before use, not guessed. If a badge is ever
-// added here without a hash confirmed from one of those kinds of sources,
-// don't assume a discord.com/assets URL will keep working on every channel.
+// independent badge CDN. Hashes cross-checked against showBadgesInChat/index.tsx
+// (staff/hypesquad/bug hunter/early supporter) and turkwr/badge-scraper's public
+// badge hash map (partner/active_developer/verified_developer/
+// certified_moderator/all boost_* tiers) - every hash HTTP-verified (200) before
+// use, not guessed. If a badge is ever added here without a hash confirmed from
+// one of those kinds of sources, don't assume a discord.com/assets URL will keep
+// working on every channel.
 export const BADGE_CATALOG: CatalogCategory[] = [
     {
         title: "General",
@@ -143,14 +143,19 @@ export const BADGE_CATALOG: CatalogCategory[] = [
             // Real Discord retired Nitro Classic as a purchasable tier -
             // hidden (not deleted), same reasoning as Active Developer above.
             { key: "nitro_classic", label: "Nitro Classic", iconSrc: emojiUrl("1528737728894734548"), hidden: true },
-            { key: "nitro_bronze", label: "Nitro — Bronze (1 Month)", iconSrc: emojiUrl("1365454925357645994") },
-            { key: "nitro_silver", label: "Nitro — Silver (3 Months)", iconSrc: emojiUrl("1365454972962996254") },
-            { key: "nitro_gold", label: "Nitro — Gold (6 Months)", iconSrc: emojiUrl("1365454994337435739") },
-            { key: "nitro_platinum", label: "Nitro — Platinum (12 Months)", iconSrc: emojiUrl("1436738175509987378") },
-            { key: "nitro_diamond", label: "Nitro — Diamond (24 Months)", iconSrc: emojiUrl("1365455075937488967") },
-            { key: "nitro_emerald", label: "Nitro — Emerald (36 Months)", iconSrc: emojiUrl("1365455096296509524") },
-            { key: "nitro_ruby", label: "Nitro — Ruby (60 Months)", iconSrc: emojiUrl("1365455125187137536") },
-            { key: "nitro_opal", label: "Nitro — Opal (72+ Months)", iconSrc: emojiUrl("1365455150260551740") },
+            // Switched from the old emoji-lookalike set to the real ornate
+            // winged-crest badge art (Fandom-hosted copies of the actual
+            // Discord assets, user-provided + HTTP-verified) - the emoji set
+            // was picked as a stand-in before these were found; matches the
+            // reference screenshot exactly now.
+            { key: "nitro_bronze", label: "Nitro — Bronze (1 Month)", iconSrc: "https://static.wikia.nocookie.net/discord/images/4/4b/Nitro_Badge_Bronze.png/revision/latest?cb=20250125142910" },
+            { key: "nitro_silver", label: "Nitro — Silver (3 Months)", iconSrc: "https://static.wikia.nocookie.net/discord/images/7/7d/Nitro_Badge_Silver.png/revision/latest?cb=20250125142948" },
+            { key: "nitro_gold", label: "Nitro — Gold (6 Months)", iconSrc: "https://static.wikia.nocookie.net/discord/images/0/09/Nitro_Badge_Gold.png/revision/latest?cb=20250125143017" },
+            { key: "nitro_platinum", label: "Nitro — Platinum (12 Months)", iconSrc: "https://static.wikia.nocookie.net/discord/images/1/16/Nitro_Badge_Platinum.png/revision/latest?cb=20250125143201" },
+            { key: "nitro_diamond", label: "Nitro — Diamond (24 Months)", iconSrc: "https://static.wikia.nocookie.net/discord/images/6/63/Nitro_Badge_Diamond.png/revision/latest?cb=20250125143404" },
+            { key: "nitro_emerald", label: "Nitro — Emerald (36 Months)", iconSrc: "https://static.wikia.nocookie.net/discord/images/0/0a/Nitro_Badge_Emerald.png/revision/latest?cb=20250125143136" },
+            { key: "nitro_ruby", label: "Nitro — Ruby (60 Months)", iconSrc: "https://static.wikia.nocookie.net/discord/images/3/3a/Nitro_Badge_Ruby.png/revision/latest?cb=20250125143106" },
+            { key: "nitro_opal", label: "Nitro — Opal (72+ Months)", iconSrc: "https://static.wikia.nocookie.net/discord/images/d/dd/Nitro_Badge_Opal.png/revision/latest?cb=20250125143043" },
         ]
     },
     {
