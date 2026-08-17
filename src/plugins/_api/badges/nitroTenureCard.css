@@ -61,23 +61,40 @@
     -webkit-mask-image: radial-gradient(100% 100% at 50% 100%, transparent 60%, #000 100%);
 }
 
+/* No align-items here (default is stretch for a flex column) - matches
+   the real card's own content wrapper (measured align-items: normal, not
+   center). This isn't just cosmetic: it's what makes .hc-nitro-tenure-
+   header a full 208px-wide flex item, which is what constrains the title
+   text's own line-wrapping width - with align-items: center here instead,
+   the header (and the title inside it) shrink-wraps to its own content's
+   natural width, so the title never wraps the same way the real card's
+   title does at longer tier names (confirmed live: the real "NITRO
+   DIAMOND" title actually wraps to 2 lines at the real 208px width -
+   center-shrinking this container was why an earlier version measured
+   20px shorter than the real card). */
 .hc-nitro-tenure-content {
     position: relative;
     z-index: 1;
     display: flex;
     flex-direction: column;
-    align-items: center;
 }
 
+/* Margin is a real, exact-value quirk of the real card (live-measured via
+   CDP, not the generic "graphic" CSS-module rule text, which turned out to
+   belong to a less-specific variant): 0 top, 24px each side (208px content
+   width minus 160px graphic width, halved), and a NEGATIVE -6px bottom
+   that pulls the title up - collapses with the header's own 20px top
+   margin to a real 14px gap. Getting this wrong (a naive positive
+   margin-bottom here) was the reason an earlier version of this card
+   rendered visibly taller than the real one. */
 .hc-nitro-tenure-graphic {
     display: flex;
     align-items: center;
     justify-content: center;
     overflow: hidden;
-    width: 100%;
-    max-width: 160px;
+    width: 160px;
     aspect-ratio: 6 / 4;
-    margin: var(--space-16) auto var(--space-20);
+    margin: 0 24px -6px;
 }
 
 .hc-nitro-tenure-graphic img {
