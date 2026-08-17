@@ -163,7 +163,13 @@ function NitroSinceHoverCard({ iconSrc, tierName, description, tierToken }: { ic
                         <img src={iconSrc} alt="" />
                     </div>
                     <div className="hc-nitro-tenure-header">
-                        <h2 className="hc-nitro-tenure-title">{tierName}</h2>
+                        {/* lang="en" opts this element out of Chromium's Turkish
+                            case-folding rule (i -> İ) for CSS text-transform:
+                            uppercase, which otherwise turns "Nitro" into "Nİtro"
+                            whenever Discord's own client language is Turkish -
+                            "Nitro" is a brand name and must stay ASCII "NITRO"
+                            regardless of locale, matching real Discord. */}
+                        <h2 className="hc-nitro-tenure-title" lang="en">{tierName}</h2>
                         <div className="hc-nitro-tenure-desc">{description}</div>
                     </div>
                 </div>
