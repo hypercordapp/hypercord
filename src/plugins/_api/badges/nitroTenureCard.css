@@ -11,12 +11,19 @@
    via :has() (not assuming a specific role/class, since that wrapper is
    real Discord's own internal markup and not something we control) so only
    this card's own styling shows. */
+/* Discord's generic Tooltip content/outer wrapper both hardcode a 200px
+   width (fine for its usual short plain-text tooltips) with overflow:
+   hidden - live-measured this clipping the right ~40px off our 240px-wide
+   card before this override existed. */
 *:has(> .hc-nitro-tenure-card),
 *:has(> * > .hc-nitro-tenure-card) {
     background: transparent !important;
     padding: 0 !important;
     box-shadow: none !important;
     border-radius: var(--radius-md) !important;
+    width: auto !important;
+    max-width: none !important;
+    overflow: visible !important;
 }
 
 /* The generic Tooltip's own small plain caret triangle (a sibling of our
