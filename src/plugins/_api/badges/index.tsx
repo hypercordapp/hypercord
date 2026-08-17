@@ -55,6 +55,14 @@ const NITRO_TIER_SHORT_NAME: Record<string, { en: string; tr: string; }> = {
     nitro_ruby: { en: "Ruby", tr: "Yakut" },
     nitro_opal: { en: "Opal", tr: "Opal" },
 };
+// Same threat model + fix as CATALOG_KEY_PRIORITY further down (also
+// indexed by badge.catalogKey) - without this, a crafted "constructor"
+// catalogKey resolves to a real inherited function (truthy, so it passes
+// the `tierName &&` check below) instead of undefined, and .tr/.en on a
+// function are just undefined, silently producing a "Nitro undefined"
+// title instead of falling through to the plain-badge path like every
+// other unrecognized catalogKey does.
+Object.setPrototypeOf(NITRO_TIER_SHORT_NAME, null);
 
 // The real ornate winged-crest badge art (originally sourced from Fandom,
 // re-hosted in docs/nitro-badges/ - Fandom's static.wikia.nocookie.net
@@ -76,6 +84,14 @@ const NITRO_TIER_CARD_ICON: Record<string, string> = {
     nitro_ruby: `${NITRO_BADGES_BASE}/nitro-ruby.webp`,
     nitro_opal: `${NITRO_BADGES_BASE}/nitro-opal.webp`,
 };
+// Same threat model + same fix as CATALOG_KEY_PRIORITY/BADGES_BY_KEY below
+// (see that Object.setPrototypeOf's own comment) - this is indexed by
+// badge.catalogKey too, so a crafted "constructor"/"__proto__"/"toString"
+// key would otherwise resolve to a real inherited function instead of
+// undefined, silently bypassing the `?? badge.badge` fallback (a function
+// isn't nullish, so `??` doesn't catch it) instead of falling through as
+// every other unrecognized key does.
+Object.setPrototypeOf(NITRO_TIER_CARD_ICON, null);
 
 // Per-tier gradient glow - corrects the previous hardcoded-oklab approach
 // (which also had the mask/order/interpolation wrong, see nitroTenureCard.
@@ -99,6 +115,8 @@ const NITRO_TIER_TOKEN_NAME: Record<string, string> = {
     nitro_ruby: "ruby",
     nitro_opal: "opal",
 };
+// Same fix, same reason as NITRO_TIER_CARD_ICON above.
+Object.setPrototypeOf(NITRO_TIER_TOKEN_NAME, null);
 
 // Structure + every measurement here is CONFIRMED real: live-captured via
 // CDP against an actual Nitro tenure badge's own hover card (240px total
