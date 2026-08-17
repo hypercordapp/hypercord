@@ -11,10 +11,12 @@
    via :has() (not assuming a specific role/class, since that wrapper is
    real Discord's own internal markup and not something we control) so only
    this card's own styling shows. */
+
 /* Discord's generic Tooltip content/outer wrapper both hardcode a 200px
    width (fine for its usual short plain-text tooltips) with overflow:
    hidden - live-measured this clipping the right ~40px off our 240px-wide
    card before this override existed. */
+
 /* Anchored to .hc-nitro-tenure-wrapper (always the direct content root
    Discord's tooltip machinery wraps) rather than .hc-nitro-tenure-card
    itself, so this doesn't need updating again if the card's own internal
@@ -94,7 +96,6 @@
     border-radius: inherit;
     background: linear-gradient(270deg in oklab, var(--hc-tier-end) 0%, var(--hc-tier-start) 100%);
     mask-image: radial-gradient(100% 100% at 50% 100%, transparent 60%, #000 100%);
-    -webkit-mask-image: radial-gradient(100% 100% at 50% 100%, transparent 60%, #000 100%);
 }
 
 /* No align-items here (default is stretch for a flex column) - matches
@@ -152,6 +153,7 @@
 
 .hc-nitro-tenure-title {
     margin: 0;
+
     /* Real Discord uses its display/branding typeface here ("ABC Ginto
        Nord Discord"), not the regular gg sans body font the description
        below uses - live-computed, confirmed a real visible mismatch
