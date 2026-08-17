@@ -48,14 +48,23 @@ async function calculateGitChanges() {
     const isOutdated = await fetchUpdates();
     if (!isOutdated) return [];
 
-    const data = await githubGet(`/compare/${gitHash}...HEAD`);
+    try {
+        const data = await githubGet(`/compare/${gitHash}...HEAD`);
 
-    return data.commits.map((c: any) => ({
-        // github api only sends the long sha
-        hash: c.sha.slice(0, 7),
-        author: c.author?.login ?? c.commit?.author?.name ?? "Unknown Author",
-        message: c.commit.message.split("\n")[0]
-    }));
+        return data.commits.map((c: any) => ({
+            // github api only sends the long sha
+            hash: c.sha.slice(0, 7),
+            author: c.author?.login ?? c.commit?.author?.name ?? "Unknown Author",
+            message: c.commit.message.split("\n")[0]
+        }));
+    } catch {
+        // This changelog is purely cosmetic - the actual update (fetchUpdates
+        // above) already succeeded and populated PendingUpdates. A local
+        // build's commit hash can vanish from the remote's history entirely
+        // after a force-push/history rewrite, which 404s this compare call
+        // forever for that install - don't let that block the update itself.
+        return [{ hash: gitHash, author: "HyperCord", message: "A new update is available" }];
+    }
 }
 
 async function fetchUpdates() {
