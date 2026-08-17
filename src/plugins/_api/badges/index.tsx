@@ -20,9 +20,10 @@ import "./fixDiscordBadgePadding.css";
 import "./nitroTenureCard.css";
 
 import { _getBadges, BadgePosition, BadgeUserArgs, ProfileBadge } from "@api/Badges";
+import { Settings } from "@api/Settings";
 import ErrorBoundary from "@components/ErrorBoundary";
 import { openContributorModal } from "@components/settings/tabs";
-import { isDiscordLocaleTurkish, tBadge } from "@i18n";
+import { t } from "@i18n";
 import { openSettingsPage } from "@plugins/commandPalette/commands/openSettings";
 import { BADGE_CATALOG, BADGES_BY_KEY } from "@plugins/fakeProfile/badgeCatalog";
 import { Devs } from "@utils/constants";
@@ -828,10 +829,10 @@ export default definePlugin({
                     const ddPadded = String(date.getDate()).padStart(2, "0");
                     const mmPadded = String(date.getMonth() + 1).padStart(2, "0");
                     const yy = String(date.getFullYear()).slice(-2);
-                    const description = isDiscordLocaleTurkish()
+                    const description = Settings.language === "tr"
                         ? `${ddPadded}.${mmPadded}.${yy} tarihinden beri abone`
                         : `Subscriber since ${date.getMonth() + 1}/${date.getDate()}/${yy}`;
-                    const title = `Nitro ${isDiscordLocaleTurkish() ? tierName.tr : tierName.en}`;
+                    const title = `Nitro ${Settings.language === "tr" ? tierName.tr : tierName.en}`;
 
                     // Card gets the real ornate art; the actual small badge
                     // shown in the tray stays on badge.badge (the plain
@@ -881,13 +882,13 @@ export default definePlugin({
             // EN wording live-verified via CDP (a real account's actual
             // tooltip): "Server boosting since Nov 12, 2023" - lowercase
             // "boosting", not "Booster".
-            let description = catalogEntry ? tBadge(catalogEntry.label) : badge.tooltip;
+            let description = catalogEntry ? t(catalogEntry.label) : badge.tooltip;
             if (badge.catalogKey?.startsWith("boost_") && boostSince) {
                 const date = new Date(boostSince);
                 if (!isNaN(date.getTime())) {
                     const day = date.getDate();
                     const year = date.getFullYear();
-                    description = isDiscordLocaleTurkish()
+                    description = Settings.language === "tr"
                         ? `${day} ${TR_MONTH_ABBR[date.getMonth()]} ${year} tarihinden beri sunucu takviyesi yapıyor`
                         : `Server boosting since ${EN_MONTH_ABBR[date.getMonth()]} ${day}, ${year}`;
                 }
