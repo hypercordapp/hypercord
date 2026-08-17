@@ -17,6 +17,7 @@
 */
 
 import "./fixDiscordBadgePadding.css";
+import "./nitroTenureCard.css";
 
 import { _getBadges, BadgePosition, BadgeUserArgs, ProfileBadge } from "@api/Badges";
 import ErrorBoundary from "@components/ErrorBoundary";
@@ -29,7 +30,7 @@ import { copyWithToast } from "@utils/discord";
 import { Logger } from "@utils/Logger";
 import { shouldShowContributorBadge } from "@utils/misc";
 import definePlugin from "@utils/types";
-import { ContextMenuApi, Menu, SnowflakeUtils, Toasts, Tooltip, UserStore } from "@webpack/common";
+import { ContextMenuApi, Menu, SnowflakeUtils, Toasts, UserStore } from "@webpack/common";
 
 const CONTRIBUTOR_BADGE = "https://raw.githubusercontent.com/hypercordapp/hypercord/main/docs/hcanim.png";
 
@@ -76,60 +77,54 @@ const NITRO_TIER_CARD_ICON: Record<string, string> = {
     nitro_opal: `${NITRO_BADGES_BASE}/nitro-opal.webp`,
 };
 
-// Per-tier gradient overlay colors - now CONFIRMED real (corrects the
-// earlier comment here): live-inspected an actual Nitro-tenure-holding
-// account's real hover card via CDP and walked the DOM up from the
-// tooltip's own <h2>. The real card is `.popoverGradientWrapper_d6f39b`
-// (`background: var(--background-surface-high); border-radius: var(
-// --radius-md); box-shadow: inset 0 0 0 1px var(--border-subtle),
-// var(--shadow-high);`) with a `::before` overlay set via inline custom
-// properties (`--custom-gradient-color-start/-end`) rendering
-// `linear-gradient(270deg, {start}/0.3 0%, {end}/0.3 100%)`. Discord names
-// these `--expressive-gradient-tenure-badge-{tier}-start/-end`; values
-// below are those tokens' final resolved oklab colors (getComputedStyle,
-// same 30% alpha Discord itself uses) for each of our 8 tiers.
-const NITRO_TIER_GRADIENT: Record<string, { start: string; end: string; }> = {
-    nitro_bronze: { start: "oklab(0.761956 0.0940579 0.128548 / 0.3)", end: "oklab(0.58824 0.162483 0.116043 / 0.3)" },
-    nitro_silver: { start: "oklab(0.707365 0.0000321865 0.0000141263 / 0.3)", end: "oklab(0.182216 0.00000828505 0.00000365078 / 0.3)" },
-    nitro_gold: { start: "oklab(0.819432 0.0158098 0.155322 / 0.3)", end: "oklab(0.809381 0.0378224 0.16191 / 0.3)" },
-    nitro_platinum: { start: "oklab(0.798265 -0.0751702 -0.0342426 / 0.3)", end: "oklab(0.481981 -0.0740651 -0.0362231 / 0.3)" },
-    nitro_diamond: { start: "oklab(0.615888 0.118784 -0.190369 / 0.3)", end: "oklab(0.443459 0.0842985 -0.173615 / 0.3)" },
-    nitro_emerald: { start: "oklab(0.833539 -0.18288 0.100645 / 0.3)", end: "oklab(0.568826 -0.126217 0.0636948 / 0.3)" },
-    nitro_ruby: { start: "oklab(0.611551 0.173128 0.0744966 / 0.3)", end: "oklab(0.318162 0.113704 0.0432772 / 0.3)" },
-    nitro_opal: { start: "oklab(0.716154 -0.0883016 -0.0391186 / 0.3)", end: "oklab(0.569336 -0.0479867 -0.183657 / 0.3)" },
+// Per-tier gradient glow - corrects the previous hardcoded-oklab approach
+// (which also had the mask/order/interpolation wrong, see nitroTenureCard.
+// css). Live-inspected an actual Nitro-tenure-holding account's real hover
+// card via CDP (walked the DOM up from the tooltip's own <h2>, then dumped
+// document.styleSheets for the exact matching CSS text) - real Discord's
+// card sets `--custom-gradient-color-start/-end` directly to
+// `var(--expressive-gradient-tenure-badge-{tier}-start/-end)` and lets its
+// shared ::before rule consume those vars, rather than resolving them to a
+// static color. Referencing the real token names (not their resolved
+// values) means we inherit Discord's own alpha/light-dark handling for
+// free and never drift out of sync - just map our catalog keys to
+// Discord's tier name suffix.
+const NITRO_TIER_TOKEN_NAME: Record<string, string> = {
+    nitro_bronze: "bronze",
+    nitro_silver: "silver",
+    nitro_gold: "gold",
+    nitro_platinum: "platinum",
+    nitro_diamond: "diamond",
+    nitro_emerald: "emerald",
+    nitro_ruby: "ruby",
+    nitro_opal: "opal",
 };
 
-// Every value here is now CONFIRMED real (live-captured from an actual
-// Nitro tenure badge's own DOM/computed styles via CDP, not guessed):
-// card width 208px, `--radius-md` corners, `--space-16` (16px) padding,
-// title 21px/900 weight/italic/uppercase, description 14px/400 in
-// `var(--text-muted)`. See NITRO_TIER_GRADIENT's comment for the
-// background gradient's own source.
-function NitroSinceHoverCard({ iconSrc, tierName, description, gradient }: { iconSrc: string; tierName: string; description: string; gradient: { start: string; end: string; }; }) {
+// Structure + every measurement here is CONFIRMED real: live-captured via
+// CDP against an actual Nitro tenure badge's own hover card (240px total
+// width, not 208 - that's the inner content width once the real card's own
+// 16px padding is subtracted; an earlier version put both `width: 208` AND
+// `padding: 16` on the same border-box element, which actually rendered a
+// too-narrow 176px content area). Styling lives in nitroTenureCard.css -
+// see its comment for why the surrounding wrapper Discord itself provides
+// (see this component's call site below) gets its own chrome stripped via
+// a `:has()` rule rather than layered underneath this card.
+function NitroSinceHoverCard({ iconSrc, tierName, description, tierToken }: { iconSrc: string; tierName: string; description: string; tierToken: string; }) {
     return (
         <div
+            className="hc-nitro-tenure-card"
             style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                boxSizing: "border-box",
-                padding: 16,
-                width: 208,
-                textAlign: "center",
-                borderRadius: "var(--radius-md)",
-                boxShadow: "inset 0 0 0 1px var(--border-subtle), var(--shadow-high)",
-                background: `linear-gradient(270deg, ${gradient.start} 0%, ${gradient.end} 100%), var(--background-surface-high)`
-            }}
+                "--hc-tier-start": `var(--expressive-gradient-tenure-badge-${tierToken}-start)`,
+                "--hc-tier-end": `var(--expressive-gradient-tenure-badge-${tierToken}-end)`
+            } as React.CSSProperties}
         >
-            <div style={{ display: "flex", height: 64, justifyContent: "center" }}>
-                <img src={iconSrc} alt="" style={{ height: 64, width: "auto", objectFit: "cover" }} />
-            </div>
-            <div style={{ marginTop: 16 }}>
-                <div style={{ fontSize: 21, fontWeight: 900, lineHeight: "24px", textTransform: "uppercase", fontStyle: "italic", color: "var(--header-primary)" }}>
-                    {tierName}
+            <div className="hc-nitro-tenure-content">
+                <div className="hc-nitro-tenure-graphic">
+                    <img src={iconSrc} alt="" />
                 </div>
-                <div style={{ marginTop: 4, fontSize: 14, color: "var(--text-muted)" }}>
-                    {description}
+                <div className="hc-nitro-tenure-header">
+                    <h2 className="hc-nitro-tenure-title">{tierName}</h2>
+                    <div className="hc-nitro-tenure-desc">{description}</div>
                 </div>
             </div>
         </div>
@@ -790,27 +785,40 @@ export default definePlugin({
                     const title = `Nitro ${isDiscordLocaleTurkish() ? tierName.tr : tierName.en}`;
 
                     // Card gets the real ornate art; the actual small badge
-                    // shown in the tray (the Tooltip's trigger) stays on
-                    // badge.badge (the plain small icon) - never the card art.
+                    // shown in the tray stays on badge.badge (the plain
+                    // small icon) - never the card art.
                     const cardIconSrc = NITRO_TIER_CARD_ICON[badge.catalogKey!] ?? badge.badge;
-                    const gradient = NITRO_TIER_GRADIENT[badge.catalogKey!] ?? NITRO_TIER_GRADIENT.nitro_diamond;
+                    const tierToken = NITRO_TIER_TOKEN_NAME[badge.catalogKey!] ?? NITRO_TIER_TOKEN_NAME.nitro_diamond;
 
+                    // Deliberately NOT `component` + our own nested <Tooltip>
+                    // here (that was the first attempt) - live-debugged via
+                    // CDP against the real running client and found that
+                    // path renders fine but never actually opens on hover:
+                    // real Discord's current badge-tray code has no
+                    // `.component` handling left to react to at all in this
+                    // build (dumped the actual live module source), so our
+                    // Vencord-side patch for it silently does nothing here,
+                    // and a manually-nested Tooltip has no working popout
+                    // context to open into (confirmed by calling its own
+                    // onMouseEnter directly - runs with no error, no tooltip
+                    // ever mounts). Real Discord's OWN default badge path
+                    // already renders a rich node as the tooltip via an
+                    // internal `__unsupportedReactNodeAsText` prop fed
+                    // straight from `badge.description` with no string
+                    // coercion - that's the exact mechanism real tiered
+                    // tenure badges use for their own card. `description` is
+                    // typed as `string` on ProfileBadge, but nothing at
+                    // runtime enforces that; piggybacking on this instead
+                    // reuses Discord's own always-working hover/popout
+                    // wiring instead of trying to reproduce it.
                     return {
                         id,
+                        iconSrc: badge.badge,
+                        description: (<NitroSinceHoverCard iconSrc={cardIconSrc} tierName={title} description={description} tierToken={tierToken} />) as unknown as string,
                         position: BadgePosition.START,
-                        component: () => (
-                            <Tooltip text={<NitroSinceHoverCard iconSrc={cardIconSrc} tierName={title} description={description} gradient={gradient} />}>
-                                {({ onMouseEnter, onMouseLeave }) => (
-                                    <img
-                                        src={badge.badge}
-                                        alt=""
-                                        onMouseEnter={onMouseEnter}
-                                        onMouseLeave={onMouseLeave}
-                                        style={{ width: 20, height: 20, objectFit: "cover" }}
-                                    />
-                                )}
-                            </Tooltip>
-                        ),
+                        props: {
+                            style: { objectFit: "cover" as const }
+                        }
                     };
                 }
             }
