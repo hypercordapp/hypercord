@@ -15,8 +15,15 @@
    width (fine for its usual short plain-text tooltips) with overflow:
    hidden - live-measured this clipping the right ~40px off our 240px-wide
    card before this override existed. */
-*:has(> .hc-nitro-tenure-card),
-*:has(> * > .hc-nitro-tenure-card) {
+/* Anchored to .hc-nitro-tenure-wrapper (always the direct content root
+   Discord's tooltip machinery wraps) rather than .hc-nitro-tenure-card
+   itself, so this doesn't need updating again if the card's own internal
+   nesting changes - already bit us once (adding the caret wrapper div
+   shifted .hc-nitro-tenure-card one level deeper, silently un-matching a
+   card-anchored version of this same rule and bringing back the 200px
+   clip). */
+*:has(> .hc-nitro-tenure-wrapper),
+*:has(> * > .hc-nitro-tenure-wrapper) {
     background: transparent !important;
     padding: 0 !important;
     box-shadow: none !important;
@@ -27,11 +34,40 @@
 }
 
 /* The generic Tooltip's own small plain caret triangle (a sibling of our
-   card's wrapper, not something we render) doesn't match this card's size
-   or per-tier glow - hidden rather than left showing the wrong shape/color
-   next to it. */
-*:has(> * > .hc-nitro-tenure-card) [class*="caret"] {
+   wrapper, not something we render) is a different size/shape than the
+   real card's own caret below - hidden in favor of our own
+   .hc-nitro-tenure-caret, built from the real caret's actual SVG path. */
+*:has(> * > .hc-nitro-tenure-wrapper) [class*="caret"]:not(.hc-nitro-tenure-caret) {
     visibility: hidden;
+}
+
+.hc-nitro-tenure-wrapper {
+    position: relative;
+}
+
+/* Positioned outside .hc-nitro-tenure-card on purpose (see index.tsx's
+   comment) so the card's own overflow: hidden (needed for the glow mask)
+   doesn't clip it. Real values, live-measured: fill matches the card's own
+   background token, stroke matches the card's own border token, and the
+   gradient-tint layer real Discord sometimes adds resolves to fully
+   transparent for this caret variant - no per-tier tint needed. */
+.hc-nitro-tenure-caret {
+    position: absolute;
+    left: 50%;
+    top: calc(100% - 1px);
+    transform: translateX(-50%);
+    z-index: 2;
+    pointer-events: none;
+}
+
+.hc-nitro-tenure-caret-fill {
+    fill: var(--background-surface-high);
+}
+
+.hc-nitro-tenure-caret-stroke {
+    fill: none;
+    stroke: var(--border-subtle);
+    stroke-opacity: 1;
 }
 
 .hc-nitro-tenure-card {
@@ -116,6 +152,12 @@
 
 .hc-nitro-tenure-title {
     margin: 0;
+    /* Real Discord uses its display/branding typeface here ("ABC Ginto
+       Nord Discord"), not the regular gg sans body font the description
+       below uses - live-computed, confirmed a real visible mismatch
+       without this (this font isn't declared anywhere else this card's
+       DOM context inherits from). */
+    font-family: "ABC Ginto Nord Discord", "gg sans", serif, "Noto Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
     font-size: 21px;
     font-weight: 900;
     line-height: 20px;

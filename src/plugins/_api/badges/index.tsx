@@ -109,24 +109,44 @@ const NITRO_TIER_TOKEN_NAME: Record<string, string> = {
 // see its comment for why the surrounding wrapper Discord itself provides
 // (see this component's call site below) gets its own chrome stripped via
 // a `:has()` rule rather than layered underneath this card.
+// The caret's own colors are real too (live-captured): fill is the same
+// `var(--background-surface-high)` as the card itself, stroke is
+// `var(--border-subtle)` (same token as the card's own inset border), and
+// the gradient-tint path real Discord layers on top of some carets
+// resolves to fully transparent for this "custom position" variant - no
+// per-tier tint needed here, unlike the card's own glow. Wrapped in its
+// own outer div (not a child of .hc-nitro-tenure-card) because the card
+// needs `overflow: hidden` for its glow mask, which would otherwise clip
+// the caret poking out below the card's bottom edge.
 function NitroSinceHoverCard({ iconSrc, tierName, description, tierToken }: { iconSrc: string; tierName: string; description: string; tierToken: string; }) {
     return (
-        <div
-            className="hc-nitro-tenure-card"
-            style={{
-                "--hc-tier-start": `var(--expressive-gradient-tenure-badge-${tierToken}-start)`,
-                "--hc-tier-end": `var(--expressive-gradient-tenure-badge-${tierToken}-end)`
-            } as React.CSSProperties}
-        >
-            <div className="hc-nitro-tenure-content">
-                <div className="hc-nitro-tenure-graphic">
-                    <img src={iconSrc} alt="" />
-                </div>
-                <div className="hc-nitro-tenure-header">
-                    <h2 className="hc-nitro-tenure-title">{tierName}</h2>
-                    <div className="hc-nitro-tenure-desc">{description}</div>
+        <div className="hc-nitro-tenure-wrapper">
+            <div
+                className="hc-nitro-tenure-card"
+                style={{
+                    "--hc-tier-start": `var(--expressive-gradient-tenure-badge-${tierToken}-start)`,
+                    "--hc-tier-end": `var(--expressive-gradient-tenure-badge-${tierToken}-end)`
+                } as React.CSSProperties}
+            >
+                <div className="hc-nitro-tenure-content">
+                    <div className="hc-nitro-tenure-graphic">
+                        <img src={iconSrc} alt="" />
+                    </div>
+                    <div className="hc-nitro-tenure-header">
+                        <h2 className="hc-nitro-tenure-title">{tierName}</h2>
+                        <div className="hc-nitro-tenure-desc">{description}</div>
+                    </div>
                 </div>
             </div>
+            <svg className="hc-nitro-tenure-caret" width="22" height="14" viewBox="0 0 22 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path className="hc-nitro-tenure-caret-fill" d="M14.0535 9.39127C12.4557 11.2796 9.54425 11.2796 7.94646 9.39127L1 1Q0 0 1 0L21 0Q22 0 21 1L14.0535 9.39127Z" />
+                <mask id="hc-nitro-tenure-caret-mask" maskUnits="userSpaceOnUse" x="0" y="0" width="22" height="11">
+                    <path fill="#fff" d="M14.0535 9.39126C12.4557 11.2796 9.54425 11.2796 7.94646 9.39126L1 1Q0 0 1 0L21 0Q22 0 21 1L14.0535 9.39126Z" />
+                </mask>
+                <g mask="url(#hc-nitro-tenure-caret-mask)">
+                    <path className="hc-nitro-tenure-caret-stroke" d="M13.6572 9.13184C12.2604 10.761 9.73957 10.761 8.34277 9.13184L1.0869141 0.5Q0.0869141 -0.5 1.0869141 -0.5L20.9131 -0.5Q21.9131 -0.5 20.9131 0.5L13.6572 9.13184Z" />
+                </g>
+            </svg>
         </div>
     );
 }
