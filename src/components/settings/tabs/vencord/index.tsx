@@ -39,7 +39,11 @@ import { MacOSVibrancySettings } from "./MacVibrancySettings";
 import { NotificationSection } from "./NotificationSettings";
 import { WindowsMaterialSettings } from "./WindowsMaterialSettings";
 
-const HC_MASCOT_IMAGE = "https://raw.githubusercontent.com/hypercordapp/hypercord/main/docs/logo.png";
+// Was raw.githubusercontent.com directly - moved to badge-api's own cached
+// CDN 2026-08-17 after a real GitHub-wide raw-content outage broke most of
+// the client's images at once (see _api/badges' CONTRIBUTOR_BADGE comment
+// for the full story).
+const HC_MASCOT_IMAGE = "https://api.hypercord.pro/img/ed58e20b2a91da30fa130ce97271d37719cba5ae063b5539cd5508049026f584.png";
 const VENNIE_DONATOR_IMAGE = HC_MASCOT_IMAGE;
 const COZY_CONTRIB_IMAGE = "https://cdn.discordapp.com/emojis/1026533070955872337.png";
 const DONOR_BACKGROUND_IMAGE = "https://media.discordapp.net/stickers/1311070116305436712.png?size=2048";

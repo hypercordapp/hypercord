@@ -32,7 +32,16 @@ import { shouldShowContributorBadge } from "@utils/misc";
 import definePlugin from "@utils/types";
 import { ContextMenuApi, Menu, SnowflakeUtils, Toasts, UserStore } from "@webpack/common";
 
-const CONTRIBUTOR_BADGE = "https://raw.githubusercontent.com/hypercordapp/hypercord/main/docs/hcanim.png";
+// Was raw.githubusercontent.com directly - moved to badge-api's own cached
+// CDN (2026-08-17) after a real GitHub-wide outage ("Archive downloads and
+// raw repository content downloads" degraded ~50% per githubstatus.com,
+// confirmed live, not guessed) broke most of the client's images at once,
+// same failure mode already fixed today for the installer/changelog/plugin
+// pages - every user's client hitting raw.githubusercontent.com directly,
+// unauthenticated, with zero caching, was always one GitHub incident away
+// from exactly this. Content-hashed, so re-uploading the same file is a
+// no-op if this ever needs to be redone.
+const CONTRIBUTOR_BADGE = "https://api.hypercord.pro/img/b8f970fa4f5bfbba7dafe6588f143ac60c6e44fc88cdd4e05d44d0c3c3f690f9.png";
 
 // Matches real Discord's own "14 Şub 2026 tarihinden beri sunucu takviyesi
 // yapıyor" tenure-badge date format (confirmed against a real screenshot) -
@@ -67,22 +76,24 @@ Object.setPrototypeOf(NITRO_TIER_SHORT_NAME, null);
 // The real ornate winged-crest badge art (originally sourced from Fandom,
 // re-hosted in docs/nitro-badges/ - Fandom's static.wikia.nocookie.net
 // revision/latest redirect turned out unreliable, caught a live 404 on the
-// exact same URL that had 200'd moments earlier - same proven
-// raw.githubusercontent.com pattern already used for Gift Giving) - used
-// ONLY inside the hover card below, never as the small picker/tray icon
-// (badgeCatalog.ts's own iconSrc stays on the plain emoji lookalikes for
-// that - using this art there too was tried and explicitly reported wrong,
-// it's sized/composed for a big card, not a small badge).
-const NITRO_BADGES_BASE = "https://raw.githubusercontent.com/hypercordapp/hypercord/main/docs/nitro-badges";
+// exact same URL that had 200'd moments earlier) - used ONLY inside the
+// hover card below, never as the small picker/tray icon (badgeCatalog.ts's
+// own iconSrc stays on the plain emoji lookalikes for that - using this
+// art there too was tried and explicitly reported wrong, it's sized/
+// composed for a big card, not a small badge).
+//
+// Was raw.githubusercontent.com directly, same as CONTRIBUTOR_BADGE above -
+// see that constant's comment for why these moved to badge-api's own
+// cached CDN instead (a real GitHub-wide raw-content outage, not a guess).
 const NITRO_TIER_CARD_ICON: Record<string, string> = {
-    nitro_bronze: `${NITRO_BADGES_BASE}/nitro-bronze.webp`,
-    nitro_silver: `${NITRO_BADGES_BASE}/nitro-silver.webp`,
-    nitro_gold: `${NITRO_BADGES_BASE}/nitro-gold.webp`,
-    nitro_platinum: `${NITRO_BADGES_BASE}/nitro-platinum.webp`,
-    nitro_diamond: `${NITRO_BADGES_BASE}/nitro-diamond.webp`,
-    nitro_emerald: `${NITRO_BADGES_BASE}/nitro-emerald.webp`,
-    nitro_ruby: `${NITRO_BADGES_BASE}/nitro-ruby.webp`,
-    nitro_opal: `${NITRO_BADGES_BASE}/nitro-opal.webp`,
+    nitro_bronze: "https://api.hypercord.pro/img/7799bae39b2aecda5fe9126736f1a58dce10738d41653e8f7ae31e7bcbc5f92c.webp",
+    nitro_silver: "https://api.hypercord.pro/img/1db25c749a2310073a6bcab97be74a59e9c324c8de90bb443e8babb63b1643ee.webp",
+    nitro_gold: "https://api.hypercord.pro/img/f9ac3d376ef493313ac9bde7c618bd169d5829d8ef067af976c9433100665e79.webp",
+    nitro_platinum: "https://api.hypercord.pro/img/adcb8473879c2bf8b5fa1e5d66e38f2f1b4dc93d8f33ec4a94642a4c43541905.webp",
+    nitro_diamond: "https://api.hypercord.pro/img/2acec52ee8548556e01eb147953e49da72e37f7af3b98668afa91a75a5e3c3bb.webp",
+    nitro_emerald: "https://api.hypercord.pro/img/8762bd3f4b0a9ad936a7762865f18d8557949f124d6e84a5dd756fd0468d2d3d.webp",
+    nitro_ruby: "https://api.hypercord.pro/img/eb11988f7fa575c8304e1ff5bb532a19403de30bd22a7a83d04e310932cf315c.webp",
+    nitro_opal: "https://api.hypercord.pro/img/db55c67318dc0327f1a7397f5020f788c2e92d75c8193a081844d6a4c348bc24.webp",
 };
 // Same threat model + same fix as CATALOG_KEY_PRIORITY/BADGES_BY_KEY below
 // (see that Object.setPrototypeOf's own comment) - this is indexed by

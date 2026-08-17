@@ -90,7 +90,7 @@ function CheckBadge({ badge, author }: { badge: string; author: User; }): JSX.El
                         className={roleIcon}
                         name="HyperCord Contributor"
                         size={20}
-                        src={"https://raw.githubusercontent.com/hypercordapp/hypercord/main/docs/hcanim.png"}
+                        src={"https://api.hypercord.pro/img/b8f970fa4f5bfbba7dafe6588f143ac60c6e44fc88cdd4e05d44d0c3c3f690f9.png"}
                     />
                 </span>
             ) : null;
