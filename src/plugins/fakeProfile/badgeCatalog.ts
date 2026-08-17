@@ -137,7 +137,11 @@ export const BADGE_CATALOG: CatalogCategory[] = [
         // unreliable) same as the Nitro tier art in _api/badges.
         title: "Orbs Apprentice",
         badges: [
-            { key: "orbs_apprentice", label: "Orbs Apprentice", iconSrc: "https://raw.githubusercontent.com/hypercordapp/hypercord/main/docs/nitro-badges/orbs-apprentice.webp", hidden: true },
+            // Was raw.githubusercontent.com directly - moved to badge-api's
+            // own cached CDN 2026-08-17 after a real GitHub-wide raw-content
+            // outage broke most of the client's images at once (see
+            // _api/badges' CONTRIBUTOR_BADGE comment for the full story).
+            { key: "orbs_apprentice", label: "Orbs Apprentice", iconSrc: "https://api.hypercord.pro/img/c9fb1cbdfe913e75fc6296f73a967e24d8009e95c1d611bc4ad6dad115e868c2.webp", hidden: true },
         ]
     },
     {
@@ -184,26 +188,27 @@ export const BADGE_CATALOG: CatalogCategory[] = [
     {
         // Not a real Discord badge category (Discord has no persistent
         // "gifted Nitro to someone" badge) - a fake tenure-style tier ladder
-        // requested by users. Custom-made icons (docs/gifting-*.png, hosted
-        // via raw.githubusercontent.com same as CONTRIBUTOR_BADGE/docs/booster.png
-        // above), not reused Discord CDN assets like the other categories.
+        // requested by users. Custom-made icons, not reused Discord CDN
+        // assets like the other categories.
+        //
+        // Was raw.githubusercontent.com directly - moved to badge-api's own
+        // cached CDN 2026-08-17 after a real GitHub-wide raw-content outage
+        // broke most of the client's images at once (see _api/badges'
+        // CONTRIBUTOR_BADGE comment for the full story). Versioned source
+        // filenames (gifting-*-v3.png, not the original names) still matter
+        // if these ever need re-uploading - overwriting the same filename's
+        // bytes wasn't enough to make clients pick up a re-padded PNG,
+        // likely a same-URL image cache (Electron/Chromium disk cache,
+        // keyed by URL) serving the old bytes indefinitely.
         title: "Gift Giving",
         exclusive: true,
         badges: [
-            // Versioned filenames on purpose (not the original gifting-*.png
-            // names) - overwriting the same filename's bytes wasn't enough to
-            // make clients pick up a re-padded PNG, likely a same-URL image
-            // cache (Electron/Chromium disk cache, keyed by URL) serving the
-            // old bytes indefinitely. A genuinely new URL forces every client
-            // to actually fetch the new file. v2's 200px-art-on-330px-canvas
-            // (~60% fill) turned out too small once actually seen live -
-            // v3 dials back to a 250px canvas (~80% fill).
-            { key: "gifter_patron", label: "Gift Giver — Patron", iconSrc: "https://raw.githubusercontent.com/hypercordapp/hypercord/main/docs/gifting-patron-v3.png" },
-            { key: "gifter_champion", label: "Gift Giver — Champion", iconSrc: "https://raw.githubusercontent.com/hypercordapp/hypercord/main/docs/gifting-champion-v3.png" },
-            { key: "gifter_luminary", label: "Gift Giver — Luminary", iconSrc: "https://raw.githubusercontent.com/hypercordapp/hypercord/main/docs/gifting-luminary-v3.png" },
-            { key: "gifter_icon", label: "Gift Giver — Icon", iconSrc: "https://raw.githubusercontent.com/hypercordapp/hypercord/main/docs/gifting-icon-v3.png" },
-            { key: "gifter_hero", label: "Gift Giver — Hero", iconSrc: "https://raw.githubusercontent.com/hypercordapp/hypercord/main/docs/gifting-hero-v3.png" },
-            { key: "gifter_legend", label: "Gift Giver — Legend", iconSrc: "https://raw.githubusercontent.com/hypercordapp/hypercord/main/docs/gifting-legend-v3.png" },
+            { key: "gifter_patron", label: "Gift Giver — Patron", iconSrc: "https://api.hypercord.pro/img/9e3730fc97769570a356838c07a463d225609ca6cf9a2a79495e58259fb5763e.png" },
+            { key: "gifter_champion", label: "Gift Giver — Champion", iconSrc: "https://api.hypercord.pro/img/b71b2b2e3e411767bae8ec5c9126413183fba697c717a174c4facf28190d79f2.png" },
+            { key: "gifter_luminary", label: "Gift Giver — Luminary", iconSrc: "https://api.hypercord.pro/img/417b431fe8811e9b438c36fb44c4bbc9b6984b16ec40bd928450ebae3756c615.png" },
+            { key: "gifter_icon", label: "Gift Giver — Icon", iconSrc: "https://api.hypercord.pro/img/a6ca901c384a2b1380b18376c11265c611c577865774d8e54c1cd5612c7df412.png" },
+            { key: "gifter_hero", label: "Gift Giver — Hero", iconSrc: "https://api.hypercord.pro/img/15d69008fe5277b6c335756f99550768452f9579ce8f874b8694175db91ef1ed.png" },
+            { key: "gifter_legend", label: "Gift Giver — Legend", iconSrc: "https://api.hypercord.pro/img/001f318284d765d64d20f3d408625feafb9624b502bde18892d1203081a00e3e.png" },
         ]
     },
 ];

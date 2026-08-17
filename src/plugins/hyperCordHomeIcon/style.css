@@ -20,7 +20,10 @@
 }
 
 [data-list-item-id="guildsnav___home"] {
-    background-image: url("https://raw.githubusercontent.com/hypercordapp/hypercord/main/docs/logo.png") !important;
+    /* Was raw.githubusercontent.com directly - moved to badge-api's own
+       cached CDN 2026-08-17 after a real GitHub-wide raw-content outage
+       broke most of the client's images at once. */
+    background-image: url("https://api.hypercord.pro/img/ed58e20b2a91da30fa130ce97271d37719cba5ae063b5539cd5508049026f584.png") !important;
     background-size: cover;
     background-position: center;
     border-radius: 50%;
