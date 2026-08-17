@@ -27,7 +27,7 @@ function detectClient(): ClientInfo {
 export function makeDevBanner(state?: string): string | JSX.Element {
     const { RELEASE_CHANNEL, BUILD_NUMBER, VERSION_HASH } = window.GLOBAL_ENV;
     const buildChannel = names[RELEASE_CHANNEL] || RELEASE_CHANNEL.charAt(0).toUpperCase() + RELEASE_CHANNEL.slice(1);
-    const { chromiumVersion, electronVersion, getVersionInfo } = SettingsPlugin;
+    const { chromiumVersion, electronVersion } = SettingsPlugin;
     const format = settings.store.format ?? "{devbannerIcon} {buildChannel} {buildNumber} ({buildHash}) | {equicordIcon} {equicordName} {equicordVersion} ({equicordHash})";
     const baseFormat = state ?? format;
 
@@ -39,7 +39,16 @@ export function makeDevBanner(state?: string): string | JSX.Element {
         .replace(/{buildHash}/g, VERSION_HASH.slice(0, 9))
         .replace(/{equicordVersion}/g, VERSION)
         .replace(/{equicordHash}/g, gitHashShort)
-        .replace(/{equicordPlatform}/g, getVersionInfo(false))
+        // Was `getVersionInfo(false)`, destructured off SettingsPlugin -
+        // that method was never actually ported over from upstream
+        // Equicord's own settings plugin (only electronVersion/
+        // chromiumVersion/additionalInfo/getInfoRows exist here), so this
+        // threw "getVersionInfo is not a function" unconditionally on
+        // every single banner render, crashing the whole client (this
+        // function has no error boundary above it) - confirmed live via
+        // CDP with this plugin enabled: hard-crashed instantly with the
+        // real IS_DEV/IS_STANDALONE globals already used a few lines up.
+        .replace(/{equicordPlatform}/g, IS_DEV ? "Dev Build" : IS_STANDALONE ? "Standalone" : "Discord Desktop")
         .replace(/{electronVersion}/g, electronVersion)
         .replace(/{chromiumVersion}/g, chromiumVersion)
         .replace(/{clientName}/g, clientInfo.name)
