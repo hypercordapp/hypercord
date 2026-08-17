@@ -1,0 +1,109 @@
+/*
+ * Vencord, a modification for Discord's desktop app
+ * Copyright (c) 2022 Vendicated and contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+*/
+
+/* This card is fed into real Discord's own badge tooltip machinery via
+   `description` (see index.tsx's comment on the badge object below) rather
+   than a custom-built Tooltip, so whatever wrapper Discord puts around it
+   is real Discord's own - neutralize just its background/padding/shadow
+   via :has() (not assuming a specific role/class, since that wrapper is
+   real Discord's own internal markup and not something we control) so only
+   this card's own styling shows. */
+*:has(> .hc-nitro-tenure-card),
+*:has(> * > .hc-nitro-tenure-card) {
+    background: transparent !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    border-radius: var(--radius-md) !important;
+}
+
+/* The generic Tooltip's own small plain caret triangle (a sibling of our
+   card's wrapper, not something we render) doesn't match this card's size
+   or per-tier glow - hidden rather than left showing the wrong shape/color
+   next to it. */
+*:has(> * > .hc-nitro-tenure-card) [class*="caret"] {
+    visibility: hidden;
+}
+
+.hc-nitro-tenure-card {
+    position: relative;
+    box-sizing: border-box;
+    width: 240px;
+    padding: var(--space-16);
+    overflow: hidden;
+    border-radius: var(--radius-md);
+    background: var(--background-surface-high);
+    box-shadow: inset 0 0 0 1px var(--border-subtle), var(--shadow-high);
+}
+
+/* The tier glow - real Discord applies this as a masked ::before on the
+   card itself (radial-gradient mask centered at the bottom, so the glow is
+   strongest at the corners/top and fades out near the badge art/caret) -
+   confirmed via getComputedStyle(el, '::before') on the real card, not a
+   flat tinted overlay. */
+.hc-nitro-tenure-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    border-radius: inherit;
+    background: linear-gradient(270deg in oklab, var(--hc-tier-end) 0%, var(--hc-tier-start) 100%);
+    mask-image: radial-gradient(100% 100% at 50% 100%, transparent 60%, #000 100%);
+    -webkit-mask-image: radial-gradient(100% 100% at 50% 100%, transparent 60%, #000 100%);
+}
+
+.hc-nitro-tenure-content {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.hc-nitro-tenure-graphic {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    width: 100%;
+    max-width: 160px;
+    aspect-ratio: 6 / 4;
+    margin: var(--space-16) auto var(--space-20);
+}
+
+.hc-nitro-tenure-graphic img {
+    display: block;
+    height: 90px;
+    width: auto;
+    max-width: 100%;
+    object-fit: contain;
+}
+
+.hc-nitro-tenure-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: var(--space-20);
+    gap: 2px;
+    text-align: center;
+}
+
+.hc-nitro-tenure-title {
+    margin: 0;
+    font-size: 21px;
+    font-weight: 900;
+    line-height: 20px;
+    text-transform: uppercase;
+    font-style: italic;
+    color: var(--header-primary);
+}
+
+.hc-nitro-tenure-desc {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 18px;
+    color: var(--text-subtle);
+}
