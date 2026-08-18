@@ -62,13 +62,20 @@
     pointer-events: none;
 }
 
+/* Blends in a bit of --header-primary (always kept legible by any dark
+   theme, confirmed live: it stayed bright white even under a theme that
+   crushes --background-surface-high/--border-subtle to near-black) rather
+   than the raw surface/border tokens alone - those measured correctly
+   (real Discord's own values) but went fully invisible against an
+   aggressively-blacked-out popout background, making the caret disappear
+   even though it was rendering with the right geometry the whole time. */
 .hc-nitro-tenure-caret-fill {
-    fill: var(--background-surface-high);
+    fill: color-mix(in oklab, var(--background-surface-high) 85%, var(--header-primary) 15%);
 }
 
 .hc-nitro-tenure-caret-stroke {
     fill: none;
-    stroke: var(--border-subtle);
+    stroke: color-mix(in oklab, var(--border-subtle) 60%, var(--header-primary) 40%);
     stroke-opacity: 1;
 }
 
