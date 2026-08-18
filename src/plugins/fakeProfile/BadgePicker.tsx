@@ -6,7 +6,7 @@
 
 import { t } from "@i18n";
 import { classNameFactory } from "@utils/css";
-import { Checkbox, Forms, Text } from "@webpack/common";
+import { Button, Checkbox, Forms, Text, Toasts } from "@webpack/common";
 
 import { settings, syncBadgesToBackend } from ".";
 import { BADGE_CATALOG, CatalogCategory } from "./badgeCatalog";
@@ -32,12 +32,33 @@ function toggle(category: CatalogCategory, key: string, checked: boolean) {
     syncBadgesToBackend();
 }
 
+// Most-requested single feature per user feedback - one click to clear every
+// picked badge and resync, instead of unchecking each one (Nitro/Boost/Gift
+// Giving/HypeSquad categories especially only ever have one checked at a
+// time, but there's no single toggle that clears all categories at once).
+function clearAll() {
+    settings.store.selectedBadges = [];
+    syncBadgesToBackend();
+    Toasts.show({
+        id: Toasts.genId(),
+        message: t("All badges removed"),
+        type: Toasts.Type.SUCCESS
+    });
+}
+
 export function BadgePicker() {
     const selected = new Set(settings.store.selectedBadges);
 
     return (
         <div>
-            <Forms.FormTitle tag="h3">Badges</Forms.FormTitle>
+            <div className={cl("badges-header")}>
+                <Forms.FormTitle tag="h3">Badges</Forms.FormTitle>
+                {selected.size > 0 && (
+                    <Button size={Button.Sizes.SMALL} look={Button.Looks.LINK} color={Button.Colors.RED} onClick={clearAll}>
+                        {t("Remove All")}
+                    </Button>
+                )}
+            </div>
             <Forms.FormText className={cl("hint")}>
                 Pick any badges to show on your profile. Synced to HyperCord's backend and shown to every HyperCord user viewing your profile.
             </Forms.FormText>
