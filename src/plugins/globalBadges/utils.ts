@@ -39,7 +39,13 @@ const blockedMods = ["vencord", "equicord"];
 export async function loadBadges() {
     const url = settings.store.apiUrl.endsWith("/") ? settings.store.apiUrl + "users" : settings.store.apiUrl + "/users";
     const globalBadges = await fetch(url, { cache: "no-cache" }).then(r => r.json());
-    const filteredUsers: Record<string, typeof globalBadges.users[string]> = {};
+    // Object.create(null), not {} - keys come straight from the configurable
+    // remote API's JSON (Discord user IDs), and JSON.parse can produce a real
+    // own property literally named "__proto__". Indexing a plain {} with that
+    // key doesn't create an own prop, it reassigns filteredUsers' own
+    // prototype via the inherited accessor - a null-prototype object has no
+    // such accessor, so the same assignment just becomes a normal own prop.
+    const filteredUsers: Record<string, typeof globalBadges.users[string]> = Object.create(null);
 
     for (const key in globalBadges.users) {
         filteredUsers[key] = globalBadges.users[key].filter(b => {

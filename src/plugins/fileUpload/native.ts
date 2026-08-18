@@ -188,6 +188,14 @@ export async function uploadToS3(
     uploadUrl: string,
     headers: Record<string, string>
 ): Promise<NativeUploadResult> {
+    // Same SSRF primitive as fetchFile above (reachable directly via
+    // VencordNative.pluginHelpers.FileUpload.uploadToS3 regardless of plugin
+    // settings), plus it echoes the response body back on failure - block it
+    // the same way instead of trusting uploadUrl to be the user's own bucket.
+    if (!isSafeExternalUrl(uploadUrl)) {
+        return { success: false, error: "Refusing to upload to that URL" };
+    }
+
     try {
         const response = await fetch(uploadUrl, {
             method: "PUT",
@@ -529,9 +537,11 @@ export async function uploadToPixelDrain(
 }
 
 function isValidHttpsUrl(url: string): boolean {
+    // https-only *and* the same private/loopback/link-local blocklist as
+    // isSafeExternalUrl - "https" alone doesn't stop this hitting an internal
+    // service that happens to terminate TLS (e.g. an internal admin panel).
     try {
-        const parsed = new URL(url);
-        return parsed.protocol === "https:";
+        return new URL(url).protocol === "https:" && isSafeExternalUrl(url);
     } catch {
         return false;
     }
