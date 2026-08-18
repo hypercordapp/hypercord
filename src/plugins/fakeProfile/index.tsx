@@ -15,6 +15,7 @@ import { Devs } from "@utils/constants";
 import { fetchUserProfile, openInviteModal } from "@utils/discord";
 import { Logger } from "@utils/Logger";
 import definePlugin, { OptionType } from "@utils/types";
+import { waitFor } from "@webpack";
 import { FluxDispatcher, Forms, GuildMemberStore, Toasts, UserProfileStore, UserStore } from "@webpack/common";
 import virtualMerge from "virtual-merge";
 
@@ -928,6 +929,54 @@ function unpatchUserProfileStore() {
     originalGetUserProfile = undefined;
 }
 
+// Real Discord builds each connection's click-through link from its own
+// per-platform registry (same one Vencord's ShowConnections plugin looks up
+// via this exact findByProps signature - not a guess, matches its own
+// getPlatformUserUrl call) using the connection's type/id/name - our fake
+// connections don't have a real platform id, so that would either produce a
+// broken link or nothing clickable at all. Patched at this single shared
+// source (not the rendering component, which real Discord doesn't expose)
+// so it's covered everywhere a connection gets rendered - Discord's own
+// native profile UI and any Vencord plugin that also reads through this
+// registry - not just one specific component.
+let originalPlatformsGet: ((type: string) => any) | undefined;
+let patchedPlatformsModule: any;
+const patchedPlatforms = new WeakSet<object>();
+
+function patchConnectionPlatforms() {
+    if (originalPlatformsGet) return;
+
+    // May not be loaded into webpack's module cache yet this early in
+    // startup (same reason ShowConnections looks this up lazily too) -
+    // waitFor calls back immediately if it's already cached, or as soon as
+    // it loads otherwise, instead of silently finding nothing once.
+    waitFor(["isSupported", "getByUrl"], (platforms: any) => {
+        if (originalPlatformsGet) return;
+
+        patchedPlatformsModule = platforms;
+        originalPlatformsGet = platforms.get.bind(platforms);
+        platforms.get = (type: string) => {
+            const platform = originalPlatformsGet!(type);
+            if (!platform || patchedPlatforms.has(platform)) return platform;
+            patchedPlatforms.add(platform);
+
+            const originalGetUrl = platform.getPlatformUserUrl?.bind(platform);
+            if (originalGetUrl) {
+                platform.getPlatformUserUrl = (connection: { id: string; }) =>
+                    connection?.id?.startsWith("hypercord-fake-") ? "https://hypercord.pro" : originalGetUrl(connection);
+            }
+            return platform;
+        };
+    });
+}
+
+function unpatchConnectionPlatforms() {
+    if (!originalPlatformsGet) return;
+    patchedPlatformsModule.get = originalPlatformsGet;
+    originalPlatformsGet = undefined;
+    patchedPlatformsModule = undefined;
+}
+
 let originalGetMember: typeof GuildMemberStore.getMember | undefined;
 
 // Nameplate inside a server's member list/popout reads from GuildMemberStore
@@ -1081,6 +1130,7 @@ export default definePlugin({
         patchUserStore();
         patchUserProfileStore();
         patchGuildMemberStore();
+        patchConnectionPlatforms();
         applyPremiumOverride();
 
         syncOnConnect();
@@ -1098,5 +1148,6 @@ export default definePlugin({
         unpatchUserStore();
         unpatchUserProfileStore();
         unpatchGuildMemberStore();
+        unpatchConnectionPlatforms();
     }
 });
