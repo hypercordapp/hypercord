@@ -25,6 +25,7 @@ import { BADGES_BY_KEY, sortByDisplayOrder } from "./badgeCatalog";
 import { BadgePicker } from "./BadgePicker";
 import { ProfileColorPickers } from "./ColorPickers";
 import { ConnectionsPicker, FakeConnection } from "./Connections";
+import { HiddenBadgesPicker } from "./HiddenBadges";
 
 const logger = new Logger("FakeProfile");
 const SELF_PROFILES_BASE = "https://api.hypercord.pro/self/profiles";
@@ -123,6 +124,33 @@ export async function syncBadgesToBackend() {
         }
     } catch (e) {
         logger.error("Failed to sync badges to HyperCord", e);
+    }
+}
+
+// Separate from syncBadgesToBackend above on purpose - this hides real,
+// Discord-issued badges (e.g. Quest Completed), not FakeProfile's own picked
+// catalog ones, which already have their own remove flow. Synced (not
+// local-only) so the hide applies for every viewer, same reasoning as
+// badges/banner/etc - a real badge is otherwise visible to everyone
+// regardless of what this client does locally.
+export async function syncHiddenBadgesToBackend() {
+    const userId = UserStore.getCurrentUser()?.id;
+    if (!userId) return;
+
+    if (settings.store.hiddenRealBadges.length === 0 && !await hasBadgeAuth()) return;
+
+    const auth = await getBadgeAuthHeader();
+    if (!auth) return;
+
+    try {
+        const res = await fetch(`${SELF_PROFILES_BASE}/${userId}/hidden-badges`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json", Authorization: auth },
+            body: JSON.stringify({ data: settings.store.hiddenRealBadges })
+        });
+        if (res.ok) await BadgeAPIPlugin.refetchBadges();
+    } catch (e) {
+        logger.error("Failed to sync hidden badges to HyperCord", e);
     }
 }
 
@@ -634,6 +662,7 @@ export async function syncFakeIdentityToBackend(silent = false) {
 
 function syncOnConnect() {
     syncBadgesToBackend();
+    syncHiddenBadgesToBackend();
     syncAvatarToBackend(true);
     syncBannerToBackend(true);
     syncAllCosmeticsFromUser(true);
@@ -760,6 +789,11 @@ export const settings = definePluginSettings({
         type: OptionType.COMPONENT,
         default: [] as FakeConnection[],
         component: ConnectionsPicker
+    },
+    hiddenRealBadges: {
+        type: OptionType.COMPONENT,
+        default: [] as string[],
+        component: HiddenBadgesPicker
     }
 });
 
@@ -919,6 +953,20 @@ function patchUserProfileStore() {
         // as decoration/nameplate - not gated to isOwnId.
         const profileEffectOverride = BadgeAPIPlugin.getProfileEffectOverride(id);
         if (profileEffectOverride) profile.profileEffect = profileEffectOverride as any;
+
+        // Real, Discord-issued badges this profile's owner chose to hide -
+        // same not-gated-to-isOwnId reasoning as profileEffect above, a real
+        // badge is otherwise visible to every viewer regardless of what THIS
+        // client does locally, so this has to apply for whoever's profile is
+        // being rendered, not just your own. Filtering (rather than
+        // appending, like connectedAccounts above) is naturally idempotent -
+        // removing an already-absent id is a no-op, so this is safe to run
+        // on the same cached Record on every call without the compounding
+        // risk that bit connectedAccounts.
+        const hiddenRealBadges = BadgeAPIPlugin.getHiddenRealBadges(id);
+        if (hiddenRealBadges.length && profile.badges?.length) {
+            profile.badges = profile.badges.filter((b: { id: string; }) => !hiddenRealBadges.includes(b.id));
+        }
 
         return profile;
     }) as typeof UserProfileStore.getUserProfile;
@@ -1129,6 +1177,7 @@ export default definePlugin({
             applyPremiumOverride();
             await Promise.all([
                 syncBadgesToBackend(),
+                syncHiddenBadgesToBackend(),
                 syncAvatarToBackend(),
                 syncBannerToBackend(),
                 syncAllCosmeticsFromUser(),
@@ -1138,7 +1187,7 @@ export default definePlugin({
             ]);
             Toasts.show({
                 id: Toasts.genId(),
-                message: "Synced badges, avatar, banner, avatar decoration, nameplate, profile effect, display name style, creation date, former username, and fake identity to HyperCord!",
+                message: "Synced badges, hidden badges, avatar, banner, avatar decoration, nameplate, profile effect, display name style, creation date, former username, and fake identity to HyperCord!",
                 type: Toasts.Type.SUCCESS
             });
         }
