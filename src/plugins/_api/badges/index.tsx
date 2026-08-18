@@ -87,14 +87,14 @@ Object.setPrototypeOf(NITRO_TIER_SHORT_NAME, null);
 // see that constant's comment for why these moved to badge-api's own
 // cached CDN instead (a real GitHub-wide raw-content outage, not a guess).
 const NITRO_TIER_CARD_ICON: Record<string, string> = {
-    nitro_bronze: "https://api.hypercord.pro/img/741134debc004f79fe677f5cc2bcc2071204b4e436dd92bf51ba69017e7fd7b3.png",
-    nitro_silver: "https://api.hypercord.pro/img/83d3c4e020a86bca8ff6cbd7d963d2825a86047f6f2dbd7503363c4a67822b88.png",
-    nitro_gold: "https://api.hypercord.pro/img/63c11f70510a80c2ca02d67865bbc4290310c96b10375627885379d6240de4e2.png",
-    nitro_platinum: "https://api.hypercord.pro/img/0de2082c767c0a8f8f255e5100a76ac9f1f064d6ab6ca5cc1ab7bb96c6ce4079.png",
-    nitro_diamond: "https://api.hypercord.pro/img/617a9b4e06b1e1e4e3c0ff8df34b5b50ac251aca46b57929e7dc0a696f8289b3.png",
-    nitro_emerald: "https://api.hypercord.pro/img/e1c9b5ca868e82bb59685963c82d67c8551c684a917099d9db3b9c06dad9d8e3.png",
-    nitro_ruby: "https://api.hypercord.pro/img/301aca58a1c1be9cfb48b488dc23bcf2754e935e02d5886dfb512eaf8da83ccf.png",
-    nitro_opal: "https://api.hypercord.pro/img/4cd437d6b81c02b33bf69e24208279a52d030c06336673394354426cb47498da.png",
+    nitro_bronze: "https://api.hypercord.pro/img/bcb5eb9a63891be7781a5b033d676c48a2e8c96039ffd26b35dc6394b8c02c85.png",
+    nitro_silver: "https://api.hypercord.pro/img/38a99e001394089cea1c2264ffe64e8acfc6b6d4005f0e87c65d3e1d705c67db.png",
+    nitro_gold: "https://api.hypercord.pro/img/34551e09104e17dbfba18e7a7b4ff3d4c2ef82854c067058d9c64bab6fba6c16.png",
+    nitro_platinum: "https://api.hypercord.pro/img/a6f4aa2d73fff3f858f23f044a4c4e236d12ddefc185c3087dc6483e285f7aeb.png",
+    nitro_diamond: "https://api.hypercord.pro/img/fd6c2306163b2acf1ff996303fa523a39063aed9353430beeced8e11830da761.png",
+    nitro_emerald: "https://api.hypercord.pro/img/bd1e4534c7343a17f17b20b038073615b7e4d8c9eeb8e371661c01001dd65760.png",
+    nitro_ruby: "https://api.hypercord.pro/img/1b185ab83870c836a9f506105803131506bf454899f1f33c11f281fb9afe27a5.png",
+    nitro_opal: "https://api.hypercord.pro/img/e4d888d3d857be56d2e3a0a170f31ab938d0b5ece208369f8d64aefd2380a87f.png",
 };
 // Same threat model + same fix as CATALOG_KEY_PRIORITY/BADGES_BY_KEY below
 // (see that Object.setPrototypeOf's own comment) - this is indexed by
