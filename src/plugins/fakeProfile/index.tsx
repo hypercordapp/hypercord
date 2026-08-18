@@ -8,16 +8,18 @@ import "./styles.css";
 
 import * as DataStore from "@api/DataStore";
 import { definePluginSettings } from "@api/Settings";
+import { Link } from "@components/Link";
+import { t } from "@i18n";
 import BadgeAPIPlugin from "@plugins/_api/badges";
 import { Devs } from "@utils/constants";
-import { fetchUserProfile } from "@utils/discord";
+import { fetchUserProfile, openInviteModal } from "@utils/discord";
 import { Logger } from "@utils/Logger";
 import definePlugin, { OptionType } from "@utils/types";
 import { FluxDispatcher, Forms, GuildMemberStore, Toasts, UserProfileStore, UserStore } from "@webpack/common";
 import virtualMerge from "virtual-merge";
 
 import { AvatarUploadButton } from "./AvatarUpload";
-import { clearBadgeAuth, getBadgeAuthHeader, hasBadgeAuth } from "./badgeAuth";
+import { clearBadgeAuth, getBadgeAuthHeader, hasBadgeAuth, HYPERCORD_INVITE_CODE } from "./badgeAuth";
 import { BADGES_BY_KEY, sortByDisplayOrder } from "./badgeCatalog";
 import { BadgePicker } from "./BadgePicker";
 import { ProfileColorPickers } from "./ColorPickers";
@@ -974,6 +976,19 @@ function SettingsAboutComponent() {
             (identify scope only) proving the account is really yours. Use the "Reapply
             Fake Profile" toolbox action after changing settings while the plugin is
             already running to force a resync.
+            <br /><br />
+            <strong>
+                {t("You must be a member of the HyperCord Discord server for the synced features above (badges, avatar, banner, Frame, Nameplate, Profile Effect, Display Name Style) to work — they get instantly wiped if you leave.")}
+            </strong>{" "}
+            <Link
+                href={`https://discord.gg/${HYPERCORD_INVITE_CODE}`}
+                onClick={e => {
+                    e.preventDefault();
+                    openInviteModal(HYPERCORD_INVITE_CODE);
+                }}
+            >
+                {t("Join the HyperCord Discord server")}
+            </Link>
         </Forms.FormText>
     );
 }
