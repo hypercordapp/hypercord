@@ -23,6 +23,7 @@ import { clearBadgeAuth, getBadgeAuthHeader, hasBadgeAuth, HYPERCORD_INVITE_CODE
 import { BADGES_BY_KEY, sortByDisplayOrder } from "./badgeCatalog";
 import { BadgePicker } from "./BadgePicker";
 import { ProfileColorPickers } from "./ColorPickers";
+import { ConnectionsPicker, FakeConnection } from "./Connections";
 
 const logger = new Logger("FakeProfile");
 const SELF_PROFILES_BASE = "https://api.hypercord.pro/self/profiles";
@@ -753,6 +754,11 @@ export const settings = definePluginSettings({
         type: OptionType.COMPONENT,
         default: [] as string[],
         component: BadgePicker
+    },
+    fakeConnections: {
+        type: OptionType.COMPONENT,
+        default: [] as FakeConnection[],
+        component: ConnectionsPicker
     }
 });
 
@@ -865,7 +871,7 @@ function patchUserProfileStore() {
         if (!profile) return profile;
 
         if (isOwnId(id)) {
-            const { fakeAccentColor, fakeThemeColorPrimary, fakeThemeColorSecondary } = settings.store;
+            const { fakeAccentColor, fakeThemeColorPrimary, fakeThemeColorSecondary, fakeConnections } = settings.store;
 
             if (fakeAccentColor) {
                 const color = parseHexColor(fakeAccentColor);
@@ -876,6 +882,22 @@ function patchUserProfileStore() {
                 const primary = parseHexColor(fakeThemeColorPrimary);
                 const secondary = parseHexColor(fakeThemeColorSecondary) ?? primary;
                 if (primary !== undefined && secondary !== undefined) profile.themeColors = [primary, secondary];
+            }
+
+            // Same self-only virtualMerge-style fake as username/accentColor
+            // above (direct mutation here instead, since profile is already a
+            // plain object at this point, not a Proxy target) - appended after
+            // any real connections rather than replacing them.
+            if (fakeConnections.length) {
+                profile.connectedAccounts = [
+                    ...(profile.connectedAccounts ?? []),
+                    ...fakeConnections.map((c, i) => ({
+                        type: c.type,
+                        id: `hypercord-fake-${i}`,
+                        name: c.name,
+                        verified: c.verified
+                    }))
+                ];
             }
         }
 
@@ -961,10 +983,11 @@ function clearPremiumOverride() {
 function SettingsAboutComponent() {
     return (
         <Forms.FormText>
-            Username, display name, Nitro badge, account creation date, accent color and
-            profile theme gradient are <strong>only visible to you</strong>, in your own
-            HyperCord client — that data lives on Discord's servers and can't be spoofed
-            client-side for other people.{" "}
+            Username, display name, Nitro badge, account creation date, accent color,
+            profile theme gradient and connections (social media/game accounts) are
+            <strong> only visible to you</strong>, in your own HyperCord client — that
+            data lives on Discord's servers and can't be spoofed client-side for other
+            people.{" "}
             <strong>Your selected badges, avatar, banner, Frame, Nameplate, Profile Effect
                 and Display Name Style are different: they're synced to HyperCord's own
                 backend and shown to every HyperCord user viewing your profile</strong>,
@@ -995,7 +1018,7 @@ function SettingsAboutComponent() {
 
 export default definePlugin({
     name: "FakeProfile",
-    description: "Locally fake your username, display name, Nitro tier, accent color and profile theme gradient on your own profile (visible only to you) — badges, avatar, banner, Frame (avatar decoration), Nameplate, Profile Effect and Display Name Style sync to HyperCord's backend and show for every HyperCord user viewing your profile",
+    description: "Locally fake your username, display name, Nitro tier, accent color, profile theme gradient and connections (social media/game accounts) on your own profile (visible only to you) — badges, avatar, banner, Frame (avatar decoration), Nameplate, Profile Effect and Display Name Style sync to HyperCord's backend and show for every HyperCord user viewing your profile",
     tags: ["Fun", "Appearance"],
     authors: [Devs.HyperCordTeam],
     settings,

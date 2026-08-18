@@ -45,3 +45,47 @@
     align-items: center;
     gap: 6px;
 }
+
+.vc-fakeprofile-connections-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 8px;
+}
+
+.vc-fakeprofile-connection-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    background: var(--background-secondary);
+}
+
+.vc-fakeprofile-connection-platform {
+    width: 140px;
+    flex-shrink: 0;
+    color: var(--header-secondary);
+}
+
+.vc-fakeprofile-connection-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.vc-fakeprofile-connection-add-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.vc-fakeprofile-connection-add-select {
+    width: 180px;
+    flex-shrink: 0;
+}
+
+.vc-fakeprofile-connection-add-input {
+    flex: 1;
+}
