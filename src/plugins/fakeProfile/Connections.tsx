@@ -7,7 +7,7 @@
 import { t } from "@i18n";
 import { classNameFactory } from "@utils/css";
 import type { ConnectedAccount } from "@vencord/discord-types";
-import { Button, Checkbox, Forms, Select, Text, TextInput, useState } from "@webpack/common";
+import { Button, Checkbox, Forms, Select, Text, TextInput, useRef, useState } from "@webpack/common";
 
 import { settings } from ".";
 
@@ -61,12 +61,25 @@ export function ConnectionsPicker() {
 
     const connections = settings.store.fakeConnections;
 
+    // Guards against adding more than one entry per click - name/platform
+    // are read fresh at call time, but two clicks landing close enough
+    // together (a real double-click, or a focused button re-firing on a
+    // held Enter key's repeat) could both run before React's re-render
+    // clears the input/disables the button, each one appending its own
+    // entry. This lock makes that impossible regardless of what causes the
+    // extra invocation - only the first call in a burst ever does anything.
+    const addingRef = useRef(false);
+
     function add() {
+        if (addingRef.current) return;
+
         const trimmed = name.trim();
         if (!trimmed) return;
 
+        addingRef.current = true;
         settings.store.fakeConnections = [...connections, { type: platform, name: trimmed, verified: true }];
         setName("");
+        setTimeout(() => { addingRef.current = false; }, 0);
     }
 
     function remove(index: number) {
@@ -123,12 +136,14 @@ export function ConnectionsPicker() {
                     placeholder={t("Platform")}
                     className={cl("connection-add-select")}
                 />
-                <TextInput
-                    value={name}
-                    onChange={setName}
-                    placeholder={t("Display name / username")}
-                    className={cl("connection-add-input")}
-                />
+                <div className={cl("connection-add-input")}>
+                    <TextInput
+                        value={name}
+                        onChange={setName}
+                        onKeyDown={e => { if (e.key === "Enter") add(); }}
+                        placeholder={t("Display name / username")}
+                    />
+                </div>
                 <Button size={Button.Sizes.SMALL} onClick={add} disabled={!name.trim()}>
                     {t("Add")}
                 </Button>
