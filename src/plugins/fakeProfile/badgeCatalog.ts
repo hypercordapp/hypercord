@@ -203,12 +203,12 @@ export const BADGE_CATALOG: CatalogCategory[] = [
         title: "Gift Giving",
         exclusive: true,
         badges: [
-            { key: "gifter_patron", label: "Gift Giver — Patron", iconSrc: "https://api.hypercord.pro/img/9e3730fc97769570a356838c07a463d225609ca6cf9a2a79495e58259fb5763e.png" },
-            { key: "gifter_champion", label: "Gift Giver — Champion", iconSrc: "https://api.hypercord.pro/img/b71b2b2e3e411767bae8ec5c9126413183fba697c717a174c4facf28190d79f2.png" },
-            { key: "gifter_luminary", label: "Gift Giver — Luminary", iconSrc: "https://api.hypercord.pro/img/417b431fe8811e9b438c36fb44c4bbc9b6984b16ec40bd928450ebae3756c615.png" },
-            { key: "gifter_icon", label: "Gift Giver — Icon", iconSrc: "https://api.hypercord.pro/img/a6ca901c384a2b1380b18376c11265c611c577865774d8e54c1cd5612c7df412.png" },
-            { key: "gifter_hero", label: "Gift Giver — Hero", iconSrc: "https://api.hypercord.pro/img/15d69008fe5277b6c335756f99550768452f9579ce8f874b8694175db91ef1ed.png" },
-            { key: "gifter_legend", label: "Gift Giver — Legend", iconSrc: "https://api.hypercord.pro/img/001f318284d765d64d20f3d408625feafb9624b502bde18892d1203081a00e3e.png" },
+            { key: "gifter_patron", label: "Gift Giver — Patron", iconSrc: "https://api.hypercord.pro/img/60ee524665bc59f806cbb9e7d7c76cade05d3c4d7dec3a47ee74aecf0ace44df.png" },
+            { key: "gifter_champion", label: "Gift Giver — Champion", iconSrc: "https://api.hypercord.pro/img/54cc7849b05cb4682f4319f4b4beb5963a77a2ac919a3b768d29f3f8979859cd.png" },
+            { key: "gifter_luminary", label: "Gift Giver — Luminary", iconSrc: "https://api.hypercord.pro/img/20ccce0696e741d3746e6865a8f8c3b890d27b89affdfacced5b549ab9163e41.png" },
+            { key: "gifter_icon", label: "Gift Giver — Icon", iconSrc: "https://api.hypercord.pro/img/5f2f51478e299a8fcc4e0c7f207a49994725e079f95ed5ed6be996ec3edb792c.png" },
+            { key: "gifter_hero", label: "Gift Giver — Hero", iconSrc: "https://api.hypercord.pro/img/fb1f68ebb03f26e8816c62d01bed0d70d745c7a6af9529895a82fe02a3a33c85.png" },
+            { key: "gifter_legend", label: "Gift Giver — Legend", iconSrc: "https://api.hypercord.pro/img/c331c52818119f9fdaa2ebd19a83e53242ece781e527acc0423c8d5ca688f41f.png" },
         ]
     },
 ];
