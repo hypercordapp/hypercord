@@ -888,17 +888,30 @@ function patchUserProfileStore() {
             // above (direct mutation here instead, since profile is already a
             // plain object at this point, not a Proxy target) - appended after
             // any real connections rather than replacing them.
-            if (fakeConnections.length) {
-                profile.connectedAccounts = [
-                    ...(profile.connectedAccounts ?? []),
+            //
+            // getUserProfile's real return value is the same cached Record
+            // reused across every call for this id, not a fresh object each
+            // time - naively appending here on every call re-added the whole
+            // fake list on top of whatever this same mutated object already
+            // had from the LAST call, compounding without bound (confirmed
+            // live: 2 fake connections turned into dozens within a single
+            // viewing session). Stripping any previously-injected fakes
+            // (marked by the id prefix below) before re-adding the current
+            // list makes this idempotent no matter how many times it runs.
+            const realConnections = (profile.connectedAccounts ?? []).filter(
+                (a: { id: string; }) => !a.id.startsWith("hypercord-fake-")
+            );
+            profile.connectedAccounts = fakeConnections.length
+                ? [
+                    ...realConnections,
                     ...fakeConnections.map((c, i) => ({
                         type: c.type,
                         id: `hypercord-fake-${i}`,
                         name: c.name,
                         verified: c.verified
                     }))
-                ];
-            }
+                ]
+                : realConnections;
         }
 
         // Profile effect applies to ANY user with synced HyperCord data, same
