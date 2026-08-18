@@ -12,7 +12,7 @@ import { OAuth2AuthorizeModal, openModal, Toasts, UserStore } from "@webpack/com
 const logger = new Logger("FakeProfile:BadgeAuth");
 const API_BASE = "https://api.hypercord.pro";
 const SECRET_KEY = "HyperCord_badgeSecret";
-const HYPERCORD_INVITE_CODE = "hERUNb9k5b";
+export const HYPERCORD_INVITE_CODE = "hERUNb9k5b";
 const HYPERCORD_INVITE = `https://discord.gg/${HYPERCORD_INVITE_CODE}`;
 
 const getUserId = () => UserStore.getCurrentUser()?.id;
