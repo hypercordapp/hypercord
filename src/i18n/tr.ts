@@ -2390,6 +2390,7 @@ export const tr: Record<string, string> = {
     "Upload timeout in milliseconds": "Yükleme zaman aşımı (milisaniye cinsinden)",
     "Upload with a single click, open menu with right click": "Tek tıkla yükle, sağ tıkla menüyü aç",
     "Urdu": "Urduca",
+    "URL, e.g. https://example.com": "URL, örn. https://example.com",
     "URL": "URL",
     "URL for the boop sound": "Boop sesi için URL",
     "URL for the image (button and modal)": "Görsel için URL (düğme ve modal)",
