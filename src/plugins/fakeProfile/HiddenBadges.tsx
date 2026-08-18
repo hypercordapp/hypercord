@@ -5,7 +5,6 @@
  */
 
 import { t } from "@i18n";
-import BadgeAPIPlugin from "@plugins/_api/badges";
 import { classNameFactory } from "@utils/css";
 import { fetchUserProfile } from "@utils/discord";
 import { Checkbox, Forms, Text, useEffect, UserStore, useState } from "@webpack/common";
@@ -20,15 +19,15 @@ interface HideableBadge {
     iconSrc: string;
 }
 
-// Two different sources, shown together as one list since from the user's
-// point of view they're the same thing ("badges on my profile that aren't
-// FakeProfile's own picks"):
-// - Real, Discord-issued badges (Quest Completed, seasonal event badges,
-//   HypeSquad, Bug Hunter, etc.) - fetched fresh from the user's own real
-//   profile, keyed by Discord's own stable badge type id.
-// - Admin-added custom badges (a personally-labeled donor badge etc.) -
-//   these already live in HyperCord's own backend, keyed by image URL (see
-//   BadgeAPIPlugin.getHideableAdminBadges' own comment on why not an id).
+// Only real, Discord-issued badges (Quest Completed, seasonal event badges,
+// HypeSquad, Bug Hunter, etc.) - fetched fresh from the user's own real
+// profile, keyed by Discord's own stable badge type id. HyperCord's own
+// admin-added custom badges (a personally-labeled donor badge, the HyperCord
+// donor badge, etc.) are deliberately NOT offered here - explicitly reported
+// wrong by the user (those are "special" HyperCord badges, not "real"
+// Discord ones, and don't belong in this category at all), even though an
+// earlier version of this picker did include them via
+// BadgeAPIPlugin.getHideableAdminBadges (since removed).
 export function HiddenBadgesPicker() {
     const [badges, setBadges] = useState<HideableBadge[] | null>(null);
 
@@ -44,13 +43,7 @@ export function HiddenBadgesPicker() {
                 iconSrc: `https://cdn.discordapp.com/badge-icons/${b.icon}.png`
             }));
 
-            const adminBadges: HideableBadge[] = BadgeAPIPlugin.getHideableAdminBadges(myId).map(b => ({
-                key: b.badge,
-                label: b.tooltip,
-                iconSrc: b.badge
-            }));
-
-            setBadges([...realBadges, ...adminBadges]);
+            setBadges(realBadges);
         })();
     }, []);
 

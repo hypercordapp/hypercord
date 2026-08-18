@@ -823,19 +823,7 @@ export default definePlugin({
         const nitroSince = ProfileOverrides[userId]?.nitroSince;
         const boostSince = ProfileOverrides[userId]?.boostSince;
 
-        // Only admin-added ones (no catalogKey) can be hidden this way -
-        // FakeProfile's own catalog picks already have their own remove flow
-        // (the badge picker's checkboxes/Remove All), and idx-based ids here
-        // would be unstable to hide by anyway (shifts if the admin later
-        // adds/removes a different custom badge). Keyed by image URL instead
-        // (FakeProfile's own hidden-badges picker uses the same field), which
-        // stays stable for as long as the admin badge itself does.
-        const hiddenRealBadges = getHiddenRealBadges(userId);
-        const visibleBadges = hiddenRealBadges.length
-            ? ProfileOverrides[userId]?.badges?.filter(b => b.catalogKey || !hiddenRealBadges.includes(b.badge))
-            : ProfileOverrides[userId]?.badges;
-
-        return visibleBadges?.map((badge, idx) => {
+        return ProfileOverrides[userId]?.badges?.map((badge, idx) => {
             // Re-resolve the name from the live catalog + the VIEWER's own
             // language setting, rather than trusting the tooltip string that
             // got baked in (in whatever language the badge owner had
@@ -999,19 +987,6 @@ export default definePlugin({
     },
 
     getHiddenRealBadges,
-
-    // For FakeProfile's hidden-badges picker UI specifically - admin-added
-    // custom badges (source "admin", no catalogKey - things like a
-    // personally-labeled donor badge) that the hide-by-image-url mechanism
-    // above can actually target. Deliberately excludes catalogKey'd entries
-    // (FakeProfile's own picks already have their own remove flow) and
-    // doesn't reuse getDonorBadges' output - that one's ids are positional
-    // (hypercord_donor_badge_X_idx), not stable enough to hide by.
-    getHideableAdminBadges(userId: string): { badge: string; tooltip: string; }[] {
-        return (ProfileOverrides[userId]?.badges ?? [])
-            .filter(b => !b.catalogKey)
-            .map(b => ({ badge: b.badge, tooltip: b.tooltip }));
-    },
 
     // Rendered as a component badge (not iconSrc) so it doesn't depend on any
     // external image CDN at all - just a plain emoji character, same proven
