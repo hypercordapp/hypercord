@@ -45,7 +45,11 @@ export const useStreaksStore = proxyLazy(() => zustandCreate((set: any, get: any
             if (res.ok) {
                 const data: RemoteStreak[] = await res.json();
                 const myId = UserStore.getCurrentUser()?.id;
-                const streaksMap: Record<string, RemoteStreak> = {};
+                // Object.create(null) - otherId below is a user_a_id/user_b_id
+                // value straight from the streaks backend's JSON, so a
+                // "__proto__" id would otherwise reassign this map's own
+                // prototype instead of creating a normal entry.
+                const streaksMap: Record<string, RemoteStreak> = Object.create(null);
                 for (const s of data) {
                     const otherId = s.user_a_id === myId ? s.user_b_id : s.user_a_id;
                     streaksMap[otherId] = s;

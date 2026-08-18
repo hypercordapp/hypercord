@@ -9,7 +9,10 @@ import { OAuth2AuthorizeModal, showToast, Toasts } from "@webpack/common";
 
 import { settings } from ".";
 
-const databaseTimezones: Record<string, { value: string | null; }> = {};
+// Object.create(null) - populated below from a configurable remote API's
+// /list JSON keyed by user id; a real "__proto__" key there would otherwise
+// reassign this object's own prototype instead of creating a normal entry.
+const databaseTimezones: Record<string, { value: string | null; }> = Object.create(null);
 const CLIENT_ID = "1377021506810417173";
 
 function getDomain(): string {

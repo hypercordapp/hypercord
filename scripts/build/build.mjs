@@ -22,6 +22,7 @@
 import { readdir } from "fs/promises";
 import { join, resolve } from "path";
 
+import { getPluginTarget } from "../utils.mjs";
 import { BUILD_TIMESTAMP, commonOpts, exists, globPlugins, IS_DEV, IS_REPORTER, IS_ANTI_CRASH_TEST, IS_STANDALONE, IS_UPDATER_DISABLED, resolvePluginName, VERSION, commonRendererPlugins, watch, buildOrWatchAll, stringifyValues } from "./common.mjs";
 
 const defines = stringifyValues({
@@ -88,6 +89,16 @@ const globNativesPlugin = {
                 const plugins = await readdir(dirPath, { withFileTypes: true });
                 for (const file of plugins) {
                     const fileName = file.name;
+
+                    // Unlike globPlugins (~plugins, the renderer-side definitions), this glob
+                    // has no per-target filtering of its own - a .dev-suffixed plugin's UI is
+                    // excluded from non-dev builds, but without this check its native.ts (main
+                    // process IPC handlers, exposed unconditionally to every renderer script
+                    // regardless of whether the plugin is even enabled) would still ship and be
+                    // callable in production. userpluginInstaller.dev is exactly this case: its
+                    // native.ts clones+builds arbitrary git repos.
+                    if (getPluginTarget(fileName) === "dev" && !IS_DEV) continue;
+
                     const nativePath = join(dirPath, fileName, "native.ts");
                     const indexNativePath = join(dirPath, fileName, "native/index.ts");
 
