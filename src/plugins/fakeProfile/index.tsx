@@ -939,6 +939,18 @@ function unpatchUserProfileStore() {
 // so it's covered everywhere a connection gets rendered - Discord's own
 // native profile UI and any Vencord plugin that also reads through this
 // registry - not just one specific component.
+//
+// "domain" (the Website connection type) is a deliberate exception: live-
+// measured, real Discord's own domain URL builder reads the connection's
+// `id` field (not `name`) - and our fake connections' id is our own
+// "hypercord-fake-N" marker (needed elsewhere: getUserProfile's cleanup
+// filter, and the id check right below), not a real domain. Falling
+// through to the real builder here would produce
+// "https://hypercord-fake-0/", and hardcoding hypercord.pro like every
+// other platform would silently ignore whatever URL the user actually
+// typed into the picker's name field for this one platform (see
+// Connections.tsx's own placeholder swap for "domain") - so this is the
+// one type that builds its own URL from `name` instead of doing either.
 let originalPlatformsGet: ((type: string) => any) | undefined;
 let patchedPlatformsModule: any;
 const patchedPlatforms = new WeakSet<object>();
@@ -962,8 +974,14 @@ function patchConnectionPlatforms() {
 
             const originalGetUrl = platform.getPlatformUserUrl?.bind(platform);
             if (originalGetUrl) {
-                platform.getPlatformUserUrl = (connection: { id: string; }) =>
-                    connection?.id?.startsWith("hypercord-fake-") ? "https://hypercord.pro" : originalGetUrl(connection);
+                platform.getPlatformUserUrl = (connection: { id: string; name: string; }) => {
+                    if (!connection?.id?.startsWith("hypercord-fake-")) return originalGetUrl(connection);
+                    if (type !== "domain") return "https://hypercord.pro";
+
+                    const url = connection.name?.trim();
+                    if (!url) return "https://hypercord.pro";
+                    return /^https?:\/\//i.test(url) ? url : `https://${url}`;
+                };
             }
             return platform;
         };

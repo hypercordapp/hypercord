@@ -158,7 +158,7 @@ export function ConnectionsPicker() {
                         value={name}
                         onChange={setName}
                         onKeyDown={e => { if (e.key === "Enter") add(); }}
-                        placeholder={t("Display name / username")}
+                        placeholder={platform === "domain" ? t("URL, e.g. https://example.com") : t("Display name / username")}
                     />
                 </div>
                 <Button size={Button.Sizes.SMALL} onClick={add} disabled={!name.trim()}>
