@@ -24,12 +24,24 @@ export default definePlugin({
     description: "API to add buttons to message popovers.",
     authors: [Devs.KingFish, Devs.Ven, Devs.Nuckyz],
     patches: [
+        // Live-verified 2026-08-18 (module dump via CDP, not a guess): the old
+        // match relied on a `X.Y` (dotted) button-component reference and a
+        // ~40-char gap before "togglePopout:" - current Discord uses a plain
+        // top-level identifier for the button component (not dotted), and the
+        // reaction-picker block now sits between two toolbar buttons rather
+        // than butted up against the exact anchors the old regex assumed, so
+        // it silently stopped matching. Anchored instead to the immediately
+        // preceding toolbar button (always present, always {label:...}) via a
+        // non-consuming lookbehind for the button-component reference, then
+        // matches the whole reaction-picker block up to its own trailing
+        // "]}):null," - inserting our buttons array right before it, same as
+        // before.
         {
             find: "#{intl::MESSAGE_UTILITIES_A11Y_LABEL}",
             replacement: {
-                match: /(?<=\]\}\)),(.{0,40}togglePopout:.+?\}\))\]\}\):null,(?<=\((\i\.\i),\{label:.+?:null,(\i)\?\(0,\i\.jsxs?\)\(\i\.Fragment.+?message:(\i).+?)/,
-                replace: (_, ReactButton, ButtonComponent, showReactButton, message) => "" +
-                    `]}):null,Vencord.Api.MessagePopover._buildPopoverElements(${ButtonComponent},${message}),${showReactButton}?${ReactButton}:null,`
+                match: /(?<=\((\i),\{label:.{0,120}?\]\}\):null,)\i\?\(0,\i\.jsxs\)\(\i\.Fragment,\{children:\[.{0,150}?message:(\i)\}\),.{0,80}?\(0,\i\.jsx\)\(\i,\{togglePopout:.{0,120}?\]\}\):null,/,
+                replace: (reactButton, ButtonComponent, message) =>
+                    `Vencord.Api.MessagePopover._buildPopoverElements(${ButtonComponent},${message}),${reactButton}`
             }
         }
     ]

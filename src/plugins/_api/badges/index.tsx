@@ -632,19 +632,23 @@ export default definePlugin({
                 replace: "$self.getBannerOverride(arguments[0])||$&"
             }
         },
-        // Same idea, same loading-state module, for avatar - a sibling
-        // getPreviewAvatar call is expected right next to getPreviewBanner's
-        // one above (Discord's profile-image loading state machine handles
-        // avatar/banner/icon in parallel). If Discord ever renames/removes
-        // this specific method, this patch just silently fails to match
-        // (Vencord's normal safe-failure behavior for any unmatched patch)
-        // rather than breaking anything - confirm live if avatar sync is
-        // ever reported as "saved but not showing".
+        // Same idea as the banner override above, for avatar - but avatar no
+        // longer goes through that same async preview-loading state machine
+        // at all (confirmed live 2026-08-18: module 686189, the one the
+        // banner patch above targets, now ONLY implements the banner side -
+        // no getPreviewAvatar sibling exists anywhere in the loaded module
+        // graph any more). Avatar now resolves synchronously through a
+        // shared avatarOverride prop that Discord already threads down to
+        // this exact hook for its own "live preview while editing your own
+        // avatar" feature - hooking in here means this now covers every
+        // place an avatar renders through the shared hook (message list,
+        // profile popouts, profile modal), not just one component like the
+        // old patch did.
         {
-            find: ':"SHOULD_LOAD");',
+            find: "avatarDecorationOverride:",
             replacement: {
-                match: /\i(?:\?)?.getPreviewAvatar\(\i,\i,\i\)(?=.{0,100}"COMPLETE")/,
-                replace: "$self.getAvatarOverride(arguments[0])||$&"
+                match: /(?<=\{user:(\i),guildId:\i,size:.{0,80}?avatarOverride:)\i(?=\}\))/,
+                replace: "$self.getAvatarOverride($1?.id)||$&"
             }
         },
         // Injects a HyperCord-synced avatar decoration for WHOEVER's profile is
@@ -944,8 +948,8 @@ export default definePlugin({
         return displayProfile?.userId ? ProfileOverrides[displayProfile.userId]?.banner || undefined : undefined;
     },
 
-    getAvatarOverride({ displayProfile }: any) {
-        return displayProfile?.userId ? ProfileOverrides[displayProfile.userId]?.avatar || undefined : undefined;
+    getAvatarOverride(userId: string | undefined) {
+        return userId ? ProfileOverrides[userId]?.avatar || undefined : undefined;
     },
 
     getDecorationOverride(userId: string | undefined) {

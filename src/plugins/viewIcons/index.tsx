@@ -197,20 +197,30 @@ export default definePlugin({
     },
 
     patches: [
-        // Avatar component used in User DMs "User Profile" popup in the right and User Profile Modal pfp
+        // Avatar component used in User DMs "User Profile" popup in the right and User Profile Modal pfp.
+        // The gap between eventHandlers and the "return null==" anchor used to
+        // be ~50 chars; Discord's caller now computes an extra clickable-avatar
+        // condition (member-has-guild-avatar check) in between, pushing it past
+        // that budget and silently breaking this match - widened, same anchors.
         {
             find: "return{avatarProps:{",
             replacement: {
-                match: /(?<=avatarProps:(\i),eventHandlers:(\i).{0,50}?)return null==/,
+                match: /(?<=avatarProps:(\i),eventHandlers:(\i).{0,300}?)return null==/,
                 replace: 'Object.assign($2,{style:{cursor:"pointer"},onClick:()=>$self.openAvatar($1.src)});$&',
             }
         },
-        // Banners
+        // Banners. Discord moved the actual style/backgroundImage div out of
+        // this component into a separate shared "fill" component (rendered as
+        // a plain jsx(Component,{bannerSrc,...}) call here) - there's no more
+        // inline overflow/backgroundImage style object in this module to hook
+        // a style/onClick prop into directly, and that shared component doesn't
+        // forward unknown props, so instead of injecting props into the call,
+        // this now wraps the whole jsx(...) call in a clickable div.
         {
             find: 'backgroundColor:"COMPLETE"',
             replacement: {
-                match: /(overflow:"visible",.{0,125}?!1\),)style:{(?=.+?backgroundImage:null!=(\i)\?`url\(\$\{\2\}\))/,
-                replace: (_, rest, bannerSrc) => `${rest}onClick:()=>${bannerSrc}!=null&&$self.openBanner(${bannerSrc}),style:{cursor:${bannerSrc}!=null?"pointer":void 0,`
+                match: /return(\(0,\i\.jsx\))\(\i\.A,\{fillClassName:.{0,60}?,bannerSrc:(\i),backgroundColor:.{0,300}?onInteractionEnd:.{0,30}?\}\)/,
+                replace: (m, jsxCall, bannerSrc) => `return${jsxCall}("div",{onClick:()=>null!=${bannerSrc}&&$self.openBanner(${bannerSrc}),style:{cursor:null!=${bannerSrc}?"pointer":void 0},children:${m.slice(6)}})`
             }
         },
         // Group DMs top small & large icon
