@@ -2,6 +2,13 @@
     margin-bottom: 12px;
 }
 
+.vc-fakeprofile-badges-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
 .vc-fakeprofile-category {
     margin-bottom: 16px;
 }
