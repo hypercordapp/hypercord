@@ -238,6 +238,12 @@ interface ProfileOverride {
     // on getUser/getCurrentUser patch below) rather than a local-only fake,
     // the same lesson already learned once for createdAt/decoration/etc.
     fakeIdentity: { username?: string; globalName?: string; } | null;
+    // Real, Discord-issued badge ids (e.g. "quest_completed") this profile's
+    // owner chose to hide from their own profile - not FakeProfile's own
+    // picked catalog badges, those already have their own remove flow. See
+    // FakeProfile's patchUserProfileStore for where this actually filters
+    // profile.badges.
+    hiddenBadges: string[];
 }
 
 const TWELVE_MONTHS_MS = 365 * 24 * 60 * 60 * 1000;
@@ -255,6 +261,14 @@ async function loadBadges(noCache = false) {
     } catch (e) {
         new Logger("BadgeAPI").error("Failed to fetch profile overrides", e);
     }
+}
+
+// Plain top-level function (not an object method) so getDonorBadges below
+// can call it directly without relying on `this` binding - this file has no
+// existing precedent for one plugin method calling a sibling via `this`, and
+// a plain function sidesteps that fragility entirely.
+function getHiddenRealBadges(userId: string | undefined): string[] {
+    return (userId && ProfileOverrides[userId]?.hiddenBadges) || [];
 }
 
 // General-purpose custom badges: anyone can add themselves to docs/badges.json
@@ -809,7 +823,19 @@ export default definePlugin({
         const nitroSince = ProfileOverrides[userId]?.nitroSince;
         const boostSince = ProfileOverrides[userId]?.boostSince;
 
-        return ProfileOverrides[userId]?.badges?.map((badge, idx) => {
+        // Only admin-added ones (no catalogKey) can be hidden this way -
+        // FakeProfile's own catalog picks already have their own remove flow
+        // (the badge picker's checkboxes/Remove All), and idx-based ids here
+        // would be unstable to hide by anyway (shifts if the admin later
+        // adds/removes a different custom badge). Keyed by image URL instead
+        // (FakeProfile's own hidden-badges picker uses the same field), which
+        // stays stable for as long as the admin badge itself does.
+        const hiddenRealBadges = getHiddenRealBadges(userId);
+        const visibleBadges = hiddenRealBadges.length
+            ? ProfileOverrides[userId]?.badges?.filter(b => b.catalogKey || !hiddenRealBadges.includes(b.badge))
+            : ProfileOverrides[userId]?.badges;
+
+        return visibleBadges?.map((badge, idx) => {
             // Re-resolve the name from the live catalog + the VIEWER's own
             // language setting, rather than trusting the tooltip string that
             // got baked in (in whatever language the badge owner had
@@ -970,6 +996,21 @@ export default definePlugin({
 
     getCreatedAtOverride(userId: string | undefined) {
         return userId ? ProfileOverrides[userId]?.createdAt || undefined : undefined;
+    },
+
+    getHiddenRealBadges,
+
+    // For FakeProfile's hidden-badges picker UI specifically - admin-added
+    // custom badges (source "admin", no catalogKey - things like a
+    // personally-labeled donor badge) that the hide-by-image-url mechanism
+    // above can actually target. Deliberately excludes catalogKey'd entries
+    // (FakeProfile's own picks already have their own remove flow) and
+    // doesn't reuse getDonorBadges' output - that one's ids are positional
+    // (hypercord_donor_badge_X_idx), not stable enough to hide by.
+    getHideableAdminBadges(userId: string): { badge: string; tooltip: string; }[] {
+        return (ProfileOverrides[userId]?.badges ?? [])
+            .filter(b => !b.catalogKey)
+            .map(b => ({ badge: b.badge, tooltip: b.tooltip }));
     },
 
     // Rendered as a component badge (not iconSrc) so it doesn't depend on any
