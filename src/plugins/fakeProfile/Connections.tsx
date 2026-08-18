@@ -61,6 +61,23 @@ export function ConnectionsPicker() {
 
     const connections = settings.store.fakeConnections;
 
+    // settings.store's entries are values read off Vencord's own reactive
+    // settings Proxy, not plain objects - spreading/filtering/mapping them
+    // straight back into a new array carries those Proxy wrappers along for
+    // the ride. Assigning that back to settings.store then throws ("An
+    // object could not be cloned") deep in the settings change-notify path,
+    // which persists to disk via structured clone - live-confirmed the
+    // write to the underlying array happens BEFORE that throw, so the
+    // exception doesn't roll anything back, it just kills the rest of that
+    // notify pass (including whatever listener re-renders this component).
+    // Net effect live-reproduced: the picker's own list silently stops
+    // updating after the first entry, while the real profile (read via a
+    // completely different path, getUserProfile) picks up the partially-
+    // applied write - a duplicate every time this ever half-succeeds.
+    // Rebuilding a plain object per entry avoids feeding any of that back
+    // into settings.store in the first place.
+    const toPlain = (c: FakeConnection): FakeConnection => ({ type: c.type, name: c.name, verified: c.verified });
+
     // Guards against adding more than one entry per click - name/platform
     // are read fresh at call time, but two clicks landing close enough
     // together (a real double-click, or a focused button re-firing on a
@@ -77,17 +94,17 @@ export function ConnectionsPicker() {
         if (!trimmed) return;
 
         addingRef.current = true;
-        settings.store.fakeConnections = [...connections, { type: platform, name: trimmed, verified: true }];
+        settings.store.fakeConnections = [...connections.map(toPlain), { type: platform, name: trimmed, verified: true }];
         setName("");
         setTimeout(() => { addingRef.current = false; }, 0);
     }
 
     function remove(index: number) {
-        settings.store.fakeConnections = connections.filter((_, i) => i !== index);
+        settings.store.fakeConnections = connections.filter((_, i) => i !== index).map(toPlain);
     }
 
     function toggleVerified(index: number, verified: boolean) {
-        settings.store.fakeConnections = connections.map((c, i) => i === index ? { ...c, verified } : c);
+        settings.store.fakeConnections = connections.map((c, i) => i === index ? { ...toPlain(c), verified } : toPlain(c));
     }
 
     return (
