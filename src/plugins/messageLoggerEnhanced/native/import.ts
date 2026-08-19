@@ -29,12 +29,20 @@ export async function startNativeLogImport(_event: IpcMainInvokeEvent, defaultPa
     return fileId;
 }
 
+const MAX_CHUNK_SIZE = 8 * 1024 * 1024;
+
 export async function readNativeLogChunk(_event: IpcMainInvokeEvent, fileId: string, size: number = 64 * 1024): Promise<string | null> {
     const fileHandle = activeFiles.get(fileId);
     if (!fileHandle) return null;
 
-    const buffer = Buffer.alloc(size);
-    const { bytesRead } = await fileHandle.read(buffer, 0, size);
+    // Native plugin IPC methods are exposed to ANY renderer script regardless
+    // of call site - size was passed straight into Buffer.alloc() with no
+    // upper bound, so a caller other than this plugin's own reader (which
+    // always uses the 64KB default) could pass an arbitrary huge size and
+    // force a large allocation in the main process - clamp it.
+    const clampedSize = Math.min(Math.max(size, 1), MAX_CHUNK_SIZE);
+    const buffer = Buffer.alloc(clampedSize);
+    const { bytesRead } = await fileHandle.read(buffer, 0, clampedSize);
 
     if (bytesRead === 0) {
         await fileHandle.close();

@@ -7,6 +7,7 @@
 import { readdir, readFile, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 
+import { ensureSafePath } from "@main/ipcMain";
 import { DATA_DIR } from "@main/utils/constants";
 import { dialog, IpcMainInvokeEvent, shell } from "electron";
 
@@ -71,7 +72,18 @@ export async function writeImageNative(_event: IpcMainInvokeEvent, filename: str
     const existingImage = nativeSavedImages.get(attachmentId);
     if (existingImage) return;
 
-    const imagePath = path.join(imageDir, filename);
+    // Native plugin IPC methods are exposed to ANY renderer script regardless
+    // of call site (VencordNative.pluginHelpers.*), same reasoning already
+    // applied to every other main-process file-write/fetch handler in this
+    // codebase - filename was joined into imageDir completely unvalidated,
+    // so a "../../../../somewhere/evil.dll"-shaped filename would write
+    // outside imageDir entirely, an arbitrary-file-write primitive from the
+    // renderer. attachmentId (derived just above via path.parse().name,
+    // which strips any directory components) is already what's used as the
+    // cache key - use it for the actual path too instead of raw filename.
+    const imagePath = ensureSafePath(imageDir, `${attachmentId}${path.extname(filename)}`);
+    if (!imagePath) return;
+
     await ensureDirectoryExists(imageDir);
     await writeFile(imagePath, content);
 
