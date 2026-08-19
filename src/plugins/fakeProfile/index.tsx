@@ -7,7 +7,7 @@
 import "./styles.css";
 
 import * as DataStore from "@api/DataStore";
-import { definePluginSettings } from "@api/Settings";
+import { definePluginSettings, Settings } from "@api/Settings";
 import { Link } from "@components/Link";
 import { t } from "@i18n";
 import BadgeAPIPlugin from "@plugins/_api/badges";
@@ -117,7 +117,9 @@ export async function syncBadgesToBackend() {
             lastGuildWarningToastAt.set(userId, Date.now());
             Toasts.show({
                 id: Toasts.genId(),
-                message: `Rozetlerin silindi çünkü HyperCord Discord sunucusunda değilsin. Katılırsan tekrar seçebilirsin: ${guildWarning.inviteUrl}`,
+                message: Settings.language === "tr"
+                    ? `Rozetlerin silindi çünkü HyperCord Discord sunucusunda değilsin. Katılırsan tekrar seçebilirsin: ${guildWarning.inviteUrl}`
+                    : `Your badges were removed because you're not in the HyperCord Discord server. Join to pick them again: ${guildWarning.inviteUrl}`,
                 type: Toasts.Type.FAILURE,
                 options: { duration: 30_000 }
             });
