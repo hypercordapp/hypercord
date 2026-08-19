@@ -147,6 +147,13 @@ export const Magnifier = ErrorBoundary.wrap<MagnifierProps>(({ instance, size: i
             document.removeEventListener("mousedown", onMouseDown);
             document.removeEventListener("mouseup", onMouseUp);
             document.removeEventListener("wheel", onWheel);
+            // Added asynchronously above once instance.state.readyState is
+            // READY (an animated image/avatar's <video> element), so never
+            // guaranteed to exist yet when this runs - without this, zooming
+            // the same animated image repeatedly stacks a duplicate
+            // "timeupdate" listener onto its <video> element every time,
+            // since nothing else ever removes the earlier one.
+            originalVideoElementRef.current?.removeEventListener("timeupdate", syncVideos);
         };
     }, []);
 
