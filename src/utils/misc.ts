@@ -123,5 +123,18 @@ export function getUserAvatarUrl(user: User, guildId?: string, canAnimate?: bool
         });
     }
 
+    // Some Discord components hand this a lightweight placeholder instead of a
+    // real User class instance for entries they don't have cached locally -
+    // e.g. UserSummaryItem's `showDefaultAvatarsForNullUsers` (used by
+    // whosWatching's viewer list), which calls the render-prop callback for
+    // "null" users too rather than skipping them. IconUtils.getUserAvatarURL
+    // calls user.getAvatarURL() internally and throws a TypeError on anything
+    // without that method (live-confirmed crash, 38 reports over 2 days) -
+    // fall straight through to the same default-avatar path real Discord
+    // would use for a userless slot instead of calling into it.
+    if (typeof (user as any)?.getAvatarURL !== "function") {
+        return IconUtils.getDefaultAvatarURL(user?.id, user?.discriminator);
+    }
+
     return IconUtils.getUserAvatarURL(user, canAnimate, size) ?? IconUtils.getDefaultAvatarURL(user.id, user?.discriminator);
 }

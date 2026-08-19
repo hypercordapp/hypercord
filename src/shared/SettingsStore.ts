@@ -9,6 +9,52 @@ import { LiteralUnion } from "type-fest";
 export const SYM_IS_PROXY = Symbol("SettingsStore.isProxy");
 export const SYM_GET_RAW_TARGET = Symbol("SettingsStore.getRawTarget");
 
+// A value assigned into the store can itself contain (possibly nested, e.g.
+// inside a plain array or object spread) references that were READ off this
+// same Proxy elsewhere - each of those is its own live Proxy (see the get
+// trap below, which wraps every object-typed property on the way out).
+// A one-off shallow unwrap only ever caught the case where the assigned
+// value itself was a proxy; anything holding one a level or more down (e.g.
+// `settings.store.list = [...settings.store.list.map(x => x)]` without every
+// caller manually re-plaining each element) stayed a live Proxy inside what
+// is supposed to be `this.plain` - a tree that has to be a real, structured-
+// cloneable JS value, since it round-trips through Electron's contextBridge
+// IPC (structuredClone, which throws "An object could not be cloned" on a
+// Proxy) on every single settings change, not just the one that planted it.
+// Once that throw happens, the bad value is already sitting in `this.plain`
+// (Reflect.set already ran) and stays there for the rest of the session -
+// so from that point on, EVERY future setting change anywhere in the app
+// hits the same throw before its listeners (persistence + re-render) ever
+// run, even though the in-memory value did update. Live-confirmed via crash
+// reports: a plugin's own "rebuild a plain array/object before assigning
+// back" pattern missed a nested proxy, and every later click of an unrelated
+// "Add" button in that same picker looked like it silently did nothing while
+// actually appending to the real underlying list each time - hence "adding
+// one connection produced hundreds of duplicates" reports, since the picker
+// never got a chance to re-render and warn anyone something was wrong.
+// Deep-unwrapping here, once, for every write, closes this for every current
+// and future settings write in the app instead of relying on each call site
+// remembering to fully re-plain a value it read back off the store.
+function deepUnwrapProxies(value: any): any {
+    if (value == null || typeof value !== "object") return value;
+
+    if (value[SYM_IS_PROXY]) value = value[SYM_GET_RAW_TARGET];
+
+    if (Array.isArray(value)) return value.map(deepUnwrapProxies);
+
+    // Only flatten plain data objects - anything else (Date, RegExp, a class
+    // instance, etc.) is left untouched, matching what settings are actually
+    // expected to hold (JSON-serializable data), same assumption the disk
+    // persistence path (JSON.stringify) already makes.
+    if (value.constructor === Object) {
+        const out: Record<string, any> = {};
+        for (const key of Object.keys(value)) out[key] = deepUnwrapProxies(value[key]);
+        return out;
+    }
+
+    return value;
+}
+
 // Resolves a possibly nested prop in the form of "some.nested.prop" to type of T.some.nested.prop
 type ResolvePropDeep<T, P> =
     P extends `${infer Pre}.*` ?
@@ -90,9 +136,7 @@ export class SettingsStore<T extends object> {
                 return v;
             },
             set(target, key: string, value) {
-                if (value?.[SYM_IS_PROXY]) {
-                    value = value[SYM_GET_RAW_TARGET];
-                }
+                value = deepUnwrapProxies(value);
 
                 if (target[key] === value) {
                     return true;
