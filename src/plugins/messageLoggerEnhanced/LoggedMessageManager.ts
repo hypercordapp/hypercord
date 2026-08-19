@@ -41,7 +41,7 @@ export const addMessage = async (message: LoggedMessage | LoggedMessageJSON, sta
 
             if (oldGuildMessages.length > 0) {
                 Flogger.info(`Deleting ${oldGuildMessages.length} old server messages older than ${settings.store.timeBasedCleanupMinutes} minutes`);
-                await deleteMessagesBulkIDB(oldGuildMessages.map(m => m.message_id));
+                await deleteMessagesBulkIDB(oldGuildMessages);
             }
         }
     }
@@ -55,7 +55,7 @@ export const addMessage = async (message: LoggedMessage | LoggedMessageJSON, sta
             const oldestMessages = await getOldestMessagesIDB(messagesToDelete);
 
             Flogger.info(`Deleting ${messagesToDelete} oldest messages`);
-            await deleteMessagesBulkIDB(oldestMessages.map(m => m.message_id));
+            await deleteMessagesBulkIDB(oldestMessages);
         }
     }
 };

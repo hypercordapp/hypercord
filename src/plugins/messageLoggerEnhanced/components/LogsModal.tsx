@@ -138,7 +138,7 @@ export function LogsModal({ modalProps, initalQuery }: Props) {
                         confirmColor: ButtonCompat.Colors.RED,
                         cancelText: "Cancel",
                         onConfirm: async () => {
-                            await deleteMessagesBulkIDB(messages.map(e => e.message_id));
+                            await deleteMessagesBulkIDB(messages);
                             reset();
                         }
                     })

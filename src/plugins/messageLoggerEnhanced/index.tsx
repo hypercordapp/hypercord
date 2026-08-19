@@ -125,7 +125,7 @@ async function messageDeleteBulkHandler({ channelId, guildId, ids }: MessageDele
 
         if (oldGuildMessages.length > 0) {
             Flogger.info(`Deleting ${oldGuildMessages.length} old server messages older than ${settings.store.timeBasedCleanupMinutes} minutes (bulk cleanup)`);
-            await idb.deleteMessagesBulkIDB(oldGuildMessages.map(m => m.message_id));
+            await idb.deleteMessagesBulkIDB(oldGuildMessages);
         }
     }
 }

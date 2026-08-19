@@ -231,8 +231,16 @@ export async function addMessagesBulkIDB(messages: LoggedMessageJSON[], status?:
     const tx = db.transaction("messages", "readwrite");
     const { store } = tx;
 
+    // put(), not add() - addMessageIDB (the single-message version) already
+    // upserts via put(); this used add(), which throws ConstraintError on
+    // any message_id already present in the store. IDB aborts the WHOLE
+    // transaction on an unhandled error from one of its requests, so a
+    // single duplicate anywhere in the batch (e.g. re-importing a log file
+    // that overlaps with messages logged normally, or a malformed export
+    // with a repeated id) would silently lose every other message in that
+    // same batch too, not just the duplicate one.
     await Promise.all([
-        ...messages.map(message => store.add({
+        ...messages.map(message => store.put({
             channel_id: message.channel_id,
             message_id: message.id,
             status: status ?? getMessageStatus(message),
@@ -262,12 +270,21 @@ export async function deleteMessageIDB(channel_id: string, message_id: string) {
     cacheSentMessages.delete(`${channel_id},${message_id}`);
 }
 
-export async function deleteMessagesBulkIDB(message_ids: string[]) {
+export async function deleteMessagesBulkIDB(records: { channel_id: string; message_id: string; }[]) {
     const tx = db.transaction("messages", "readwrite");
     const { store } = tx;
 
-    await Promise.all([...message_ids.map(id => store.delete(id)), tx.done]);
-    message_ids.forEach(id => cachedMessages.delete(id));
+    await Promise.all([...records.map(r => store.delete(r.message_id)), tx.done]);
+
+    // Same cacheSentMessages resurrection risk as deleteMessageIDB above,
+    // just for every bulk-clear path (Clear Visible/All Logs, time-based
+    // cleanup, the messageLimit trim) - all 3 call sites already have the
+    // channel_id on hand via the records they're deleting, so there's no
+    // reason for this to have stayed string-id-only and missed the same fix.
+    for (const { channel_id, message_id } of records) {
+        cachedMessages.delete(message_id);
+        cacheSentMessages.delete(`${channel_id},${message_id}`);
+    }
 }
 
 export async function clearMessagesIDB(showToast = true) {
