@@ -378,15 +378,27 @@ export const initPluginManager = onlyOnce(function init() {
         if (p.renderMessageDecoration) neededApiPlugins.add("MessageDecorationsAPI");
         if (p.messagePopoverButton) neededApiPlugins.add("MessagePopoverAPI");
         if (p.userProfileBadge) neededApiPlugins.add("BadgeAPI");
-
-        for (const key of pluginKeysToBind) {
-            p[key] &&= p[key].bind(p) as any;
-        }
     }
 
     for (const p of neededApiPlugins) {
         Plugins[p].isDependency = true;
         settings[p].enabled = true;
+    }
+
+    // Separate pass, after every dependency (direct AND api-plugin-implied)
+    // has already been marked enabled above - binding this per-plugin in the
+    // same pass that resolves enabled state meant a dependency (or a
+    // needed-API-plugin like BadgeAPI, which is only ever marked enabled in
+    // the neededApiPlugins loop above, strictly after this used to run) whose
+    // own turn in pluginsValues came before whatever enabled it would still
+    // read as disabled and skip its bind - leaving its hook methods
+    // (onMessageClick etc.) called with the wrong `this` the first time
+    // something actually fires them, since plenty of plugins rely on
+    // `this.someHelper()` inside those handlers.
+    for (const p of pluginsValues) if (isPluginEnabled(p.name)) {
+        for (const key of pluginKeysToBind) {
+            p[key] &&= p[key].bind(p) as any;
+        }
     }
 
     for (const p of pluginsValues) {
