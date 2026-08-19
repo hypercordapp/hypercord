@@ -572,19 +572,19 @@ export function BadgeContextMenu({ badge }: { badge: Omit<ProfileBadge, "id"> & 
         <Menu.Menu
             navId="vc-badge-context"
             onClose={ContextMenuApi.closeContextMenu}
-            aria-label="Badge Options"
+            aria-label={t("Badge Options")}
         >
             {badge.description && (
                 <Menu.MenuItem
                     id="vc-badge-copy-name"
-                    label="Copy Badge Name"
+                    label={t("Copy Badge Name")}
                     action={() => copyWithToast(badge.description!)}
                 />
             )}
             {badge.iconSrc && (
                 <Menu.MenuItem
                     id="vc-badge-copy-link"
-                    label="Copy Badge Image Link"
+                    label={t("Copy Badge Image Link")}
                     action={() => copyWithToast(badge.iconSrc!)}
                 />
             )}
@@ -731,7 +731,7 @@ export default definePlugin({
             await refetchBadges();
             Toasts.show({
                 id: Toasts.genId(),
-                message: "Successfully refetched badges!",
+                message: t("Successfully refetched badges!"),
                 type: Toasts.Type.SUCCESS
             });
         }
@@ -1001,8 +1001,18 @@ export default definePlugin({
             .sort((a, b) => Date.parse(b.until) - Date.parse(a.until));
         if (!recent.length) return undefined;
 
+        // toLocaleDateString() (no explicit locale arg) follows the OS/Electron
+        // locale, not this app's own Settings.language toggle - same
+        // inconsistency already fixed for the Nitro/Boost tenure dates above,
+        // pin it to the same toggle instead of whatever Windows happens to be
+        // set to.
+        const isTr = Settings.language === "tr";
+        const locale = isTr ? "tr-TR" : "en-US";
         const tooltip = recent
-            .map(entry => `"${entry.name}" (until ${new Date(entry.until).toLocaleDateString()})`)
+            .map(entry => {
+                const date = new Date(entry.until).toLocaleDateString(locale);
+                return isTr ? `"${entry.name}" (${date} tarihine kadar)` : `"${entry.name}" (until ${date})`;
+            })
             .join(", ");
 
         return {
@@ -1011,7 +1021,7 @@ export default definePlugin({
             component: () => (
                 <span
                     style={{ fontSize: 16, lineHeight: 1 }}
-                    title={`Formerly known as ${tooltip}`}
+                    title={`${t("Formerly known as")} ${tooltip}`}
                 >
                     📛
                 </span>
