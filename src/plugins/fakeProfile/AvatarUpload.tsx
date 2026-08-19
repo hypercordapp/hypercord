@@ -4,6 +4,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+import { Settings } from "@api/Settings";
+import { t } from "@i18n";
 import BadgeAPIPlugin from "@plugins/_api/badges";
 import { classNameFactory } from "@utils/css";
 import { Button, Forms, Toasts, useState } from "@webpack/common";
@@ -19,7 +21,7 @@ async function uploadAvatarFile(file: File, userId: string) {
     if (!auth) {
         Toasts.show({
             id: Toasts.genId(),
-            message: "Couldn't verify your Discord identity - a HyperCord authorization popup should have appeared, complete it and try again.",
+            message: t("Couldn't verify your Discord identity - a HyperCord authorization popup should have appeared, complete it and try again."),
             type: Toasts.Type.FAILURE
         });
         return;
@@ -32,18 +34,22 @@ async function uploadAvatarFile(file: File, userId: string) {
     });
 
     if (res.status === 409) {
-        Toasts.show({ id: Toasts.genId(), message: "Can't set your avatar - HyperCord staff already set one for you.", type: Toasts.Type.FAILURE });
+        Toasts.show({ id: Toasts.genId(), message: t("Can't set your avatar - HyperCord staff already set one for you."), type: Toasts.Type.FAILURE });
         return;
     }
     if (!res.ok) {
-        Toasts.show({ id: Toasts.genId(), message: `Couldn't upload that image (error ${res.status}).`, type: Toasts.Type.FAILURE });
+        Toasts.show({
+            id: Toasts.genId(),
+            message: Settings.language === "tr" ? `Görsel yüklenemedi (hata ${res.status}).` : `Couldn't upload that image (error ${res.status}).`,
+            type: Toasts.Type.FAILURE
+        });
         return;
     }
 
     const result = await res.json();
     settings.store.fakeAvatarUrl = result.avatar ?? "";
     await BadgeAPIPlugin.refetchBadges();
-    Toasts.show({ id: Toasts.genId(), message: "Avatar updated!", type: Toasts.Type.SUCCESS });
+    Toasts.show({ id: Toasts.genId(), message: t("Avatar updated!"), type: Toasts.Type.SUCCESS });
 }
 
 export function AvatarUploadButton({ getCurrentUserId }: { getCurrentUserId: () => string | undefined; }) {
@@ -74,7 +80,7 @@ export function AvatarUploadButton({ getCurrentUserId }: { getCurrentUserId: () 
                         try {
                             await uploadAvatarFile(file, userId);
                         } catch (err) {
-                            Toasts.show({ id: Toasts.genId(), message: "Failed to upload avatar.", type: Toasts.Type.FAILURE });
+                            Toasts.show({ id: Toasts.genId(), message: t("Failed to upload avatar."), type: Toasts.Type.FAILURE });
                         } finally {
                             setUploading(false);
                         }
@@ -85,7 +91,7 @@ export function AvatarUploadButton({ getCurrentUserId }: { getCurrentUserId: () 
                     disabled={uploading}
                     onClick={() => document.getElementById("vc-fakeprofile-avatar-input")?.click()}
                 >
-                    {uploading ? "Uploading..." : "Choose from device"}
+                    {uploading ? t("Uploading...") : t("Choose from device")}
                 </Button>
                 {hasFake && (
                     <Button
@@ -97,7 +103,7 @@ export function AvatarUploadButton({ getCurrentUserId }: { getCurrentUserId: () 
                             syncAvatarToBackend();
                         }}
                     >
-                        Remove fake avatar
+                        {t("Remove fake avatar")}
                     </Button>
                 )}
             </div>

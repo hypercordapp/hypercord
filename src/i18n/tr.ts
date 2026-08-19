@@ -9,6 +9,32 @@
 // Anything missing here simply falls back to English (see @i18n/index.ts's t()), so this
 // file can be extended over time without ever breaking untranslated strings.
 export const tr: Record<string, string> = {
+    // --- FakeProfile / badges (src/plugins/fakeProfile, src/plugins/_api/badges) ---
+    "Your avatar URL isn't a valid https:// link - fix or clear it in settings.": "Avatarının URL'si geçerli bir https:// linki değil - ayarlardan düzelt ya da temizle.",
+    "Can't sync your avatar - HyperCord staff already set one for you.": "Avatarın senkronize edilemiyor - HyperCord ekibi senin için zaten birini ayarlamış.",
+    "Your banner URL isn't a valid https:// link - fix or clear it in settings.": "Banner'ının URL'si geçerli bir https:// linki değil - ayarlardan düzelt ya da temizle.",
+    "Can't sync your banner - HyperCord staff already set one for you.": "Banner'ın senkronize edilemiyor - HyperCord ekibi senin için zaten birini ayarlamış.",
+    "Synced badges, hidden badges, avatar, banner, avatar decoration, nameplate, profile effect, display name style, creation date, former username, and fake identity to HyperCord!": "Rozetler, gizli rozetler, avatar, banner, avatar dekorasyonu, isim levhası, profil efekti, görünen isim stili, oluşturulma tarihi, eski kullanıcı adı ve sahte kimlik HyperCord'a senkronize edildi!",
+    "Couldn't verify your Discord identity - a HyperCord authorization popup should have appeared, complete it and try again.": "Discord kimliğin doğrulanamadı - bir HyperCord yetkilendirme penceresi açılmış olmalıydı, onu tamamlayıp tekrar dene.",
+    "Can't set your avatar - HyperCord staff already set one for you.": "Avatarın ayarlanamıyor - HyperCord ekibi senin için zaten birini ayarlamış.",
+    "Avatar updated!": "Avatar güncellendi!",
+    "Failed to upload avatar.": "Avatar yüklenemedi.",
+    "Uploading...": "Yükleniyor...",
+    "Choose from device": "Cihazdan seç",
+    "Remove fake avatar": "Sahte avatarı kaldır",
+    "Accent Color": "Vurgu Rengi",
+    "Theme Primary": "Ana Tema Rengi",
+    "Theme Secondary": "İkincil Tema Rengi",
+    "Reset": "Sıfırla",
+    "Profile Colors": "Profil Renkleri",
+    "Pick colors instead of typing hex codes. Only visible to you, in your own HyperCord client - the primary/secondary theme colors need both set to apply.": "Hex kod yazmak yerine renk seç. Sadece sana görünür, kendi HyperCord istemcinde - ana/ikincil tema renklerinin uygulanması için ikisinin de ayarlanması gerekir.",
+    "Formerly known as": "Önceden şu isimlerle biliniyordu:",
+    "Successfully refetched badges!": "Rozetler başarıyla yeniden alındı!",
+    "Badge Options": "Rozet Seçenekleri",
+    "Copy Badge Name": "Rozet Adını Kopyala",
+    "Copy Badge Image Link": "Rozet Görsel Linkini Kopyala",
+    "Copied to clipboard!": "Panoya kopyalandı!",
+
     // --- Plugins tab chrome (src/components/settings/tabs/plugins) ---
     "Restart required!": "Yeniden başlatma gerekli!",
     "Restart now to apply new plugins and their settings": "Yeni eklentileri ve ayarlarını uygulamak için şimdi yeniden başlat",

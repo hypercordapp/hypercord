@@ -166,7 +166,7 @@ export async function syncAvatarToBackend(silent = false) {
         if (!silent) {
             Toasts.show({
                 id: Toasts.genId(),
-                message: "Your avatar URL isn't a valid https:// link - fix or clear it in settings.",
+                message: t("Your avatar URL isn't a valid https:// link - fix or clear it in settings."),
                 type: Toasts.Type.FAILURE
             });
         }
@@ -186,7 +186,7 @@ export async function syncAvatarToBackend(silent = false) {
         if (res.status === 409 && !silent) {
             Toasts.show({
                 id: Toasts.genId(),
-                message: "Can't sync your avatar - HyperCord staff already set one for you.",
+                message: t("Can't sync your avatar - HyperCord staff already set one for you."),
                 type: Toasts.Type.FAILURE
             });
         } else if (res.ok) {
@@ -207,7 +207,7 @@ export async function syncBannerToBackend(silent = false) {
         if (!silent) {
             Toasts.show({
                 id: Toasts.genId(),
-                message: "Your banner URL isn't a valid https:// link - fix or clear it in settings.",
+                message: t("Your banner URL isn't a valid https:// link - fix or clear it in settings."),
                 type: Toasts.Type.FAILURE
             });
         }
@@ -227,7 +227,7 @@ export async function syncBannerToBackend(silent = false) {
         if (res.status === 409 && !silent) {
             Toasts.show({
                 id: Toasts.genId(),
-                message: "Can't sync your banner - HyperCord staff already set one for you.",
+                message: t("Can't sync your banner - HyperCord staff already set one for you."),
                 type: Toasts.Type.FAILURE
             });
         } else if (res.ok) {
@@ -244,6 +244,21 @@ export async function syncBannerToBackend(silent = false) {
 // as-is. Because it's genuinely real asset/skuId data, Discord's own
 // (unpatched) rendering resolves it correctly for whoever views the profile -
 // no custom image hosting or URL construction needed, unlike banner above.
+// Every syncCosmeticFromUser toast below interpolates this English noun
+// straight into a full sentence - can't route the whole sentence through
+// t()'s exact-string dict without one entry per noun x message combination,
+// so just the noun gets its own small TR lookup instead.
+const NOUN_TR: Record<string, string> = {
+    "avatar decoration": "avatar dekorasyonu",
+    "nameplate": "isim levhası",
+    "profile effect": "profil efekti",
+    "display name style": "görünen isim stili"
+};
+
+function localizedNoun(noun: string): string {
+    return Settings.language === "tr" ? (NOUN_TR[noun] ?? noun) : noun;
+}
+
 async function syncCosmeticFromUser(
     routeSegment: string,
     sourceUserId: string,
@@ -299,7 +314,9 @@ async function syncCosmeticFromUser(
         if (sourceUserId) {
             Toasts.show({
                 id: Toasts.genId(),
-                message: `Couldn't verify your Discord identity to sync your ${noun} - a HyperCord authorization popup should have appeared, complete it and try again.`,
+                message: Settings.language === "tr"
+                    ? `Discord kimliğini doğrulayamadık, ${localizedNoun(noun)} senkronize edilemedi - bir HyperCord yetkilendirme penceresi açılmış olmalıydı, onu tamamlayıp tekrar dene.`
+                    : `Couldn't verify your Discord identity to sync your ${noun} - a HyperCord authorization popup should have appeared, complete it and try again.`,
                 type: Toasts.Type.FAILURE
             });
         }
@@ -323,13 +340,17 @@ async function syncCosmeticFromUser(
         if (res.status === 409 && !silent) {
             Toasts.show({
                 id: Toasts.genId(),
-                message: `Can't sync your ${noun} - HyperCord staff already set one for you.`,
+                message: Settings.language === "tr"
+                    ? `${localizedNoun(noun)} senkronize edilemiyor - HyperCord ekibi senin için zaten birini ayarlamış.`
+                    : `Can't sync your ${noun} - HyperCord staff already set one for you.`,
                 type: Toasts.Type.FAILURE
             });
         } else if (res.status === 400 && !silent) {
             Toasts.show({
                 id: Toasts.genId(),
-                message: `That user doesn't have a real ${noun} to copy - double check the ID.`,
+                message: Settings.language === "tr"
+                    ? `O kullanıcının kopyalanacak gerçek bir ${localizedNoun(noun)} yok - ID'yi tekrar kontrol et.`
+                    : `That user doesn't have a real ${noun} to copy - double check the ID.`,
                 type: Toasts.Type.FAILURE
             });
         } else if (res.status === 401) {
@@ -342,14 +363,18 @@ async function syncCosmeticFromUser(
             if (!silent) {
                 Toasts.show({
                     id: Toasts.genId(),
-                    message: `Couldn't sync your ${noun} - your HyperCord authorization expired, try again to re-authorize.`,
+                    message: Settings.language === "tr"
+                        ? `${localizedNoun(noun)} senkronize edilemedi - HyperCord yetkilendirmenin süresi doldu, yeniden yetkilendirmek için tekrar dene.`
+                        : `Couldn't sync your ${noun} - your HyperCord authorization expired, try again to re-authorize.`,
                     type: Toasts.Type.FAILURE
                 });
             }
         } else if (!res.ok && !silent) {
             Toasts.show({
                 id: Toasts.genId(),
-                message: `Couldn't sync your ${noun} to HyperCord (error ${res.status}).`,
+                message: Settings.language === "tr"
+                    ? `${localizedNoun(noun)} HyperCord'a senkronize edilemedi (hata ${res.status}).`
+                    : `Couldn't sync your ${noun} to HyperCord (error ${res.status}).`,
                 type: Toasts.Type.FAILURE
             });
         } else if (res.ok) {
@@ -1214,7 +1239,7 @@ export default definePlugin({
             ]);
             Toasts.show({
                 id: Toasts.genId(),
-                message: "Synced badges, hidden badges, avatar, banner, avatar decoration, nameplate, profile effect, display name style, creation date, former username, and fake identity to HyperCord!",
+                message: t("Synced badges, hidden badges, avatar, banner, avatar decoration, nameplate, profile effect, display name style, creation date, former username, and fake identity to HyperCord!"),
                 type: Toasts.Type.SUCCESS
             });
         }

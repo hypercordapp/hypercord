@@ -17,6 +17,7 @@
 */
 
 import type { MessageObject } from "@api/MessageEvents";
+import { t } from "@i18n";
 import type { Channel, CloudUpload, Guild, GuildFeatures, MediaModalItem, MediaModalProps, Message, User } from "@vencord/discord-types";
 import { ChannelActionCreators, ChannelStore, ComponentDispatch, Constants, FluxDispatcher, GuildStore, i18n, InviteActions, MessageActions, openMediaModal, RestAPI, SelectedChannelStore, SelectedGuildStore, Toasts, UserProfileActions, UserProfileStore, UserSettingsActionCreators, UserUtils } from "@webpack/common";
 import { Except } from "type-fest";
@@ -114,7 +115,7 @@ export function insertTextIntoChatInputBox(text: string) {
     });
 }
 
-export async function copyWithToast(text: string, toastMessage = "Copied to clipboard!") {
+export async function copyWithToast(text: string, toastMessage: string = t("Copied to clipboard!")) {
     await copyToClipboard(text);
     Toasts.show({
         message: toastMessage,

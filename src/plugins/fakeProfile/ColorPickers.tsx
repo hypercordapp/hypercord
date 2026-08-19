@@ -5,6 +5,7 @@
  */
 
 import { Flex } from "@components/Flex";
+import { t } from "@i18n";
 import { classNameFactory } from "@utils/css";
 import { Button, ColorPicker, Forms, Text } from "@webpack/common";
 
@@ -29,7 +30,7 @@ function Swatch({ label, settingKey }: { label: string; settingKey: "fakeAccentC
         <div className={cl("color-swatch")}>
             <ColorPicker
                 color={color ?? 0x5865f2}
-                label={<Text variant="text-xs/normal">{label}</Text>}
+                label={<Text variant="text-xs/normal">{t(label)}</Text>}
                 onChange={(newColor: number) => { settings.store[settingKey] = toHex(newColor); }}
             />
             {hex && (
@@ -39,7 +40,7 @@ function Swatch({ label, settingKey }: { label: string; settingKey: "fakeAccentC
                     color={Button.Colors.PRIMARY}
                     onClick={() => { settings.store[settingKey] = ""; }}
                 >
-                    Reset
+                    {t("Reset")}
                 </Button>
             )}
         </div>
@@ -49,9 +50,9 @@ function Swatch({ label, settingKey }: { label: string; settingKey: "fakeAccentC
 export function ProfileColorPickers() {
     return (
         <div>
-            <Forms.FormTitle tag="h3">Profile Colors</Forms.FormTitle>
+            <Forms.FormTitle tag="h3">{t("Profile Colors")}</Forms.FormTitle>
             <Forms.FormText className={cl("hint")}>
-                Pick colors instead of typing hex codes. Only visible to you, in your own HyperCord client - the primary/secondary theme colors need both set to apply.
+                {t("Pick colors instead of typing hex codes. Only visible to you, in your own HyperCord client - the primary/secondary theme colors need both set to apply.")}
             </Forms.FormText>
             <Flex gap="1.5em" className={cl("color-row")}>
                 <Swatch label="Accent Color" settingKey="fakeAccentColor" />
