@@ -896,6 +896,16 @@ function unpatchUserStore() {
 
 let originalGetUserProfile: typeof UserProfileStore.getUserProfile | undefined;
 
+// Reads the user's REAL, un-hidden badge list straight from the store's
+// own cache via the original unpatched getter - bypasses the hiddenRealBadges
+// filtering above entirely, so HiddenBadgesPicker can always show every real
+// badge as a checkbox (including currently-hidden ones) regardless of what
+// this user has chosen to hide. Only meaningful after the id has actually
+// been fetched at least once (callers should await fetchUserProfile(id) first).
+export function getRealBadgesUnfiltered(id: string): { id: string; description: string; icon: string; }[] | undefined {
+    return originalGetUserProfile?.(id)?.badges as any;
+}
+
 function patchUserProfileStore() {
     if (originalGetUserProfile) return;
 
@@ -958,14 +968,29 @@ function patchUserProfileStore() {
         // same not-gated-to-isOwnId reasoning as profileEffect above, a real
         // badge is otherwise visible to every viewer regardless of what THIS
         // client does locally, so this has to apply for whoever's profile is
-        // being rendered, not just your own. Filtering (rather than
-        // appending, like connectedAccounts above) is naturally idempotent -
-        // removing an already-absent id is a no-op, so this is safe to run
-        // on the same cached Record on every call without the compounding
-        // risk that bit connectedAccounts.
+        // being rendered, not just your own.
+        //
+        // Unlike every other field touched above, this must NOT mutate
+        // `profile` in place - `profile` is the same cached Record
+        // getUserProfile reuses across every call for this id (see the
+        // connectedAccounts comment above), and `Array.prototype.filter`
+        // always returns a new array, so `profile.badges = ...filter(...)`
+        // permanently replaces the cache's real badge list with the
+        // shrunken one. That's real data loss, not just idempotent
+        // filtering: un-hiding a badge later has nothing left to restore it
+        // from (the id is gone from the only badges array this store ever
+        // hands back for the rest of the session), and getRealBadgesUnfiltered
+        // below - what HiddenBadgesPicker relies on to even show a hidden
+        // badge as a checkbox again - would see the same already-shrunken
+        // list. Live-confirmed: hide a badge, then try to un-hide it from
+        // the picker, and it's simply gone from the list, not unchecked.
+        // Returning a shallow copy here instead leaves the cached `profile`
+        // (and its real, untouched `badges` array) alone, so filtering is
+        // freshly derived from the real list on every call and fully
+        // reversible.
         const hiddenRealBadges = BadgeAPIPlugin.getHiddenRealBadges(id);
         if (hiddenRealBadges.length && profile.badges?.length) {
-            profile.badges = profile.badges.filter((b: { id: string; }) => !hiddenRealBadges.includes(b.id));
+            return { ...profile, badges: profile.badges.filter((b: { id: string; }) => !hiddenRealBadges.includes(b.id)) };
         }
 
         return profile;
