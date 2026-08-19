@@ -155,8 +155,18 @@ export default definePlugin({
     wrapMessageColorProps(colorProps: { colorString: string, colorStrings?: Record<"primaryColor" | "secondaryColor" | "tertiaryColor", string>; }, context: any) {
         try {
             const channelId = SelectedChannelStore.getChannelId();
+            // ChannelStore.getChannel can return undefined here (e.g. no
+            // channel selected yet, or the selected one isn't cached at this
+            // exact moment) - live-confirmed crash reports, ~2/day. This is
+            // try/caught below, but the catch path still logs via
+            // console.error, and HyperCordTelemetry reports any Error passed
+            // to console.error as a crash (that's intentional, it's how
+            // React-boundary-swallowed errors get surfaced at all - see
+            // hyperCordTelemetry/index.ts) - so a plain null-guard here means
+            // one less real Error object logged for something that isn't
+            // actually a bug, not just a caught one.
             const channel = ChannelStore.getChannel(channelId);
-            const isDM = channel.isDM() || channel.isMultiUserDM();
+            const isDM = channel != null && (channel.isDM() || channel.isMultiUserDM());
             const colorString = this.colorIfServer(context);
             if (colorString === colorProps.colorString) return colorProps;
             if (!settings.store.colorInServers && !isDM) return colorProps;
