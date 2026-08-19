@@ -106,7 +106,7 @@ export const contextMenuPath: NavContextMenuPatchCallback = (children, props) =>
                                 label={props.message?.deleted ? "Remove Message (Permanent)" : "Remove Message History (Permanent)"}
                                 color="danger"
                                 action={() =>
-                                    deleteMessageIDB(props.message.id)
+                                    deleteMessageIDB(props.message.channel_id, props.message.id)
                                         .then(() => {
                                             if (props.message.deleted) {
                                                 FluxDispatcher.dispatch({

@@ -7,6 +7,8 @@
 import { ChannelStore, Toasts } from "@webpack/common";
 import { DBSchema, IDBPDatabase, openDB } from "idb";
 
+import { cacheSentMessages } from "@plugins/messageLoggerEnhanced/index";
+
 import { LoggedMessageJSON } from "./types";
 import { getMessageStatus } from "./utils";
 import { stripTransientRenderState } from "./utils/cleanUp";
@@ -242,10 +244,22 @@ export async function addMessagesBulkIDB(messages: LoggedMessageJSON[], status?:
     messages.forEach(message => cachedMessages.set(message.id, message));
 }
 
-export async function deleteMessageIDB(message_id: string) {
+export async function deleteMessageIDB(channel_id: string, message_id: string) {
     await db.delete("messages", message_id);
 
     cachedMessages.delete(message_id);
+
+    // cacheSentMessages (index.tsx) is a completely separate, longer-lived
+    // cache of recently-seen message content/editHistory, keyed by
+    // "channel_id,message_id" - never touched above. Left stale, it's a
+    // resurrection vector: messageUpdateHandler falls back to it whenever
+    // MessageStore doesn't have this message cached (common after a reload,
+    // before scrolling back to it), and rebuilds a fresh editHistory by
+    // appending onto whatever it finds there - including the exact entries
+    // this call was supposed to permanently remove - the next time Discord
+    // fires ANY MESSAGE_UPDATE for this message (e.g. an embed/link preview
+    // finishing loading, which very commonly happens right after a reload).
+    cacheSentMessages.delete(`${channel_id},${message_id}`);
 }
 
 export async function deleteMessagesBulkIDB(message_ids: string[]) {
