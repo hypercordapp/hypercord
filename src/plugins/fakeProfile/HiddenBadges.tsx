@@ -9,7 +9,7 @@ import { classNameFactory } from "@utils/css";
 import { fetchUserProfile } from "@utils/discord";
 import { Checkbox, Forms, Text, useEffect, UserStore, useState } from "@webpack/common";
 
-import { settings, syncHiddenBadgesToBackend } from ".";
+import { getRealBadgesUnfiltered, settings, syncHiddenBadgesToBackend } from ".";
 
 const cl = classNameFactory("vc-fakeprofile-");
 
@@ -36,8 +36,15 @@ export function HiddenBadgesPicker() {
             const myId = UserStore.getCurrentUser()?.id;
             if (!myId) return;
 
-            const profile = await fetchUserProfile(myId);
-            const realBadges: HideableBadge[] = ((profile as any)?.badges ?? []).map((b: any) => ({
+            // fetchUserProfile's own return value goes through the SAME
+            // hiddenRealBadges-filtered getter this picker exists to let you
+            // undo, so it can never be used to populate this list (a hidden
+            // badge would never come back as a checkbox) - only called here
+            // to make sure the store has fetched/cached this id at all.
+            // getRealBadgesUnfiltered then reads the real, un-hidden list
+            // straight from that same cache.
+            await fetchUserProfile(myId);
+            const realBadges: HideableBadge[] = (getRealBadgesUnfiltered(myId) ?? []).map(b => ({
                 key: b.id,
                 label: b.description,
                 iconSrc: `https://cdn.discordapp.com/badge-icons/${b.icon}.png`
