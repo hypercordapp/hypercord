@@ -9,7 +9,7 @@ import { openLogModal } from "@plugins/messageLoggerEnhanced/components/LogsModa
 import { deleteMessageIDB } from "@plugins/messageLoggerEnhanced/db";
 import { settings } from "@plugins/messageLoggerEnhanced/index";
 import { findStoreLazy } from "@webpack";
-import { FluxDispatcher, Menu, MessageActions, React, Toasts, UserStore } from "@webpack/common";
+import { FluxDispatcher, Menu, MessageActions, MessageStore, React, Toasts, UserStore } from "@webpack/common";
 
 import { addToXAndRemoveFromOpposite, ListType, removeFromX } from ".";
 
@@ -116,7 +116,26 @@ export const contextMenuPath: NavContextMenuPatchCallback = (children, props) =>
                                                     mlDeleted: true
                                                 });
                                             } else {
-                                                props.message.editHistory = [];
+                                                // Mutating props.message alone never repaints anything -
+                                                // nothing here triggers a React re-render, unlike the
+                                                // deleted-message branch above (MESSAGE_DELETE is a real
+                                                // Discord flux event the message list already reacts to).
+                                                // The "edited" indicator/history this plugin renders would
+                                                // stay stuck showing the just-removed history until some
+                                                // unrelated event happened to re-render that message.
+                                                // Re-dispatching MESSAGE_UPDATE on the canonical
+                                                // MessageStore object (same proven pattern as
+                                                // messageTranslate's triggerReRender) forces an immediate
+                                                // repaint - safe against this plugin's own
+                                                // messageUpdateHandler re-logging it as a fresh edit,
+                                                // since that handler already no-ops on an empty
+                                                // editHistory (see its check a few lines down).
+                                                const current: any = MessageStore.getMessage(props.message.channel_id, props.message.id) ?? props.message;
+                                                current.editHistory = [];
+                                                FluxDispatcher.dispatch({
+                                                    type: "MESSAGE_UPDATE",
+                                                    message: current
+                                                });
                                             }
                                         }).catch(() => Toasts.show({
                                             type: Toasts.Type.FAILURE,
