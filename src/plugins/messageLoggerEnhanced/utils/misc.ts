@@ -126,9 +126,13 @@ export const messageJsonToMessageClass = memoize((log: { message: LoggedMessageJ
 });
 
 export function parseJSON(json?: string | null) {
+    // A `return` in `finally` unconditionally overrides whatever the `try`
+    // returned (or threw) - this always returned null, even on a
+    // successful parse. Currently unused within this plugin, but exported,
+    // so left as-is it's a silent trap for whenever something does call it.
     try {
         return JSON.parse(json!);
-    } finally {
+    } catch {
         return null;
     }
 }

@@ -108,4 +108,4 @@ export const getAttachmentBlobUrl = memoize(async (attachment: LoggedAttachment)
     const resUrl = URL.createObjectURL(blob);
 
     return resUrl;
-});
+}, evicted => { evicted.then(url => url && URL.revokeObjectURL(url)); });
