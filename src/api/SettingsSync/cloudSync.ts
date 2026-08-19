@@ -84,13 +84,29 @@ export async function getCloudSettings(shouldNotify = true, force = false) {
     if (!await checkCloudUrlCsp()) return;
 
     try {
+        const headers: Record<string, string> = {
+            Authorization: await getCloudAuth(),
+            Accept: "application/octet-stream",
+        };
+
+        // The server 304s whenever this exactly matches its own stored
+        // version - which happens for as long as nothing has changed
+        // locally since the last successful push/pull, i.e. almost always
+        // right after enabling sync or making no other changes since. That
+        // check runs entirely server-side before this function ever sees a
+        // response, so `force` (the whole point of the CloudTab "Download
+        // Settings" button - "replace your current settings with the ones
+        // saved in the cloud, be careful!") previously had no way to skip
+        // it: the button would just silently no-op and report "up to date"
+        // even though the user explicitly asked to re-pull regardless.
+        // Omitting the header outright when forcing guarantees a real 200
+        // with the actual current blob (or a genuine 404 if there truly is
+        // none) instead of a cached-response short-circuit.
+        if (!force) headers["If-None-Match"] = Settings.cloud.settingsSyncVersion.toString();
+
         const res = await fetch(new URL("/v1/settings", getCloudUrl()), {
             method: "GET",
-            headers: {
-                Authorization: await getCloudAuth(),
-                Accept: "application/octet-stream",
-                "If-None-Match": Settings.cloud.settingsSyncVersion.toString()
-            },
+            headers,
         });
 
         if (res.status === 404) {
