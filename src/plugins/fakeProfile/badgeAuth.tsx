@@ -5,6 +5,7 @@
  */
 
 import * as DataStore from "@api/DataStore";
+import { Settings } from "@api/Settings";
 import { openInviteModal } from "@utils/discord";
 import { Logger } from "@utils/Logger";
 import { OAuth2AuthorizeModal, openModal, Toasts, UserStore } from "@webpack/common";
@@ -129,7 +130,9 @@ export async function getBadgeAuthHeader(): Promise<string | undefined> {
                     membershipCheckCache.delete(userId);
                     Toasts.show({
                         id: Toasts.genId(),
-                        message: "HyperCord Discord sunucusuna katıldın! Rozetleri seçmek için tekrar dene.",
+                        message: Settings.language === "tr"
+                            ? "HyperCord Discord sunucusuna katıldın! Rozetleri seçmek için tekrar dene."
+                            : "You joined the HyperCord Discord server! Try selecting badges again.",
                         type: Toasts.Type.SUCCESS,
                         options: { duration: 30_000 }
                     });
@@ -138,7 +141,9 @@ export async function getBadgeAuthHeader(): Promise<string | undefined> {
                 logger.error("Failed to open HyperCord invite modal", e);
                 Toasts.show({
                     id: Toasts.genId(),
-                    message: `Bu özelliği kullanmak için HyperCord Discord sunucusuna katılman gerekiyor: ${HYPERCORD_INVITE}`,
+                    message: Settings.language === "tr"
+                        ? `Bu özelliği kullanmak için HyperCord Discord sunucusuna katılman gerekiyor: ${HYPERCORD_INVITE}`
+                        : `You need to join the HyperCord Discord server to use this feature: ${HYPERCORD_INVITE}`,
                     type: Toasts.Type.FAILURE,
                     options: { duration: 30_000 }
                 });
