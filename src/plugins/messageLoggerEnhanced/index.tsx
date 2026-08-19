@@ -52,7 +52,7 @@ const handledMessageIds = new Set();
 async function messageDeleteHandler(payload: MessageDeletePayload & { isBulk: boolean; }) {
     if (payload.mlDeleted) {
         if (settings.store.permanentlyRemoveLogByDefault)
-            await idb.deleteMessageIDB(payload.id);
+            await idb.deleteMessageIDB(payload.channelId, payload.id);
 
         return;
     }

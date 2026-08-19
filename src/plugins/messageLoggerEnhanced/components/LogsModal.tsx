@@ -377,7 +377,7 @@ function LMessage({ log, isGroupStart, reset, }: LMessageProps) {
                             label="Delete Log"
                             color="danger"
                             action={() =>
-                                deleteMessageIDB(log.message.id).then(() => reset())
+                                deleteMessageIDB(log.message.channel_id, log.message.id).then(() => reset())
                             }
                         />
 
