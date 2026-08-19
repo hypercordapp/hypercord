@@ -71,8 +71,22 @@ async function fetchUpdates() {
     const data = await githubGet("/releases/latest");
 
     const hash = data.name.slice(data.name.lastIndexOf(" ") + 1);
-    if (hash === gitHash)
+
+    // Reset before repopulating, not just on the early "no update" return -
+    // this function (and the check that calls it) can run more than once per
+    // session (e.g. revisiting the update settings page), and without this
+    // every re-check appended another full copy of the same file list onto
+    // PendingUpdates instead of replacing it. applyUpdates() still only
+    // wrote each file's *last* queued content, so nothing corrupted, but every
+    // extra check meant every file got needlessly re-downloaded and re-hashed
+    // once per prior check, growing without bound the longer a session (and
+    // its outdated-update banner) stuck around.
+    PendingUpdates = [];
+
+    if (hash === gitHash) {
+        ChecksumsUrl = undefined;
         return false;
+    }
 
     ChecksumsUrl = data.assets.find(({ name }: any) => name === "checksums.txt")?.browser_download_url;
 
