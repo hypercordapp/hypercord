@@ -217,7 +217,7 @@ function VencordSettings() {
                     <QuickAction
                         Icon={WebsiteIcon}
                         text="Join our Discord"
-                        action={() => VencordNative.native.openExternal("https://discord.gg/hERUNb9k5b")}
+                        action={() => VencordNative.native.openExternal("https://discord.gg/hypercord")}
                     />
                 </QuickActionCard>
             </section>
