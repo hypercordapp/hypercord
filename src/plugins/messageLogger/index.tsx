@@ -20,9 +20,11 @@ import "./messageLogger.css";
 
 import { findGroupChildrenByChildId, NavContextMenuPatchCallback } from "@api/ContextMenu";
 import { updateMessage } from "@api/MessageUpdater";
+import { isPluginEnabled } from "@api/PluginManager";
 import { definePluginSettings } from "@api/Settings";
 import { disableStyle, enableStyle } from "@api/Styles";
 import ErrorBoundary from "@components/ErrorBoundary";
+import { deleteMessageIDB } from "@plugins/messageLoggerEnhanced/db";
 import { Devs, SUPPORT_CATEGORY_ID, VENBOT_USER_ID } from "@utils/constants";
 import { getIntlMessage } from "@utils/discord";
 import { Logger } from "@utils/Logger";
@@ -127,6 +129,24 @@ function addDeleteStyle() {
 
 const REMOVE_HISTORY_ID = "ml-remove-history";
 const TOGGLE_DELETE_STYLE_ID = "ml-toggle-style";
+
+// This plugin has no persistence of its own - deleted/edited state only
+// lives in Discord's in-memory MessageStore for the current session, so the
+// dispatch/updateMessage calls below are all a base-only install needs.
+// MessageLoggerEnhanced (declared as this plugin's dependent, not the other
+// way round, so it may or may not actually be enabled) adds its own
+// IndexedDB layer on top that survives reloads - if it's enabled, its store
+// is the thing that actually gets replayed into the chat on the next fetch
+// (coolReAddDeletedMessages), regardless of what we did to the live,
+// in-memory state here. Without also clearing Enhanced's own record, this
+// button looked like it removed the message/history, then undid itself the
+// moment the channel was re-fetched (e.g. a reload) - Enhanced's store still
+// had the old data the whole time.
+function permanentlyRemoveFromEnhancedLog(channelId: string, id: string) {
+    if (isPluginEnabled("MessageLoggerEnhanced")) {
+        deleteMessageIDB(channelId, id);
+    }
+}
 const patchMessageContextMenu: NavContextMenuPatchCallback = (children, props) => {
     const { message } = props;
     const { deleted, editHistory, id, channel_id } = message;
@@ -166,6 +186,7 @@ const patchMessageContextMenu: NavContextMenuPatchCallback = (children, props) =
                 } else {
                     updateMessage(channel_id, id, { editHistory: [] });
                 }
+                permanentlyRemoveFromEnhancedLog(channel_id, id);
             }}
         />
     ));
@@ -194,6 +215,7 @@ const patchChannelContextMenu: NavContextMenuPatchCallback = (children, { channe
                         updateMessage(channel.id, msg.id, {
                             editHistory: []
                         });
+                    permanentlyRemoveFromEnhancedLog(channel.id, msg.id);
                 });
             }}
         />
