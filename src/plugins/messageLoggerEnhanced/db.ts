@@ -231,6 +231,14 @@ export async function getMessagesByChannelAndAfterTimestampIDB(channel_id: strin
 }
 
 export async function addMessageIDB(message: LoggedMessageJSON, status: DBMessageStatus) {
+    // Final backstop, not just belt-and-suspenders: a message a user
+    // permanently removed can get logged again by a handler that has no way
+    // to know that (e.g. a stray MESSAGE_UPDATE from an embed finishing
+    // loading, well after the removal). Blocking the actual write here means
+    // no future caller of this function can silently undo a removal, even
+    // one added later that forgets to check permanentlyRemovedIds itself.
+    if (permanentlyRemovedIds.has(message.id)) return;
+
     stripTransientRenderState(message);
 
     if (!db) await initIDB();
