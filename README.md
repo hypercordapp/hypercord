@@ -9,7 +9,7 @@
 ![](https://img.shields.io/github/package-json/v/hypercordapp/hypercord?style=for-the-badge&logo=github&logoColor=d3869b&label=&color=1d2021&labelColor=282828)
 ![](https://img.shields.io/github/license/hypercordapp/hypercord?style=for-the-badge&color=1d2021&labelColor=282828)
 
-[![](https://img.shields.io/discord/1529218860522274996?style=for-the-badge&label=Discord&color=5865F2&labelColor=282828)](https://discord.gg/hERUNb9k5b)
+[![](https://img.shields.io/discord/1529218860522274996?style=for-the-badge&label=Discord&color=5865F2&labelColor=282828)](https://discord.gg/hypercord)
 
 **[Türkçe](#türkçe) · [English](#english)**
 
@@ -61,7 +61,7 @@ pnpm uninject
 
 ### Destek/Topluluk Sunucumuza Katıl
 
-**[discord.gg/hERUNb9k5b](https://discord.gg/hERUNb9k5b)**
+**[discord.gg/hypercord](https://discord.gg/hypercord)**
 
 ### Destek Ol
 
@@ -150,7 +150,7 @@ pnpm uninject
 
 ### Join our Support/Community Server
 
-**[discord.gg/hERUNb9k5b](https://discord.gg/hERUNb9k5b)**
+**[discord.gg/hypercord](https://discord.gg/hypercord)**
 
 ### Support
 
