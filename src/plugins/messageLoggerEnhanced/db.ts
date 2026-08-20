@@ -44,6 +44,26 @@ export interface MLIDB extends DBSchema {
 export let db: IDBPDatabase<MLIDB>;
 export const cachedMessages = new Map<string, LoggedMessageJSON>();
 
+// Ids explicitly removed via deleteMessageIDB/deleteMessagesBulkIDB - checked
+// by getDeleted/getEdited (index.tsx) BEFORE they even look at what Discord's
+// own message-update transformer computed. Discord rebuilds a message's
+// deleted/editHistory fields on every MESSAGE_UPDATE/MESSAGE_DELETE by merging
+// the previous stored instance with the new incoming data through its own
+// minified internal logic - which of those two ends up "winning" isn't
+// something we control or can safely assume from the outside. A membership
+// check here can't be undermined by that internal merge picking the wrong
+// side, unlike mutating the dispatched payload and hoping it's read back out
+// correctly. Bounded the same way LimitedMap evicts (oldest id first) so a
+// long session doing lots of deletions can't grow this unbounded.
+const MAX_PERMANENTLY_REMOVED_IDS = 2000;
+export const permanentlyRemovedIds = new Set<string>();
+export function markPermanentlyRemoved(message_id: string) {
+    permanentlyRemovedIds.add(message_id);
+    if (permanentlyRemovedIds.size > MAX_PERMANENTLY_REMOVED_IDS) {
+        permanentlyRemovedIds.delete(permanentlyRemovedIds.values().next().value!);
+    }
+}
+
 // this is probably not the best way to do this
 async function cacheRecords(records: DBMessageRecord[]) {
     for (const r of records) {
@@ -255,6 +275,7 @@ export async function deleteMessageIDB(channel_id: string, message_id: string) {
     await db.delete("messages", message_id);
 
     cachedMessages.delete(message_id);
+    markPermanentlyRemoved(message_id);
 
     // cacheSentMessages (index.tsx) is a completely separate, longer-lived
     // cache of recently-seen message content/editHistory, keyed by
@@ -283,6 +304,7 @@ export async function deleteMessagesBulkIDB(records: { channel_id: string; messa
     for (const { channel_id, message_id } of records) {
         cachedMessages.delete(message_id);
         cacheSentMessages.delete(`${channel_id},${message_id}`);
+        markPermanentlyRemoved(message_id);
     }
 }
 
