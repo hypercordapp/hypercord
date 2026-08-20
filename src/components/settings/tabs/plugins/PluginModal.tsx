@@ -29,7 +29,7 @@ import { gitRemote } from "@shared/vencordUserAgent";
 import { classNameFactory } from "@utils/css";
 import { proxyLazy } from "@utils/lazy";
 import { Margins } from "@utils/margins";
-import { classes } from "@utils/misc";
+import { classes, getUserAvatarUrl } from "@utils/misc";
 import { OptionType, Plugin, PluginTag } from "@utils/types";
 import { RenderModalProps, User } from "@vencord/discord-types";
 import { findCssClassesLazy } from "@webpack";
@@ -221,7 +221,7 @@ export default function PluginModal({ plugin, onRestartNeeded, onClose, transiti
                                     >
                                         <img
                                             className={AvatarStyles.avatar}
-                                            src={user.getAvatarURL(void 0, 80, true)}
+                                            src={getUserAvatarUrl(user, undefined, true, 80)}
                                             alt={user.username}
                                             title={user.username}
                                         />
