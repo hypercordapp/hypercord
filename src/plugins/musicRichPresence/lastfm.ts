@@ -41,13 +41,21 @@ export const LastFMScrobbler: ScrobblerBackend = {
                 return null;
 
             // why does the json api have xml structure
+            // Last.fm omits the "album" field entirely for tracks that
+            // aren't part of an album (singles, some scrobbles from other
+            // clients) - trackData.album["#text"] threw on those and only
+            // got caught by the outer try/catch, silently no-oping the
+            // presence update for that whole cycle instead of just leaving
+            // album info blank.
+            const artistName = trackData.artist?.["#text"];
+            const albumName = trackData.album?.["#text"];
             return {
                 name: trackData.name || "Unknown",
-                album: trackData.album["#text"],
-                artist: trackData.artist["#text"] || "Unknown",
+                album: albumName,
+                artist: artistName || "Unknown",
                 trackURL: trackData.url,
-                artistURL: trackData.artist["#text"] ? url(`/music/${encodeURIComponent(trackData.artist["#text"])}`) : undefined,
-                albumURL: url(`/music/${encodeURIComponent(trackData.artist["#text"])}/${encodeURIComponent(trackData.album["#text"])}`),
+                artistURL: artistName ? url(`/music/${encodeURIComponent(artistName)}`) : undefined,
+                albumURL: (artistName && albumName) ? url(`/music/${encodeURIComponent(artistName)}/${encodeURIComponent(albumName)}`) : undefined,
                 imageURL: trackData.image?.find((x: any) => x.size === "large")?.["#text"]
             } as TrackData;
         } catch (e) {

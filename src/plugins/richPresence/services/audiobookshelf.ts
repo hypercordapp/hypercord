@@ -7,6 +7,7 @@
 import { settings } from "@plugins/richPresence/settings";
 import { AbsMediaData, AbsSession } from "@plugins/richPresence/types/audiobookshelf";
 import { Logger } from "@utils/Logger";
+import { parseUrl } from "@utils/misc";
 import { Activity } from "@vencord/discord-types";
 import { ApplicationAssetUtils, FluxDispatcher, showToast } from "@webpack/common";
 
@@ -25,6 +26,16 @@ function setActivity(activity: Activity | null) {
     FluxDispatcher.dispatch({ type: "LOCAL_ACTIVITY_UPDATE", activity, socketId: SOCKET_ID });
 }
 
+// AudioBookShelf's own server URL setting, validated and https-enforced -
+// this request carries the user's real password in its body (and the
+// listening-sessions request below carries the session token), so silently
+// accepting a plain "http://" URL would send both unencrypted.
+function getValidatedBaseUrl(serverUrl: string): string | null {
+    const parsedUrl = parseUrl(serverUrl);
+    if (!parsedUrl || parsedUrl.protocol !== "https:") return null;
+    return parsedUrl.href.replace(/\/$/, "");
+}
+
 async function authenticate(): Promise<boolean> {
     const { abs_serverUrl, abs_username, abs_password } = settings.store;
     if (!abs_serverUrl || !abs_username || !abs_password) {
@@ -33,8 +44,14 @@ async function authenticate(): Promise<boolean> {
         return false;
     }
 
+    const baseUrl = getValidatedBaseUrl(abs_serverUrl);
+    if (!baseUrl) {
+        logger.warn("AudioBookShelf server URL is invalid or not using HTTPS.");
+        showToast("AudioBookShelf server URL must use HTTPS.", "failure", { duration: 15000 });
+        return false;
+    }
+
     try {
-        const baseUrl = abs_serverUrl.replace(/\/$/, "");
         const res = await fetch(`${baseUrl}/login`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -56,7 +73,9 @@ async function fetchMediaData(): Promise<AbsMediaData | null> {
     if (!authToken && !(await authenticate())) return null;
 
     try {
-        const baseUrl = settings.store.abs_serverUrl!.replace(/\/$/, "");
+        const baseUrl = getValidatedBaseUrl(settings.store.abs_serverUrl!);
+        if (!baseUrl) return null;
+
         const res = await fetch(`${baseUrl}/api/me/listening-sessions`, {
             headers: { "Authorization": `Bearer ${authToken}` },
         });
