@@ -305,7 +305,9 @@ export async function getUserplugins() {
 
 export async function updatePlugin(_, directory: string) {
     return new Promise((resolve, reject) => {
-        const pluginDir = join(vencordPath, "../src/userplugins", directory);
+        const safeDirectory = basename(directory);
+        const pluginDir = join(vencordPath, "../src/userplugins", safeDirectory);
+        if (!existsSync(pluginDir)) return reject("Invalid plugin");
 
         async function doStuff() {
             const pluginMeta = await getPluginMeta(pluginDir);
