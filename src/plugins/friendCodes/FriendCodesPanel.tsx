@@ -102,7 +102,7 @@ export default function FriendCodesPanel() {
                             color={Button.Colors.RED}
                             look={Button.Looks.FILLED}
                             disabled={!invites.length}
-                            onClick={() => revokeFriendInvites().then(setInvites([]))}
+                            onClick={() => revokeFriendInvites().then(() => setInvites([]))}
                         >
                             Revoke all Friend Codes
                         </Button>
