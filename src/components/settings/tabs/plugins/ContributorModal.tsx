@@ -11,7 +11,7 @@ import { Link } from "@components/Link";
 import { DevsById } from "@utils/constants";
 import { classNameFactory } from "@utils/css";
 import { fetchUserProfile } from "@utils/discord";
-import { classes, pluralise } from "@utils/misc";
+import { classes, getUserAvatarUrl, pluralise } from "@utils/misc";
 import { RenderModalProps, User } from "@vencord/discord-types";
 import { Forms, Modal,openModal, showToast, useEffect, useMemo, UserProfileStore, useStateFromStores } from "@webpack/common";
 
@@ -59,7 +59,7 @@ function ContributorModal({ user, modalProps }: { user: User; modalProps: Render
                 <div className="vc-plugin-modal-header">
                     <img
                         className={cl("avatar")}
-                        src={user.getAvatarURL(void 0, 512, true)}
+                        src={getUserAvatarUrl(user, undefined, true, 512)}
                         alt=""
                     />
                     <Forms.FormTitle tag="h2" className={cl("name")}>{user.username}</Forms.FormTitle>
