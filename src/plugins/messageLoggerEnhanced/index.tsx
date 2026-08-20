@@ -370,10 +370,29 @@ export default definePlugin({
     imageUtils,
     idb,
 
-    coolReAddDeletedMessages: (messages: LoggedMessageJSON[] & { extra: LoggedMessageJSON[]; }, payload: LoadMessagePayload) => {
+    // The patch above turns "messages" into a getter, so this runs on every
+    // single property access Discord's own LOAD_MESSAGES_SUCCESS handler
+    // makes on it - live-confirmed via a real channel load to fire 24 times
+    // for one load, not once. reAddDeletedMessages splices messages.extra's
+    // entries into `messages` IN PLACE, so re-running it on an array that's
+    // already been spliced by an earlier call re-reads shifted indices/
+    // already-inserted entries as if they were the original untouched list -
+    // exactly the kind of corruption that would eventually leave something
+    // that isn't a real message object in the array, which is consistent
+    // with a live-reported crash ("Cannot use 'in' operator to search for
+    // 'flags' in <a bare snowflake>") inside Discord's own message-loading
+    // code right after this getter runs. Guard with a WeakSet keyed by the
+    // array reference (stable across every getter access for the same load)
+    // so the actual splice work only ever happens once per array.
+    processedMessageArrays: new WeakSet<object>(),
+    coolReAddDeletedMessages(messages: LoggedMessageJSON[] & { extra: LoggedMessageJSON[]; }, payload: LoadMessagePayload) {
+        if (this.processedMessageArrays.has(messages)) return messages;
+
         try {
-            if (messages.extra)
+            if (messages.extra) {
                 reAddDeletedMessages(messages, messages.extra, !payload.hasMoreAfter && !payload.isBefore, !payload.hasMoreBefore && !payload.isAfter);
+                this.processedMessageArrays.add(messages);
+            }
         }
         catch (e) {
             Flogger.error("Failed to re-add deleted messages", e);
