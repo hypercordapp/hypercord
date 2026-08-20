@@ -362,12 +362,18 @@ export default definePlugin({
     isDeletedMessage: (id: string) => cacheSentMessages.get(id)?.deleted ?? false,
 
     getDeleted(m1, m2) {
+        const id = m1?.id ?? m2?.id;
+        if (id && idb.permanentlyRemovedIds.has(id)) return false;
+
         const deleted = m2?.deleted;
         if (deleted == null && m1?.deleted != null) return m1.deleted;
         return deleted;
     },
 
     getEdited(m1, m2) {
+        const id = m1?.id ?? m2?.id;
+        if (id && idb.permanentlyRemovedIds.has(id)) return undefined;
+
         const editHistory = m2?.editHistory;
         if (editHistory == null && m1?.editHistory != null && m1.editHistory.length > 0)
             return m1.editHistory.map(mapTimestamp);
