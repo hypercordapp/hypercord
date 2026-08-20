@@ -4,10 +4,9 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+import { cacheSentMessages } from "@plugins/messageLoggerEnhanced/index";
 import { ChannelStore, Toasts } from "@webpack/common";
 import { DBSchema, IDBPDatabase, openDB } from "idb";
-
-import { cacheSentMessages } from "@plugins/messageLoggerEnhanced/index";
 
 import { LoggedMessageJSON } from "./types";
 import { getMessageStatus } from "./utils";
