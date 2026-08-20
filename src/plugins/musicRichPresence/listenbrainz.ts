@@ -16,7 +16,11 @@ const url = (path: string) => `https://listenbrainz.org${path}`;
 async function fetchCoverArt(releaseGroupMBID: string) {
     const res = await fetch(`https://coverartarchive.org/release-group/${releaseGroupMBID}`);
     if (!res.ok) return null;
-    return res.json().then(json => json.images[0].thumbnails.large);
+    // A release group with no cover art returns an empty images array rather
+    // than a 404 - images[0] being undefined threw here, silently no-oping
+    // the whole presence update for that cycle via the outer try/catch
+    // instead of just leaving the cover art blank.
+    return res.json().then(json => json.images?.[0]?.thumbnails?.large);
 }
 
 async function getUrls(additionalInfo: Record<string, string> | undefined, trackName: string, artistName: string, releaseName: string): Promise<Partial<TrackData>> {

@@ -7,6 +7,7 @@
 import { settings } from "@plugins/richPresence/settings";
 import { JfMediaData, JfSession } from "@plugins/richPresence/types/jellyfin";
 import { Logger } from "@utils/Logger";
+import { parseUrl } from "@utils/misc";
 import { formatDurationMs } from "@utils/text";
 import { Activity } from "@vencord/discord-types";
 import { ApplicationAssetUtils, FluxDispatcher, showToast } from "@webpack/common";
@@ -38,8 +39,29 @@ async function fetchMediaData(): Promise<JfMediaData | null> {
     }
 
     try {
-        const baseUrl = (jf_serverUrl.startsWith("http") ? jf_serverUrl : `https://${jf_serverUrl}`).replace(/\/$/, "");
-        const res = await fetch(`${baseUrl}/Sessions?api_key=${jf_apiKey}`);
+        // Same reasoning as Navidrome's own service file: this URL and header
+        // carry the user's real Jellyfin API key, so silently accepting a
+        // plain "http://" server URL would send it unencrypted. Reject
+        // anything that doesn't resolve to https instead of guessing.
+        const parsedUrl = parseUrl(jf_serverUrl.startsWith("http") ? jf_serverUrl : `https://${jf_serverUrl}`);
+        if (!parsedUrl || parsedUrl.protocol !== "https:") {
+            if (!hasShownError) {
+                logger.warn("Jellyfin server URL is invalid or not using HTTPS.");
+                showToast("Jellyfin server URL must use HTTPS.", "failure", { duration: 15000 });
+                hasShownError = true;
+            }
+            return null;
+        }
+        const baseUrl = parsedUrl.href.replace(/\/$/, "");
+
+        // The API key used to be sent as a "?api_key=" query param, which
+        // Jellyfin (and any reverse proxy/CDN in front of it) would then
+        // write straight into its own access logs in plaintext on every
+        // request. Jellyfin's documented X-Emby-Token header does the exact
+        // same auth without that exposure - same key, safer transport.
+        const res = await fetch(`${baseUrl}/Sessions`, {
+            headers: { "X-Emby-Token": jf_apiKey }
+        });
         if (!res.ok) throw `${res.status} ${res.statusText}`;
 
         const contentType = res.headers.get("content-type") ?? "";
