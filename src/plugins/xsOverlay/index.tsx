@@ -225,7 +225,12 @@ export default definePlugin({
                     titleString = message.author.username.trim();
                     break;
                 case ChannelTypes.GROUP_DM:
-                    const channelName = channel.name.trim() ?? channel.rawRecipients.map(e => e.username).join(", ");
+                    // channel.name is null for an unnamed group DM (the common
+                    // case) - "?? " only catches null/undefined, but
+                    // channel.name.trim() throws before "??" ever gets a
+                    // chance to run, crashing every notification for that
+                    // channel. Check name first instead.
+                    const channelName = channel.name?.trim() || channel.rawRecipients.map(e => e.username).join(", ");
                     titleString = `${message.author.username} (${channelName})`;
                     break;
             }
