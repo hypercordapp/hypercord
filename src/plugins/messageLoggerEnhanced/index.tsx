@@ -61,6 +61,16 @@ async function messageDeleteHandler(payload: MessageDeletePayload & { isBulk: bo
         return;
     }
 
+    // A message permanently removed via the context menu can still receive
+    // an unrelated real MESSAGE_DELETE later (e.g. a duplicate/replayed
+    // gateway event for the same id) - without this check that would fall
+    // through to addMessage() below and silently write the record straight
+    // back into IDB, undoing the removal until the next reload re-fetches
+    // and re-displays it.
+    if (idb.permanentlyRemovedIds.has(payload.id)) {
+        return;
+    }
+
     try {
         handledMessageIds.add(payload.id);
 
@@ -131,6 +141,20 @@ async function messageDeleteBulkHandler({ channelId, guildId, ids }: MessageDele
 }
 
 async function messageUpdateHandler(payload: MessageUpdatePayload) {
+    // Same resurrection risk as messageDeleteHandler above, just for the far
+    // more common trigger: an unrelated MESSAGE_UPDATE (an embed/link preview
+    // finishing loading is the most frequent real-world case, and Discord's
+    // own embed-hydration pipeline doesn't check a message's deleted state
+    // before firing one - see the "only check for expired attachments if the
+    // message is not deleted" patch above, added for the identical reason).
+    // Without this, addMessage() below would silently write a permanently
+    // removed message straight back into IDB with its old editHistory,
+    // invisibly undoing the removal until the next reload re-fetches and
+    // re-displays it.
+    if (idb.permanentlyRemovedIds.has(payload.message.id)) {
+        return;
+    }
+
     const cachedMessage = cacheSentMessages.get(`${payload.message.channel_id},${payload.message.id}`);
     if (
         shouldIgnore({
