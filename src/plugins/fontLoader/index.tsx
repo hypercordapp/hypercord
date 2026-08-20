@@ -94,7 +94,7 @@ const applyFont = async (fontFamily: string) => {
                 --font-primary: '${fontFamily}', sans-serif !important;
                 --font-display: '${fontFamily}', sans-serif !important;
                 --font-headline: '${fontFamily}', sans-serif !important;
-                ${settings.store.applyOnCodeBlocks ? "--font-code: '${fontFamily}', monospace !important;" : ""}
+                ${settings.store.applyOnCodeBlocks ? `--font-code: '${fontFamily}', monospace !important;` : ""}
             }
         `;
     } catch (err) {
