@@ -203,7 +203,15 @@ export async function downloadAttachment(_event: IpcMainInvokeEvent, attachment:
         const imageCacheDir = await getImageCacheDir();
         await ensureDirectoryExists(imageCacheDir);
 
-        const finalPath = path.join(imageCacheDir, `${attachment.id}${attachment.fileExtension}`);
+        // attachment.id is checked above, but attachment.fileExtension never
+        // was - same arbitrary-file-write shape writeImageNative already
+        // guards against in this file (a "/../../evil" fileExtension would
+        // join outside imageCacheDir). In practice the allowedList check
+        // above rejects most malformed extensions first, but that's
+        // incidental - guard the actual write directly instead of relying
+        // on an unrelated allowlist to keep doing it by accident.
+        const finalPath = ensureSafePath(imageCacheDir, `${attachment.id}${attachment.fileExtension}`);
+        if (!finalPath) return { error: "Invalid Attachment", path: null };
         await writeFile(finalPath, Buffer.from(ab));
 
         nativeSavedImages.set(attachment.id, finalPath);
