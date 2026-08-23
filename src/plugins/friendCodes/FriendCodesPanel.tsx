@@ -10,6 +10,7 @@ import { BaseText } from "@components/BaseText";
 import { Flex } from "@components/Flex";
 import { Heading, HeadingTertiary } from "@components/Heading";
 import { copyToClipboard } from "@utils/clipboard";
+import { Logger } from "@utils/Logger";
 import { findByPropsLazy, findCssClassesLazy } from "@webpack";
 import { Button, Parser, useEffect, useState } from "@webpack/common";
 
@@ -17,6 +18,7 @@ import { FriendInvite } from "./types";
 
 const FormStyles = findCssClassesLazy("header", "title", "emptyState");
 const { createFriendInvite, getAllFriendInvites, revokeFriendInvites } = findByPropsLazy("createFriendInvite");
+const logger = new Logger("FriendCodes");
 
 function CopyButton({ copyText, copiedText, onClick }) {
     const [copied, setCopied] = useState(false);
@@ -71,6 +73,7 @@ export default function FriendCodesPanel() {
         setLoading(true);
         getAllFriendInvites()
             .then(setInvites)
+            .catch(e => logger.error("Failed to fetch friend invites", e))
             .then(() => setLoading(false));
     }, []);
 
@@ -93,7 +96,9 @@ export default function FriendCodesPanel() {
                         <Button
                             color={Button.Colors.GREEN}
                             look={Button.Looks.FILLED}
-                            onClick={() => createFriendInvite().then((invite: FriendInvite) => setInvites([...invites, invite]))}
+                            onClick={() => createFriendInvite()
+                                .then((invite: FriendInvite) => setInvites([...invites, invite]))
+                                .catch(e => logger.error("Failed to create friend invite", e))}
                         >
                             Create Friend Code
                         </Button>
@@ -102,7 +107,9 @@ export default function FriendCodesPanel() {
                             color={Button.Colors.RED}
                             look={Button.Looks.FILLED}
                             disabled={!invites.length}
-                            onClick={() => revokeFriendInvites().then(() => setInvites([]))}
+                            onClick={() => revokeFriendInvites()
+                                .then(() => setInvites([]))
+                                .catch(e => logger.error("Failed to revoke friend invites", e))}
                         >
                             Revoke all Friend Codes
                         </Button>
