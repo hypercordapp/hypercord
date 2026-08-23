@@ -70,7 +70,42 @@ const BENIGN_NOISE_PATTERNS = [
 ];
 
 function isBenignNoise(message: string): boolean {
-    return BENIGN_NOISE_PATTERNS.some(pattern => pattern.test(message));
+    return BENIGN_NOISE_PATTERNS.some(pattern => pattern.test(message)) || isDiscordApiResponseNoise(message);
+}
+
+// Discord's own request layer routinely logs already-handled, expected API/network
+// conditions via console.error (rate limits, failed REST calls, raw fetch Response
+// dumps) - our console.error hook (below) picks up the real Error objects wrapping
+// these and reports them as "crashes", even though nothing actually broke. Confirmed
+// live: this was ~45% of all 500 stored crash reports as of 2026-08-23, all with
+// stacks pointing into discord.com's own bundle, none into ours - drowning out the
+// small number of reports that are real, actionable bugs. Detected by shape (not by
+// message text, since these are Turkish/localized and vary per-request) rather than
+// by pattern-matching specific strings.
+function isDiscordApiResponseNoise(message: string): boolean {
+    if (!message.startsWith("{")) return false;
+
+    let parsed: unknown;
+    try {
+        parsed = JSON.parse(message);
+    } catch {
+        // The message may get truncated (see reportCrash's message.slice(0, 300))
+        // before this shape check ever sees it again on a re-report - fall back to
+        // a prefix check for the biggest, highest-volume offender (a raw fetch/XHR
+        // Response dump) so a cut-off object still gets caught.
+        return /^\{("hasErr":\w+,)?"ok":false,"headers":/.test(message);
+    }
+    if (typeof parsed !== "object" || parsed === null) return false;
+
+    const obj = parsed as Record<string, unknown>;
+    // Discord's own rate-limit response shape.
+    if ("retry_after" in obj && "global" in obj) return true;
+    // Discord's own structured REST API error response shape.
+    if ("code" in obj && "message" in obj && ("status" in obj || "fields" in obj)) return true;
+    // A serialized fetch/XHR Response-like object from Discord's own request layer.
+    if ("ok" in obj && ("headers" in obj || "hasErr" in obj)) return true;
+
+    return false;
 }
 
 function reportCrash(message: string, stack: string) {

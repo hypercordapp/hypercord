@@ -183,6 +183,16 @@ export function createAudioPlayer(
     audio: string,
     options: AudioPlayerOptions = {}
 ): AudioPlayerInterface {
+    // Callers frequently pass a plugin setting straight through (e.g. Questify's
+    // alert-sound pickers). If that setting is ever a non-string (a stale/foreign
+    // shape from settings sync, a bad migration, etc.), Discord's own internal
+    // sound player stringifies it into a bogus module path and throws a confusing
+    // "Cannot find module './[object Object].mp3'" deep in its own bundle - fail
+    // clearly at our own API boundary instead of letting that happen.
+    if (typeof audio !== "string" || audio.length === 0) {
+        throw new TypeError(`createAudioPlayer: audio must be a non-empty string, got ${JSON.stringify(audio)}`);
+    }
+
     const internalPlayer: AudioPlayerInternal = new AudioPlayerConstructor(
         options,
         audio,

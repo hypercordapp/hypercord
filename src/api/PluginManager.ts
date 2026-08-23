@@ -225,7 +225,20 @@ export const startPlugin = traceFunction("startPlugin", function startPlugin(p: 
             return false;
         }
         try {
-            p.start();
+            // start() is typed as returning void, but plugins are free to declare it
+            // async - a rejection surfacing after this synchronous try/catch has
+            // already returned isn't caught here, so it fell through as an
+            // unattributed unhandled rejection instead of a properly plugin-tagged
+            // crash report (confirmed live: "Failed to fetch" was the single largest
+            // unattributed crash-report bucket). Mirrors the same catch-and-tag
+            // pattern already used for async flux handlers below.
+            const result: unknown = p.start();
+            if (result instanceof Promise) {
+                result.catch(e => {
+                    logger.error(`Failed to start ${name}\n`, e);
+                    reportPluginError(name, e instanceof Error ? e.message : String(e), e instanceof Error ? e.stack : undefined);
+                });
+            }
         } catch (e) {
             logger.error(`Failed to start ${name}\n`, e);
             reportPluginError(name, e instanceof Error ? e.message : String(e), e instanceof Error ? e.stack : undefined);
