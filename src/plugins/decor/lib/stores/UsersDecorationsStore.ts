@@ -19,7 +19,6 @@ interface UserDecorationData {
 
 interface UsersDecorationsState {
     usersDecorations: Map<string, UserDecorationData>;
-    fetchQueue: Set<string>;
     bulkFetch: () => Promise<void>;
     fetch: (userId: string, force?: boolean) => Promise<void>;
     fetchMany: (userIds: string[]) => Promise<void>;
@@ -29,19 +28,30 @@ interface UsersDecorationsState {
     set: (userId: string, decoration: string | null) => void;
 }
 
+// Kept outside the zustand store on purpose - nothing ever reads this for
+// rendering (see UsersDecorationsState, no `fetchQueue` field), it's pure
+// internal bookkeeping for what bulkFetch should request next. Previously
+// lived in reactive store state, so every single fetch() call (i.e. every
+// avatar mounting without cached decoration data - member lists, message
+// authors, DM list) did a whole-store set(), and useUserDecorAvatarDecoration
+// below subscribes with no selector, so EVERY currently-mounted avatar's
+// listener re-ran on EVERY other avatar's mount. Scrolling a large member
+// list turned into an O(n^2) storm of listener invocations. A plain Set here
+// means fetch()/fetchMany() no longer touch the store at all until bulkFetch
+// actually resolves (still debounced, still one set() per batch).
+let fetchQueue = new Set<string>();
+
 export const useUsersDecorationsStore = proxyLazy(() => zustandCreate((set: any, get: any) => ({
     usersDecorations: new Map<string, UserDecorationData>(),
-    fetchQueue: new Set(),
     bulkFetch: debounce(async () => {
-        const { fetchQueue, usersDecorations } = get();
-
         if (fetchQueue.size === 0) return;
 
-        set({ fetchQueue: new Set() });
-
         const fetchIds = [...fetchQueue];
+        fetchQueue = new Set();
+
         const fetchedUsersDecorations = await getUsersDecorations(fetchIds);
 
+        const { usersDecorations } = get();
         const newUsersDecorations = new Map(usersDecorations);
 
         const now = new Date();
@@ -53,21 +63,19 @@ export const useUsersDecorationsStore = proxyLazy(() => zustandCreate((set: any,
         set({ usersDecorations: newUsersDecorations });
     }),
     async fetch(userId: string, force: boolean = false) {
-        const { usersDecorations, fetchQueue, bulkFetch } = get();
+        const { usersDecorations, bulkFetch } = get();
 
         const { fetchedAt } = usersDecorations.get(userId) ?? {};
         if (fetchedAt) {
             if (!force && Date.now() - fetchedAt.getTime() < DECORATION_FETCH_COOLDOWN) return;
         }
 
-        set({ fetchQueue: new Set(fetchQueue).add(userId) });
+        fetchQueue.add(userId);
         bulkFetch();
     },
     async fetchMany(userIds) {
         if (!userIds.length) return;
-        const { usersDecorations, fetchQueue, bulkFetch } = get();
-
-        const newFetchQueue = new Set(fetchQueue);
+        const { usersDecorations, bulkFetch } = get();
 
         const now = Date.now();
         for (const userId of userIds) {
@@ -75,10 +83,9 @@ export const useUsersDecorationsStore = proxyLazy(() => zustandCreate((set: any,
             if (fetchedAt) {
                 if (now - fetchedAt.getTime() < DECORATION_FETCH_COOLDOWN) continue;
             }
-            newFetchQueue.add(userId);
+            fetchQueue.add(userId);
         }
 
-        set({ fetchQueue: newFetchQueue });
         bulkFetch();
     },
     get(userId: string) { return get().usersDecorations.get(userId); },
