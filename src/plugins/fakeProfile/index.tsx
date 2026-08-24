@@ -856,8 +856,18 @@ function applyCosmeticOverrides(real: any) {
     const decorationOverride = BadgeAPIPlugin.getDecorationOverride(real.id);
     if (decorationOverride) real.avatarDecorationData = decorationOverride;
 
+    // Guard against reassigning when already applied - getUser/getCurrentUser
+    // are called on nearly every React render (including ones fired while
+    // typing in the message composer). Spreading unconditionally here handed
+    // back a brand-new object reference on every single call even when the
+    // content was identical, which broke reference-equality memoization on
+    // `collectibles` everywhere it's consumed - matches a user report of
+    // severe typing lag (each keystroke landing ~1s late) with only
+    // FakeProfile enabled.
     const nameplateOverride = BadgeAPIPlugin.getNameplateOverride(real.id);
-    if (nameplateOverride) real.collectibles = { ...(real.collectibles ?? {}), nameplate: nameplateOverride };
+    if (nameplateOverride && real.collectibles?.nameplate !== nameplateOverride) {
+        real.collectibles = { ...(real.collectibles ?? {}), nameplate: nameplateOverride };
+    }
 
     // Discord's own field is plural (displayNameStyles) - see
     // profileSets/utils/profile.ts. Read off UserStore like decoration/
@@ -1119,8 +1129,13 @@ function patchGuildMemberStore() {
             (member as any).avatarDecoration = decorationOverride;
         }
 
+        // Same reference-stability guard as applyCosmeticOverrides above -
+        // getMember is called just as often as getUser/getCurrentUser (member
+        // list, message authors, mention autocomplete, ...), so recreating
+        // this object unconditionally on every call caused the same
+        // render-storm/keystroke-lag bug for guild member views.
         const nameplateOverride = BadgeAPIPlugin.getNameplateOverride(userId);
-        if (nameplateOverride) {
+        if (nameplateOverride && (member as any).collectibles?.nameplate !== nameplateOverride) {
             (member as any).collectibles = { ...((member as any).collectibles ?? {}), nameplate: nameplateOverride };
         }
 
