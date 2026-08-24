@@ -217,6 +217,19 @@ function formatBoxValue(value: string): string | null {
     return value;
 }
 
+// id/className/font come from whatever element the user happens to hover -
+// including third-party embeds/widgets that set those from remote data -
+// and were being spliced into an innerHTML string unescaped, letting markup
+// in an id/class execute as script while highlighting is on.
+function escapeHtml(value: string): string {
+    return value
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+}
+
 function buildTooltipContent(el: Element, computed: CSSStyleDeclaration, rect: DOMRect): string {
     const tag = el.tagName.toLowerCase();
     const colorVar = getColorVar(el) ?? computed.color;

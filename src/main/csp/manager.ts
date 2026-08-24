@@ -75,7 +75,11 @@ async function addCspRule(_: IpcMainInvokeEvent, url: string, directives: string
 
     const domain = new URL(url).host;
 
-    if (domain in NativeSettings.store.customCspRules) {
+    // `in` (and a plain bracket lookup) resolves inherited Object.prototype
+    // properties for a domain literally named "constructor"/"toString"/etc,
+    // wrongly treating it as an existing rule. Object.hasOwn only reports
+    // actual own keys.
+    if (Object.hasOwn(NativeSettings.store.customCspRules, domain)) {
         return "conflict";
     }
 
@@ -103,7 +107,7 @@ async function addCspRule(_: IpcMainInvokeEvent, url: string, directives: string
 }
 
 function removeCspRule(_: IpcMainInvokeEvent, domain: string) {
-    if (domain in NativeSettings.store.customCspRules) {
+    if (Object.hasOwn(NativeSettings.store.customCspRules, domain)) {
         delete NativeSettings.store.customCspRules[domain];
         return true;
     }
@@ -115,7 +119,8 @@ function isDomainAllowed(_: IpcMainInvokeEvent, url: string, directives: string[
     try {
         const domain = new URL(url).host;
 
-        const ruleForDomain = CspPolicies[domain] ?? NativeSettings.store.customCspRules[domain];
+        const ruleForDomain = (Object.hasOwn(CspPolicies, domain) && CspPolicies[domain])
+            || (Object.hasOwn(NativeSettings.store.customCspRules, domain) && NativeSettings.store.customCspRules[domain]);
         if (!ruleForDomain) return false;
 
         return directives.every(d => ruleForDomain.includes(d));

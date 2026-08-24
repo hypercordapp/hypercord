@@ -75,10 +75,23 @@ const preloadFont = (family: string) =>
 
 let styleElement: HTMLStyleElement | null = null;
 
+// fontFamily comes from Google's Fonts API search response, not a fixed
+// allowlist - splicing it into a CSS string literal unescaped would let a
+// name containing a quote character break out of the string and inject
+// arbitrary CSS (e.g. via url()) into the client's own stylesheet. Real
+// Google Fonts family names are always letters/digits/spaces/hyphens, so
+// reject anything else instead of trying to escape it.
+const SAFE_FONT_FAMILY_RE = /^[A-Za-z0-9 -]+$/;
+
 const applyFont = async (fontFamily: string) => {
     if (!fontFamily) {
         styleElement?.remove();
         styleElement = null;
+        return;
+    }
+
+    if (!SAFE_FONT_FAMILY_RE.test(fontFamily)) {
+        console.error("Refusing to apply font with unexpected characters in its name:", fontFamily);
         return;
     }
 

@@ -37,7 +37,7 @@ export async function rmPlugin(_, name: string): Promise<string> {
     return new Promise(async (resolve, reject) => {
         const ups = await getUserplugins();
         const pl = ups.find(p => p.directory! === name);
-        if (!pl) return;
+        if (!pl) return reject("Plugin not found");
 
         const deleteReqDialog = await dialog.showMessageBox({
             title: "Uninstall plugin",
@@ -83,7 +83,8 @@ export async function isUpdateAvailableForPlugin(_, name: string): Promise<boole
 export function initPluginInstall(_, link: string, source: string, owner: string, repo: string): Promise<string> {
     // eslint-disable-next-line
     return new Promise(async (resolve, reject) => {
-        const verifiedRegex = link.match(CLONE_LINK_REGEX)!;
+        const verifiedRegex = link.match(CLONE_LINK_REGEX);
+        if (!verifiedRegex) return reject("Invalid link");
         const idpl = source === "plugins.nin0.dev" ? 1 : 0;
         if (![4, 7].includes(verifiedRegex.length) || verifiedRegex[0] !== link || verifiedRegex[[1, 4][idpl]] !== source || verifiedRegex[[2, 5][idpl]] !== owner || verifiedRegex[[3, 6][idpl]] !== repo) return reject("Invalid link");
 
