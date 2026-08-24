@@ -35,23 +35,33 @@ export async function ensurePluginsDirectory(_: any) {
 export async function rmPlugin(_, name: string): Promise<string> {
     // eslint-disable-next-line
     return new Promise(async (resolve, reject) => {
-        const ups = await getUserplugins();
-        const pl = ups.find(p => p.directory! === name);
-        if (!pl) return reject("Plugin not found");
+        // An async executor's own throw doesn't reach `reject` - it's an
+        // unhandled rejection of the executor's own implicit promise, so
+        // without this try/catch any of the awaits below throwing (e.g. `rm`
+        // failing on a file still locked by another process, common on
+        // Windows) leaves this Promise permanently unsettled instead of
+        // rejecting - the caller hangs forever instead of seeing an error.
+        try {
+            const ups = await getUserplugins();
+            const pl = ups.find(p => p.directory! === name);
+            if (!pl) return reject("Plugin not found");
 
-        const deleteReqDialog = await dialog.showMessageBox({
-            title: "Uninstall plugin",
-            message: `Uninstall ${pl.name}`,
-            type: "error",
-            detail: `The uninstall of the userplugin ${pl.name} has been requested. Would you like to do so?\n\nIf you did not initiate this, press No.`,
-            buttons: ["No", "Yes"]
-        });
+            const deleteReqDialog = await dialog.showMessageBox({
+                title: "Uninstall plugin",
+                message: `Uninstall ${pl.name}`,
+                type: "error",
+                detail: `The uninstall of the userplugin ${pl.name} has been requested. Would you like to do so?\n\nIf you did not initiate this, press No.`,
+                buttons: ["No", "Yes"]
+            });
 
-        if (deleteReqDialog.response !== 1) return reject("User rejected");
-        await rm(join(vencordPath, "../src/userplugins", name), { recursive: true });
+            if (deleteReqDialog.response !== 1) return reject("User rejected");
+            await rm(join(vencordPath, "../src/userplugins", name), { recursive: true });
 
-        await build();
-        resolve("Done");
+            await build();
+            resolve("Done");
+        } catch (e) {
+            reject(e);
+        }
     });
 }
 
@@ -83,86 +93,98 @@ export async function isUpdateAvailableForPlugin(_, name: string): Promise<boole
 export function initPluginInstall(_, link: string, source: string, owner: string, repo: string): Promise<string> {
     // eslint-disable-next-line
     return new Promise(async (resolve, reject) => {
-        const verifiedRegex = link.match(CLONE_LINK_REGEX);
-        if (!verifiedRegex) return reject("Invalid link");
-        const idpl = source === "plugins.nin0.dev" ? 1 : 0;
-        if (![4, 7].includes(verifiedRegex.length) || verifiedRegex[0] !== link || verifiedRegex[[1, 4][idpl]] !== source || verifiedRegex[[2, 5][idpl]] !== owner || verifiedRegex[[3, 6][idpl]] !== repo) return reject("Invalid link");
+        // Same unhandled-rejection-hangs-forever risk as rmPlugin above -
+        // cloneRepo/getPluginMeta rejecting/throwing (bad link, network
+        // failure, malformed plugin) inside this async executor would
+        // otherwise never reach `reject`, leaving the install stuck.
+        try {
+            const verifiedRegex = link.match(CLONE_LINK_REGEX);
+            if (!verifiedRegex) return reject("Invalid link");
+            const idpl = source === "plugins.nin0.dev" ? 1 : 0;
+            if (![4, 7].includes(verifiedRegex.length) || verifiedRegex[0] !== link || verifiedRegex[[1, 4][idpl]] !== source || verifiedRegex[[2, 5][idpl]] !== owner || verifiedRegex[[3, 6][idpl]] !== repo) return reject("Invalid link");
 
-        // Ask for clone
-        const cloneDialog = await dialog.showMessageBox({
-            title: "Clone userplugin",
-            message: `You are about to clone a userplugin from ${source}.`,
-            type: "question",
-            detail: `The repository name is "${repo}" and it is owned by "${owner}".\nThe repository URL is ${link}\n\n(If you did not request this intentionally, choose Cancel)`,
-            buttons: ["Cancel", "Clone repository and continue install", "Open repository in browser"]
-        });
-        switch (cloneDialog.response) {
-            case 0: {
-                return reject("Rejected by user");
-            }
-            case 1: {
-                await cloneRepo(link, repo);
-                break;
-            }
-            case 2: {
-                await shell.openExternal(link);
-                return reject("silentStop");
-            }
-        }
-
-        // Get plugin meta
-        const meta = await getPluginMeta(join(vencordPath, "..", "src", "userplugins", repo));
-
-        // Review plugin
-        const win = new BrowserWindow({
-            maximizable: false,
-            minimizable: false,
-            width: 560,
-            height: meta.usesNative || meta.usesPreSend ? 650 : 360,
-            resizable: false,
-            webPreferences: {
-                devTools: true
-            },
-            title: "Review userplugin",
-            modal: true,
-            parent: BrowserWindow.getAllWindows()[0],
-            show: false,
-            autoHideMenuBar: true
-        });
-        const reView /* haha got it */ = new WebContentsView({
-            webPreferences: {
-                devTools: true,
-                nodeIntegration: true
-            }
-        });
-        win.contentView.addChildView(reView);
-        win.loadURL(generateReviewPluginContent(meta));
-        win.on("page-title-updated", async e => {
-            switch (win.webContents.getTitle() as "abortInstall" | "reviewCode" | "install") {
-                case "abortInstall": {
-                    win.close();
-                    await rm(join(vencordPath, "..", "src", "userplugins", repo), {
-                        recursive: true
-                    });
+            // Ask for clone
+            const cloneDialog = await dialog.showMessageBox({
+                title: "Clone userplugin",
+                message: `You are about to clone a userplugin from ${source}.`,
+                type: "question",
+                detail: `The repository name is "${repo}" and it is owned by "${owner}".\nThe repository URL is ${link}\n\n(If you did not request this intentionally, choose Cancel)`,
+                buttons: ["Cancel", "Clone repository and continue install", "Open repository in browser"]
+            });
+            switch (cloneDialog.response) {
+                case 0: {
                     return reject("Rejected by user");
                 }
-                case "install": {
-                    win.close();
-                    try {
-                        await build();
-                    }
-                    catch (e) {
-                        reject((e as Error).toString());
-                    }
-                    resolve(JSON.stringify({
-                        name: meta.name,
-                        native: meta.usesNative
-                    }));
+                case 1: {
+                    await cloneRepo(link, repo);
                     break;
                 }
+                case 2: {
+                    await shell.openExternal(link);
+                    return reject("silentStop");
+                }
             }
-        });
-        win.show();
+
+            // Get plugin meta
+            const meta = await getPluginMeta(join(vencordPath, "..", "src", "userplugins", repo));
+
+            // Review plugin
+            const win = new BrowserWindow({
+                maximizable: false,
+                minimizable: false,
+                width: 560,
+                height: meta.usesNative || meta.usesPreSend ? 650 : 360,
+                resizable: false,
+                webPreferences: {
+                    devTools: true
+                },
+                title: "Review userplugin",
+                modal: true,
+                parent: BrowserWindow.getAllWindows()[0],
+                show: false,
+                autoHideMenuBar: true
+            });
+            const reView /* haha got it */ = new WebContentsView({
+                webPreferences: {
+                    devTools: true,
+                    nodeIntegration: true
+                }
+            });
+            win.contentView.addChildView(reView);
+            win.loadURL(generateReviewPluginContent(meta));
+            win.on("page-title-updated", async e => {
+                try {
+                    switch (win.webContents.getTitle() as "abortInstall" | "reviewCode" | "install") {
+                        case "abortInstall": {
+                            win.close();
+                            await rm(join(vencordPath, "..", "src", "userplugins", repo), {
+                                recursive: true
+                            });
+                            return reject("Rejected by user");
+                        }
+                        case "install": {
+                            win.close();
+                            try {
+                                await build();
+                            }
+                            catch (e) {
+                                reject((e as Error).toString());
+                            }
+                            resolve(JSON.stringify({
+                                name: meta.name,
+                                native: meta.usesNative
+                            }));
+                            break;
+                        }
+                    }
+                } catch (e) {
+                    reject(e);
+                }
+            });
+            win.show();
+        } catch (e) {
+            reject(e);
+        }
     });
 }
 

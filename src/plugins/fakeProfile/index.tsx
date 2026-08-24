@@ -932,6 +932,7 @@ function unpatchUserStore() {
 // as badges/banner/decoration already do.
 
 let originalGetUserProfile: typeof UserProfileStore.getUserProfile | undefined;
+let filteredProfileCache = new WeakMap<object, { hiddenRealBadges: string[]; badges: unknown[]; result: unknown; }>();
 
 // Reads the user's REAL, un-hidden badge list straight from the store's
 // own cache via the original unpatched getter - bypasses the hiddenRealBadges
@@ -1027,7 +1028,23 @@ function patchUserProfileStore() {
         // reversible.
         const hiddenRealBadges = BadgeAPIPlugin.getHiddenRealBadges(id);
         if (hiddenRealBadges.length && profile.badges?.length) {
-            return { ...profile, badges: profile.badges.filter((b: { id: string; }) => !hiddenRealBadges.includes(b.id)) };
+            // getUserProfile is called on nearly every render (same hot-path
+            // as getUser/getCurrentUser above) - spreading a fresh object
+            // unconditionally here handed back a new reference every single
+            // call even when nothing changed, breaking reference-equality
+            // memoization the same way the collectibles/nameplate spread
+            // above once did. `hiddenRealBadges` and `profile.badges` are
+            // both the same underlying references reused between polls/
+            // store updates, so caching on them lets repeat calls return the
+            // exact same filtered object instead of rebuilding it.
+            const cached = filteredProfileCache.get(profile);
+            if (cached && cached.hiddenRealBadges === hiddenRealBadges && cached.badges === profile.badges) {
+                return cached.result;
+            }
+
+            const result = { ...profile, badges: profile.badges.filter((b: { id: string; }) => !hiddenRealBadges.includes(b.id)) };
+            filteredProfileCache.set(profile, { hiddenRealBadges, badges: profile.badges, result });
+            return result;
         }
 
         return profile;
@@ -1037,6 +1054,7 @@ function patchUserProfileStore() {
 function unpatchUserProfileStore() {
     if (originalGetUserProfile) UserProfileStore.getUserProfile = originalGetUserProfile;
     originalGetUserProfile = undefined;
+    filteredProfileCache = new WeakMap();
 }
 
 // Real Discord builds each connection's click-through link from its own
