@@ -174,15 +174,33 @@ const settings = definePluginSettings({
     },
 });
 
-let socket: WebSocket;
+let socket: WebSocket | null = null;
 
 async function start() {
-    if (socket) socket.close();
-    socket = new WebSocket(`ws://127.0.0.1:${settings.store.webSocketPort ?? 42070}/?client=HyperCord`);
-    return new Promise((resolve, reject) => {
-        socket.onopen = resolve;
-        socket.onerror = reject;
-        setTimeout(reject, 3000);
+    if (socket) {
+        socket.onopen = null;
+        socket.onerror = null;
+        try { socket.close(); } catch {}
+        socket = null;
+    }
+    return new Promise<void>((resolve, reject) => {
+        try {
+            const ws = new WebSocket(`ws://127.0.0.1:${settings.store.webSocketPort ?? 42070}/?client=HyperCord`);
+            socket = ws;
+            const timeout = setTimeout(() => {
+                reject(new Error("XSOverlay WebSocket connection timed out"));
+            }, 3000);
+            ws.onopen = () => {
+                clearTimeout(timeout);
+                resolve();
+            };
+            ws.onerror = () => {
+                clearTimeout(timeout);
+                reject(new Error("XSOverlay WebSocket connection failed"));
+            };
+        } catch (e) {
+            reject(e);
+        }
     });
 }
 
@@ -371,19 +389,27 @@ function sendOtherNotif(content: string, titleString: string) {
 }
 
 async function sendToOverlay(notif: NotificationObject) {
-    if (!IS_WEB && settings.store.preferUDP) {
-        Native.sendToOverlay(notif);
-        return;
+    try {
+        if (!IS_WEB && settings.store.preferUDP) {
+            Native.sendToOverlay(notif);
+            return;
+        }
+        const apiObject: ApiObject = {
+            sender: "HyperCord",
+            target: "xsoverlay",
+            command: "SendNotification",
+            jsonData: JSON.stringify(notif),
+            rawData: null
+        };
+        if (!socket || socket.readyState !== WebSocket.OPEN) {
+            await start();
+        }
+        if (socket?.readyState === WebSocket.OPEN) {
+            socket.send(JSON.stringify(apiObject));
+        }
+    } catch {
+        // Silently ignore when XSOverlay app is not running
     }
-    const apiObject: ApiObject = {
-        sender: "HyperCord",
-        target: "xsoverlay",
-        command: "SendNotification",
-        jsonData: JSON.stringify(notif),
-        rawData: null
-    };
-    if (socket.readyState !== socket.OPEN) await start();
-    socket.send(JSON.stringify(apiObject));
 }
 
 function shouldNotify(message: Message, channel: string) {

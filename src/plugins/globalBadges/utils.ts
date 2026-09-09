@@ -37,56 +37,65 @@ export const serviceMap: Record<string, string> = {
 const blockedMods = ["vencord", "equicord"];
 
 export async function loadBadges() {
-    const url = settings.store.apiUrl.endsWith("/") ? settings.store.apiUrl + "users" : settings.store.apiUrl + "/users";
-    const globalBadges = await fetch(url, { cache: "no-cache" }).then(r => r.json());
-    // Object.create(null), not {} - keys come straight from the configurable
-    // remote API's JSON (Discord user IDs), and JSON.parse can produce a real
-    // own property literally named "__proto__". Indexing a plain {} with that
-    // key doesn't create an own prop, it reassigns filteredUsers' own
-    // prototype via the inherited accessor - a null-prototype object has no
-    // such accessor, so the same assignment just becomes a normal own prop.
-    const filteredUsers: Record<string, typeof globalBadges.users[string]> = Object.create(null);
+    try {
+        const url = settings.store.apiUrl.endsWith("/") ? settings.store.apiUrl + "users" : settings.store.apiUrl + "/users";
+        const res = await fetch(url, { cache: "no-cache" });
+        if (!res.ok) return;
+        const globalBadges = await res.json();
+        if (!globalBadges || typeof globalBadges !== "object" || !globalBadges.users) return;
 
-    for (const key in globalBadges.users) {
-        filteredUsers[key] = globalBadges.users[key].filter(b => {
-            const { mod } = b;
-            if (!mod || blockedMods.includes(mod)) return false;
+        // Object.create(null), not {} - keys come straight from the configurable
+        // remote API's JSON (Discord user IDs), and JSON.parse can produce a real
+        // own property literally named "__proto__". Indexing a plain {} with that
+        // key doesn't create an own prop, it reassigns filteredUsers' own
+        // prototype via the inherited accessor - a null-prototype object has no
+        // such accessor, so the same assignment just becomes a normal own prop.
+        const filteredUsers: Record<string, typeof globalBadges.users[string]> = Object.create(null);
 
-            const conditionalMods = {
-                aero: settings.store.showAero,
-                velocity: settings.store.showVelocity,
-                badgevault: settings.store.showCustom,
-                nekocord: settings.store.showNekocord,
-                reviewdb: settings.store.showReviewDB,
-                aliucord: settings.store.showAliucord,
-                raincord: settings.store.showRaincord,
-                enmity: settings.store.showEnmity,
-                paicord: settings.store.showPaicord,
-                bunny: settings.store.showBunny,
-                goosemod: settings.store.showGooseMod,
-                replugged: settings.store.showReplugged,
-                betterdiscord: settings.store.showBetterDiscord,
-                vendroidenhanced: settings.store.showVendroidEnhanced,
-                revenge: settings.store.showRevenge,
-                record: settings.store.showReCord
-            };
+        for (const key in globalBadges.users) {
+            if (!Array.isArray(globalBadges.users[key])) continue;
+            filteredUsers[key] = globalBadges.users[key].filter(b => {
+                const { mod } = b;
+                if (!mod || blockedMods.includes(mod)) return false;
 
-            if (mod in conditionalMods && !conditionalMods[mod]) return false;
+                const conditionalMods = {
+                    aero: settings.store.showAero,
+                    velocity: settings.store.showVelocity,
+                    badgevault: settings.store.showCustom,
+                    nekocord: settings.store.showNekocord,
+                    reviewdb: settings.store.showReviewDB,
+                    aliucord: settings.store.showAliucord,
+                    raincord: settings.store.showRaincord,
+                    enmity: settings.store.showEnmity,
+                    paicord: settings.store.showPaicord,
+                    bunny: settings.store.showBunny,
+                    goosemod: settings.store.showGooseMod,
+                    replugged: settings.store.showReplugged,
+                    betterdiscord: settings.store.showBetterDiscord,
+                    vendroidenhanced: settings.store.showVendroidEnhanced,
+                    revenge: settings.store.showRevenge,
+                    record: settings.store.showReCord
+                };
 
-            return true;
-        }).map(b => {
-            const modFormatted = serviceMap[b.mod];
-            const prefix = settings.store.showModStyle === "prefix" ? `${modFormatted} - ` : "";
-            const suffix = settings.store.showModStyle === "suffix" ? ` - ${modFormatted}` : "";
+                if (mod in conditionalMods && !conditionalMods[mod as keyof typeof conditionalMods]) return false;
 
-            const tooltip = prefix + b.tooltip + suffix;
-            return {
-                ...b,
-                key: b.tooltip,
-                tooltip
-            };
-        });
+                return true;
+            }).map(b => {
+                const modFormatted = serviceMap[b.mod];
+                const prefix = settings.store.showModStyle === "prefix" ? `${modFormatted} - ` : "";
+                const suffix = settings.store.showModStyle === "suffix" ? ` - ${modFormatted}` : "";
+
+                const tooltip = prefix + b.tooltip + suffix;
+                return {
+                    ...b,
+                    key: b.tooltip,
+                    tooltip
+                };
+            });
+        }
+
+        GlobalBadges = filteredUsers;
+    } catch {
+        // Silently ignore transient network fetch failures
     }
-
-    GlobalBadges = filteredUsers;
 }

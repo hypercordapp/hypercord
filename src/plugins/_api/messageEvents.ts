@@ -27,10 +27,10 @@ export default definePlugin({
         {
             find: "#{intl::EDIT_TEXTAREA_HELP}",
             replacement: {
-                match: /(?<=,channel:\i,message:\i\}\)\.then\().+?(?=\i\.content!==this\.props\.message\.content&&\i\((.+?)\)\})/,
-                replace: (match, args) => "" +
+                match: /(?<=,channel:\i,message:\i\}\)\.then\()(?:async\s*)?(.+?)(?=\i\.content!==this\.props\.message\.content&&\i\((.+?)\)\})/,
+                replace: (_, match, args) => "" +
                     `async ${match}` +
-                    `if(await Vencord.Api.MessageEvents._handlePreEdit(${args}))` +
+                    `if(await (globalThis.Vencord||window.Vencord).Api.MessageEvents._handlePreEdit(${args}))` +
                     "return Promise.resolve({shouldClear:false,shouldRefocus:true});"
             }
         },
@@ -40,7 +40,7 @@ export default definePlugin({
                 // https://regex101.com/r/7iswuk/1
                 match: /let (\i)=\i\.\i\.parse\((\i),.+?\.getSendMessageOptions\(\{.+?\}\)?;(?=.+?(\i)\.flags=)(?<=\)\(({.+?})\)\.then.+?)/,
                 replace: (m, parsedMessage, channel, options, props) => m +
-                    `if(await Vencord.Api.MessageEvents._handlePreSend(${channel}.id,${parsedMessage},${options},${props}))` +
+                    `if(await (globalThis.Vencord||window.Vencord).Api.MessageEvents._handlePreSend(${channel}.id,${parsedMessage},${options},${props}))` +
                     "return{shouldClear:false,shouldRefocus:true};"
             }
         },
@@ -49,7 +49,7 @@ export default definePlugin({
             replacement: {
                 match: /let\{id:\i}=(\i),{id:\i}=(\i);return \i\.useCallback\((\i)=>\{/,
                 replace: (m, message, channel, event) =>
-                    `const vcMsg=${message},vcChan=${channel};${m}Vencord.Api.MessageEvents._handleClick(vcMsg,vcChan,${event});`
+                    `const vcMsg=${message},vcChan=${channel};${m}(globalThis.Vencord||window.Vencord).Api.MessageEvents._handleClick(vcMsg,vcChan,${event});`
             }
         }
     ]
