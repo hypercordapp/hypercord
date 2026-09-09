@@ -77,7 +77,7 @@ async function initThemes() {
         links.push(...localThemes);
     }
 
-    themesStyle.textContent = links.map(link => `@import url("${link.trim()}");`).join("\n");
+    themesStyle.textContent = links.map(link => `@import url(${JSON.stringify(link.trim())});`).join("\n");
     updatePopoutWindows();
 }
 

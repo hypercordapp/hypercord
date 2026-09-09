@@ -36,11 +36,17 @@ function getRedirect(url: string, redirectsLeft: number) {
         }
 
         const req = request(target, { method: "HEAD" }, res => {
-            resolve(
-                res.headers.location
-                    ? getRedirect(res.headers.location, redirectsLeft - 1)
-                    : url
-            );
+            const loc = res.headers.location;
+            if (!loc) {
+                resolve(url);
+                return;
+            }
+            try {
+                const nextUrl = new URL(loc, target).toString();
+                resolve(getRedirect(nextUrl, redirectsLeft - 1));
+            } catch {
+                resolve(url);
+            }
         });
         req.on("error", reject);
         req.end();

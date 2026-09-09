@@ -24,5 +24,3 @@ src/userplugins
 ExtensionCache/
 /settings
 
-# Claude Code's own local runtime state - not shared project config
-.claude/

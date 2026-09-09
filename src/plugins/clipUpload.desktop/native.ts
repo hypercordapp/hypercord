@@ -9,7 +9,7 @@ import { DATA_DIR } from "@main/utils/constants";
 import { randomUUID } from "crypto";
 import { dialog, type IpcMainInvokeEvent } from "electron";
 import { mkdir, readFile, rm, writeFile } from "fs/promises";
-import { basename, extname, join, resolve } from "path";
+import { basename, extname, join, normalize, resolve } from "path";
 
 interface TempEntry {
     tmpDir: string;
@@ -158,7 +158,9 @@ export async function deleteTempVideoFile(_: IpcMainInvokeEvent, token: string):
 
     tempEntries.delete(token);
 
-    if (!ensureSafePath(CLIP_UPLOAD_DIR, entry.tmpDir)) return;
+    const normalizedUploadDir = normalize(CLIP_UPLOAD_DIR + "/");
+    const normalizedTmpDir = normalize(entry.tmpDir + "/");
+    if (!normalizedTmpDir.startsWith(normalizedUploadDir)) return;
 
     try {
         await rm(entry.tmpDir, { force: true, recursive: true });

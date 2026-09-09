@@ -258,5 +258,11 @@ const DISPLAY_ORDER = [
 
 /** Reorders badge keys to match real Discord's display order, regardless of what order they were picked in. */
 export function sortByDisplayOrder(keys: string[]): string[] {
-    return [...keys].sort((a, b) => DISPLAY_ORDER.indexOf(a) - DISPLAY_ORDER.indexOf(b));
+    return [...keys].sort((a, b) => {
+        const indexA = DISPLAY_ORDER.indexOf(a);
+        const indexB = DISPLAY_ORDER.indexOf(b);
+        const posA = indexA === -1 ? Number.MAX_SAFE_INTEGER : indexA;
+        const posB = indexB === -1 ? Number.MAX_SAFE_INTEGER : indexB;
+        return posA - posB;
+    });
 }

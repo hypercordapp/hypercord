@@ -17,7 +17,7 @@ export async function readRecording(_, filePath: string) {
     try {
         const buf = await readFile(filePath);
         rm(filePath).catch(() => { });
-        return new Uint8Array(buf.buffer);
+        return new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength);
     } catch {
         return null;
     }
