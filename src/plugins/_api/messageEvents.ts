@@ -38,8 +38,9 @@ export default definePlugin({
             find: ".handleSendMessage,onResize:",
             replacement: {
                 // https://regex101.com/r/7iswuk/1
-                match: /let (\i)=\i\.\i\.parse\((\i),.+?\.getSendMessageOptions\(\{.+?\}\)?;(?=.+?(\i)\.flags=)(?<=\)\(({.+?})\)\.then.+?)/,
-                replace: (m, parsedMessage, channel, options, props) => m +
+                match: /(?<=\.then\()(?:async\s*)?((?:function\s*)?\((?:\{.+?\})\)\s*(?:=>)?\s*\{)(let (\i)=\i\.\i\.parse\((\i),.+?\.getSendMessageOptions\(\{.+?\}\)?;(?=.+?(\i)\.flags=))/,
+                replace: (_, fnHeader, letStatement, parsedMessage, channel, options, props) =>
+                    `async ${fnHeader}${letStatement}` +
                     `if(await (globalThis.Vencord||window.Vencord).Api.MessageEvents._handlePreSend(${channel}.id,${parsedMessage},${options},${props}))` +
                     "return{shouldClear:false,shouldRefocus:true};"
             }
