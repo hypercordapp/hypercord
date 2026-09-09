@@ -19,13 +19,13 @@
 
 ## Türkçe
 
-Vencord tabanlı, **Equicord'dan daha fazla plugin** içermeyi ve piyasada adını duyurmayı hedefleyen bir Discord client mod'u.
+Discord profilini istediğin gibi şekillendirmene izin veren, **özel rozet ve profil** özellikli modern bir Discord client mod'u — istediğin rozeti tak, özel profiller kur, kendine göre bir Discord deneyimi yarat.
 
 ### Özellikler
 
 -   Kurulumu kolay
--   Vencord'un tüm built-in plugin'leri + HyperCord'a özel onlarca ek plugin (Fun, Utility, Chat, Voice Chat, Themes, Experimental)
--   Bu kadar çok plugin'e rağmen oldukça hafif
+-   Özel rozetler, kozmetikler ve onlarca güçlü plugin (Fun, Utility, Chat, Voice Chat, Themes, Experimental)
+-   Bu kadar çok özelliğe rağmen oldukça hafif
 -   Mükemmel tarayıcı desteği: extension veya UserScript ile tarayıcında çalıştır
 -   Herhangi bir Discord branch'inde çalışır: Stable, Canary, PTB fark etmez
 -   Özel CSS ve tema desteği: dahili CSS editörü, herhangi bir CSS dosyasını import edebilir (BetterDiscord temaları dahil)
@@ -71,11 +71,11 @@ HyperCord'un henüz kendi bağış/sponsorluk altyapısı yok. Bu repodaki **Spo
 
 Katkı sağlamak istersen [CONTRIBUTING.md](./CONTRIBUTING.md) dosyasına göz at.
 
-### Teşekkürler & Lisans
+### Lisans
 
 GNU General Public License v3.0 — bkz. [LICENSE](./LICENSE).
 
-Bu proje [Vencord](https://github.com/Vendicated/Vencord)'un bir forku olarak başlamıştır. Orijinal Vencord ekibine ve tüm katkıda bulunanlara teşekkürler.
+Açık kaynaklı, hafif ve topluluk odaklı Discord client modu.
 
 ### Sorumluluk Reddi
 
@@ -108,12 +108,12 @@ Ayrıca, banlanma riski olan bir sunucuda HyperCord'un göründüğü ekran gör
 
 ## English
 
-A Discord client mod based on Vencord, aiming to include **more plugins than Equicord** and build a name for itself.
+A modern Discord client mod that lets you customize your Discord profile with **custom badges, cosmetics, and features** — pick your badges, build custom profiles, and experience Discord your way.
 
 ### Features
 
 -   Easy to install
--   All of Vencord's built-in plugins + dozens of HyperCord-exclusive plugins (Fun, Utility, Chat, Voice Chat, Themes, Experimental)
+-   Custom badges, cosmetics, and dozens of powerful plugins (Fun, Utility, Chat, Voice Chat, Themes, Experimental)
 -   Fairly lightweight despite the many inbuilt plugins
 -   Excellent Browser Support: Run HyperCord in your Browser via extension or UserScript
 -   Works on any Discord branch: Stable, Canary or PTB all work
@@ -160,11 +160,11 @@ HyperCord doesn't have its own donation/sponsorship setup yet. This repo's **Spo
 
 If you want to contribute, check out [CONTRIBUTING.md](./CONTRIBUTING.md).
 
-### Credits & License
+### License
 
 GNU General Public License v3.0 — see [LICENSE](./LICENSE).
 
-This project started as a fork of [Vencord](https://github.com/Vendicated/Vencord). Thanks to the original Vencord team and all its contributors.
+Open source, lightweight and community-driven Discord client mod.
 
 ### Disclaimer
 
