@@ -2,7 +2,7 @@
     "name": "hypercord",
     "private": "true",
     "version": "0.1.0",
-    "description": "HyperCord - Vencord tabanli, en cok plugin'e sahip Discord client mod",
+    "description": "HyperCord - Özel rozet ve profil destekli modern Discord client mod",
     "homepage": "https://github.com/hypercordapp/hypercord#readme",
     "bugs": {
         "url": "https://github.com/hypercordapp/hypercord/issues"
