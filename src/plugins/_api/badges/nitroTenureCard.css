@@ -24,6 +24,7 @@
    shifted .hc-nitro-tenure-card one level deeper, silently un-matching a
    card-anchored version of this same rule and bringing back the 200px
    clip). */
+
 /* Scoped to tooltip / popout layer containers rather than universal * (which forces
    Chromium to re-evaluate :has() across every single DOM node in Discord on every frame/keystroke). */
 [class*="tooltip"]:has(> .hc-nitro-tenure-wrapper),
