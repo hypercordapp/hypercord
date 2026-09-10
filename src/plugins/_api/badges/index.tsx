@@ -352,8 +352,8 @@ function patchIdentity() {
         const fake = ProfileOverrides[real.id]?.fakeIdentity;
         if (!fake) return real;
 
-        if (fake.username) real.username = fake.username;
-        if (fake.globalName) real.globalName = fake.globalName;
+        if (fake.username && real.username !== fake.username) real.username = fake.username;
+        if (fake.globalName && real.globalName !== fake.globalName) real.globalName = fake.globalName;
         return real;
     };
 

@@ -705,13 +705,19 @@ export const settings = definePluginSettings({
         type: OptionType.STRING,
         description: "Override your own username - synced to HyperCord's backend and shown to every HyperCord user viewing your profile (leave empty to disable)",
         default: "",
-        onChange: () => syncFakeIdentityToBackend()
+        onChange: () => {
+            invalidateFakeUserCache();
+            syncFakeIdentityToBackend();
+        }
     },
     fakeGlobalName: {
         type: OptionType.STRING,
         description: "Override your own display name - synced to HyperCord's backend and shown to every HyperCord user viewing your profile (leave empty to disable)",
         default: "",
-        onChange: () => syncFakeIdentityToBackend()
+        onChange: () => {
+            invalidateFakeUserCache();
+            syncFakeIdentityToBackend();
+        }
     },
     fakeAvatarUrl: {
         type: OptionType.STRING,
@@ -789,7 +795,8 @@ export const settings = definePluginSettings({
         type: OptionType.STRING,
         description: "Override your own profile accent color, hex like #5865F2 (leave empty to disable) - set via the color pickers below",
         default: "",
-        hidden: true
+        hidden: true,
+        onChange: () => invalidateFakeUserCache()
     },
     fakeThemeColorPrimary: {
         type: OptionType.STRING,
@@ -827,13 +834,24 @@ export const settings = definePluginSettings({
 let originalGetUser: typeof UserStore.getUser | undefined;
 let originalGetCurrentUser: typeof UserStore.getCurrentUser | undefined;
 
-// Must go through the ORIGINAL unpatched getCurrentUser, never the patched
-// UserStore.getCurrentUser - that one calls buildFakeUser, which (for the
-// current user) calls isOwnId, which would call the patched
-// getCurrentUser again - unbounded recursion/stack overflow. This bit
-// FakeProfile in production once already, don't reintroduce it.
-const isOwnId = (userId: string) => userId === (originalGetCurrentUser ?? UserStore.getCurrentUser.bind(UserStore))()?.id;
+let cachedSelfId: string | undefined;
+function getSelfId(): string | undefined {
+    if (!cachedSelfId) {
+        cachedSelfId = (originalGetCurrentUser ?? UserStore.getCurrentUser.bind(UserStore))()?.id;
+    }
+    return cachedSelfId;
+}
+const isOwnId = (userId: string) => Boolean(userId && userId === getSelfId());
 let fakeUserCache = new WeakMap<object, unknown>();
+
+function invalidateFakeUserCache() {
+    fakeUserCache = new WeakMap();
+}
+
+function updateCachedSelfId() {
+    cachedSelfId = (originalGetCurrentUser ?? UserStore.getCurrentUser.bind(UserStore))()?.id;
+    invalidateFakeUserCache();
+}
 
 function parseHexColor(hex: string): number | undefined {
     const match = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
@@ -844,37 +862,22 @@ function parseHexColor(hex: string): number | undefined {
 // just yourself - shown to every HyperCord user viewing that profile, same
 // as badges/banner already are. Applied by directly mutating the raw fields
 // (avatarDecorationData/collectibles) on the actual cached Discord Record
-// itself, NOT via virtualMerge's Proxy wrapper - confirmed by testing that
-// Profile Effect (which already used this same direct-mutation approach on
-// the UserProfileStore object) shows up for other viewers, while Frame/
-// Nameplate (previously done via virtualMerge, a separate Proxy object)
-// did not. Discord's own `.avatarDecoration`/`.nameplate` getters read off
-// `this.avatarDecorationData`/`this.collectibles` - mutating those raw
-// fields in place means the getters reflect the change naturally, without
-// needing the Proxy-receiver trick virtualMerge relies on.
+// itself, NOT via virtualMerge's Proxy wrapper.
 function applyCosmeticOverrides(real: any) {
     const decorationOverride = BadgeAPIPlugin.getDecorationOverride(real.id);
-    if (decorationOverride) real.avatarDecorationData = decorationOverride;
+    if (decorationOverride && real.avatarDecorationData !== decorationOverride) {
+        real.avatarDecorationData = decorationOverride;
+    }
 
-    // Guard against reassigning when already applied - getUser/getCurrentUser
-    // are called on nearly every React render (including ones fired while
-    // typing in the message composer). Spreading unconditionally here handed
-    // back a brand-new object reference on every single call even when the
-    // content was identical, which broke reference-equality memoization on
-    // `collectibles` everywhere it's consumed - matches a user report of
-    // severe typing lag (each keystroke landing ~1s late) with only
-    // FakeProfile enabled.
     const nameplateOverride = BadgeAPIPlugin.getNameplateOverride(real.id);
     if (nameplateOverride && real.collectibles?.nameplate !== nameplateOverride) {
         real.collectibles = { ...(real.collectibles ?? {}), nameplate: nameplateOverride };
     }
 
-    // Discord's own field is plural (displayNameStyles) - see
-    // profileSets/utils/profile.ts. Read off UserStore like decoration/
-    // nameplate above, confirmed working via the same direct-mutation
-    // approach.
     const displayNameStyleOverride = BadgeAPIPlugin.getDisplayNameStyleOverride(real.id);
-    if (displayNameStyleOverride) real.displayNameStyles = displayNameStyleOverride;
+    if (displayNameStyleOverride && real.displayNameStyles !== displayNameStyleOverride) {
+        real.displayNameStyles = displayNameStyleOverride;
+    }
 }
 
 function buildFakeUser(real: any) {
@@ -921,25 +924,13 @@ function unpatchUserStore() {
     if (originalGetUser) UserStore.getUser = originalGetUser;
     if (originalGetCurrentUser) UserStore.getCurrentUser = originalGetCurrentUser;
     originalGetUser = originalGetCurrentUser = undefined;
+    cachedSelfId = undefined;
     fakeUserCache = new WeakMap();
 }
-
-// SnowflakeUtils.extractTimestamp is patched in BadgeAPIPlugin (@plugins/_api/badges),
-// not here - it's required/always-on for every HyperCord user, whereas
-// FakeProfile is opt-in and off by default. Patching it here meant a synced
-// fake creation date only rendered for viewers who happened to also have
-// FakeProfile enabled themselves - moved so it works for every viewer, same
-// as badges/banner/decoration already do.
 
 let originalGetUserProfile: typeof UserProfileStore.getUserProfile | undefined;
 let filteredProfileCache = new WeakMap<object, { hiddenRealBadges: string[]; badges: unknown[]; result: unknown; }>();
 
-// Reads the user's REAL, un-hidden badge list straight from the store's
-// own cache via the original unpatched getter - bypasses the hiddenRealBadges
-// filtering above entirely, so HiddenBadgesPicker can always show every real
-// badge as a checkbox (including currently-hidden ones) regardless of what
-// this user has chosen to hide. Only meaningful after the id has actually
-// been fetched at least once (callers should await fetchUserProfile(id) first).
 export function getRealBadgesUnfiltered(id: string): { id: string; description: string; icon: string; }[] | undefined {
     return originalGetUserProfile?.(id)?.badges as any;
 }
@@ -958,85 +949,47 @@ function patchUserProfileStore() {
 
             if (fakeAccentColor) {
                 const color = parseHexColor(fakeAccentColor);
-                if (color !== undefined) profile.accentColor = color;
+                if (color !== undefined && profile.accentColor !== color) profile.accentColor = color;
             }
 
             if (fakeThemeColorPrimary) {
                 const primary = parseHexColor(fakeThemeColorPrimary);
                 const secondary = parseHexColor(fakeThemeColorSecondary) ?? primary;
-                if (primary !== undefined && secondary !== undefined) profile.themeColors = [primary, secondary];
+                if (primary !== undefined && secondary !== undefined) {
+                    if (!profile.themeColors || profile.themeColors[0] !== primary || profile.themeColors[1] !== secondary) {
+                        profile.themeColors = [primary, secondary];
+                    }
+                }
             }
 
-            // Same self-only virtualMerge-style fake as username/accentColor
-            // above (direct mutation here instead, since profile is already a
-            // plain object at this point, not a Proxy target) - appended after
-            // any real connections rather than replacing them.
-            //
-            // getUserProfile's real return value is the same cached Record
-            // reused across every call for this id, not a fresh object each
-            // time - naively appending here on every call re-added the whole
-            // fake list on top of whatever this same mutated object already
-            // had from the LAST call, compounding without bound (confirmed
-            // live: 2 fake connections turned into dozens within a single
-            // viewing session). Stripping any previously-injected fakes
-            // (marked by the id prefix below) before re-adding the current
-            // list makes this idempotent no matter how many times it runs.
-            const realConnections = (profile.connectedAccounts ?? []).filter(
-                (a: { id: string; }) => !a.id.startsWith("hypercord-fake-")
-            );
-            profile.connectedAccounts = fakeConnections.length
-                ? [
-                    ...realConnections,
-                    ...fakeConnections.map((c, i) => ({
-                        type: c.type,
-                        id: `hypercord-fake-${i}`,
-                        name: c.name,
-                        verified: c.verified
-                    }))
-                ]
-                : realConnections;
+            const currentAccounts = profile.connectedAccounts ?? [];
+            const hasFakeInProfile = currentAccounts.some((a: { id: string; }) => a.id.startsWith("hypercord-fake-"));
+            if (fakeConnections.length > 0 || hasFakeInProfile) {
+                const realConnections = currentAccounts.filter((a: { id: string; }) => !a.id.startsWith("hypercord-fake-"));
+                profile.connectedAccounts = fakeConnections.length
+                    ? [
+                        ...realConnections,
+                        ...fakeConnections.map((c, i) => ({
+                            type: c.type,
+                            id: `hypercord-fake-${i}`,
+                            name: c.name,
+                            verified: c.verified
+                        }))
+                    ]
+                    : realConnections;
+            }
         }
 
         // Profile effect applies to ANY user with synced HyperCord data, same
         // as decoration/nameplate - not gated to isOwnId.
         const profileEffectOverride = BadgeAPIPlugin.getProfileEffectOverride(id);
-        if (profileEffectOverride) profile.profileEffect = profileEffectOverride as any;
+        if (profileEffectOverride && (profile.profileEffect as any) !== profileEffectOverride) {
+            profile.profileEffect = profileEffectOverride as any;
+        }
 
-        // Real, Discord-issued badges this profile's owner chose to hide -
-        // same not-gated-to-isOwnId reasoning as profileEffect above, a real
-        // badge is otherwise visible to every viewer regardless of what THIS
-        // client does locally, so this has to apply for whoever's profile is
-        // being rendered, not just your own.
-        //
-        // Unlike every other field touched above, this must NOT mutate
-        // `profile` in place - `profile` is the same cached Record
-        // getUserProfile reuses across every call for this id (see the
-        // connectedAccounts comment above), and `Array.prototype.filter`
-        // always returns a new array, so `profile.badges = ...filter(...)`
-        // permanently replaces the cache's real badge list with the
-        // shrunken one. That's real data loss, not just idempotent
-        // filtering: un-hiding a badge later has nothing left to restore it
-        // from (the id is gone from the only badges array this store ever
-        // hands back for the rest of the session), and getRealBadgesUnfiltered
-        // below - what HiddenBadgesPicker relies on to even show a hidden
-        // badge as a checkbox again - would see the same already-shrunken
-        // list. Live-confirmed: hide a badge, then try to un-hide it from
-        // the picker, and it's simply gone from the list, not unchecked.
-        // Returning a shallow copy here instead leaves the cached `profile`
-        // (and its real, untouched `badges` array) alone, so filtering is
-        // freshly derived from the real list on every call and fully
-        // reversible.
+        // Real, Discord-issued badges this profile's owner chose to hide
         const hiddenRealBadges = BadgeAPIPlugin.getHiddenRealBadges(id);
         if (hiddenRealBadges.length && profile.badges?.length) {
-            // getUserProfile is called on nearly every render (same hot-path
-            // as getUser/getCurrentUser above) - spreading a fresh object
-            // unconditionally here handed back a new reference every single
-            // call even when nothing changed, breaking reference-equality
-            // memoization the same way the collectibles/nameplate spread
-            // above once did. `hiddenRealBadges` and `profile.badges` are
-            // both the same underlying references reused between polls/
-            // store updates, so caching on them lets repeat calls return the
-            // exact same filtered object instead of rebuilding it.
             const cached = filteredProfileCache.get(profile);
             if (cached && cached.hiddenRealBadges === hiddenRealBadges && cached.badges === profile.badges) {
                 return cached.result;
@@ -1050,6 +1003,8 @@ function patchUserProfileStore() {
         return profile;
     }) as typeof UserProfileStore.getUserProfile;
 }
+
+
 
 function unpatchUserProfileStore() {
     if (originalGetUserProfile) UserProfileStore.getUserProfile = originalGetUserProfile;
@@ -1143,22 +1098,17 @@ function patchGuildMemberStore() {
         if (!member) return member;
 
         const decorationOverride = BadgeAPIPlugin.getDecorationOverride(userId);
-        if (decorationOverride) {
+        if (decorationOverride && (member as any).avatarDecoration !== decorationOverride) {
             (member as any).avatarDecoration = decorationOverride;
         }
 
-        // Same reference-stability guard as applyCosmeticOverrides above -
-        // getMember is called just as often as getUser/getCurrentUser (member
-        // list, message authors, mention autocomplete, ...), so recreating
-        // this object unconditionally on every call caused the same
-        // render-storm/keystroke-lag bug for guild member views.
         const nameplateOverride = BadgeAPIPlugin.getNameplateOverride(userId);
         if (nameplateOverride && (member as any).collectibles?.nameplate !== nameplateOverride) {
             (member as any).collectibles = { ...((member as any).collectibles ?? {}), nameplate: nameplateOverride };
         }
 
         const displayNameStyleOverride = BadgeAPIPlugin.getDisplayNameStyleOverride(userId);
-        if (displayNameStyleOverride) {
+        if (displayNameStyleOverride && (member as any).displayNameStyles !== displayNameStyleOverride) {
             (member as any).displayNameStyles = displayNameStyleOverride;
         }
 
@@ -1229,6 +1179,16 @@ function SettingsAboutComponent() {
     );
 }
 
+function onConnectionOpen() {
+    updateCachedSelfId();
+    syncOnConnect();
+}
+
+function onLogout() {
+    cachedSelfId = undefined;
+    invalidateFakeUserCache();
+}
+
 export default definePlugin({
     name: "FakeProfile",
     description: "Locally fake your username, display name, Nitro tier, accent color, profile theme gradient and connections (social media/game accounts) on your own profile (visible only to you) — badges, avatar, banner, Frame (avatar decoration), Nameplate, Profile Effect and Display Name Style sync to HyperCord's backend and show for every HyperCord user viewing your profile",
@@ -1279,6 +1239,7 @@ export default definePlugin({
     },
 
     start() {
+        updateCachedSelfId();
         patchUserStore();
         patchUserProfileStore();
         patchGuildMemberStore();
@@ -1286,20 +1247,21 @@ export default definePlugin({
         applyPremiumOverride();
 
         syncOnConnect();
-        FluxDispatcher.subscribe("CONNECTION_OPEN", syncOnConnect);
-        // Catches a rename the moment it happens instead of waiting for the
-        // next reconnect - CONNECTION_OPEN alone could miss same-session
-        // renames for hours.
+        FluxDispatcher.subscribe("CONNECTION_OPEN", onConnectionOpen);
         FluxDispatcher.subscribe("USER_UPDATE", onSelfUsernameUpdate);
+        FluxDispatcher.subscribe("LOGOUT", onLogout);
     },
 
     stop() {
-        FluxDispatcher.unsubscribe("CONNECTION_OPEN", syncOnConnect);
+        FluxDispatcher.unsubscribe("CONNECTION_OPEN", onConnectionOpen);
         FluxDispatcher.unsubscribe("USER_UPDATE", onSelfUsernameUpdate);
+        FluxDispatcher.unsubscribe("LOGOUT", onLogout);
         clearPremiumOverride();
         unpatchUserStore();
         unpatchUserProfileStore();
         unpatchGuildMemberStore();
         unpatchConnectionPlatforms();
+        cachedSelfId = undefined;
+        invalidateFakeUserCache();
     }
 });
