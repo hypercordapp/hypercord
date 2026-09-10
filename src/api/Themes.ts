@@ -77,7 +77,10 @@ async function initThemes() {
         links.push(...localThemes);
     }
 
-    themesStyle.textContent = links.map(link => `@import url(${JSON.stringify(link.trim())});`).join("\n");
+    const newContent = links.map(link => `@import url(${JSON.stringify(link.trim())});`).join("\n");
+    if (themesStyle.textContent !== newContent) {
+        themesStyle.textContent = newContent;
+    }
     updatePopoutWindows();
 }
 

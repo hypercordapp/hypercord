@@ -327,7 +327,7 @@ export default definePlugin({
     start,
 
     stop() {
-        socket.close();
+        socket?.close();
     },
 
     settingsAboutComponent: () => (

@@ -2,3 +2,25 @@
 body {
     app-region: no-drag;
 }
+
+/* HyperCord Core GPU Layer Acceleration & Theme Performance Optimizations */
+[class*="chatContent_"],
+[class*="messagesWrapper_"],
+[class*="scroller_"],
+[class*="scrollerBase_"],
+[class*="sidebar_"],
+[class*="guilds_"],
+[class*="membersWrap_"] {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+}
+
+/* Prevent recursive theme blur lag on nested containers */
+[class*="appMount_"] [class*="app_"] {
+    contain: paint;
+}
+
+/* Optimize scrolling performance and isolate scrollers */
+[class*="scroller_"] {
+    overscroll-behavior: contain;
+}
