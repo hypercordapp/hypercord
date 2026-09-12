@@ -193,13 +193,20 @@ export function createAudioPlayer(
         throw new TypeError(`createAudioPlayer: audio must be a non-empty string, got ${JSON.stringify(audio)}`);
     }
 
+    const volume = typeof options.volume === "number" ? Math.max(0, Math.min(1, options.volume / 100)) : 1;
+    const speed = typeof options.speed === "number" ? Math.max(0.0625, Math.min(16, options.speed)) : 1;
+
     const internalPlayer: AudioPlayerInternal = new AudioPlayerConstructor(
-        options,
         audio,
-        null,
-        null,
-        "default"
+        "default",
+        volume,
+        speed
     );
+
+    if (options.preload !== undefined) internalPlayer.preload = options.preload;
+    if (options.persistent !== undefined) internalPlayer.persistent = options.persistent;
+    if (options.onEnded) internalPlayer.onEnded = options.onEnded;
+    if (options.onError) internalPlayer.onError = options.onError;
 
     return new AudioPlayerWrapper(internalPlayer);
 }

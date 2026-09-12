@@ -173,37 +173,43 @@ const settings = definePluginSettings({
     }
 });
 
-function UserToTagID(user, tag, remove) {
+function UserToTagID(user: string, tag: string, remove: boolean) {
+    const entry = SavedData.find(e => e.tagName === tag);
+    if (!entry) return;
+    if (!entry.userIds) entry.userIds = [];
+
     if (remove) {
-        SavedData.filter(e => e.tagName === tag)[0].userIds = SavedData.filter(e => e.tagName === tag)[0].userIds.filter(e => e !== user);
-    }
-    else {
-        SavedData.filter(e => e.tagName === tag)[0]?.userIds.push(user);
+        entry.userIds = entry.userIds.filter(e => e !== user);
+    } else if (!entry.userIds.includes(user)) {
+        entry.userIds.push(user);
     }
     SetData();
 }
 
-const userPatch: NavContextMenuPatchCallback = (children, { user }) => {
-    const buttonElement =
-        <Menu.MenuItem
-            id="vc-tag-group"
-            label="Tag"
-        >
-            {SavedData.map(tag => {
-                const isTagged = SavedData.filter(e => e.tagName === tag.tagName)[0].userIds.includes(user.id);
+const userPatch: NavContextMenuPatchCallback = (children, { user }: { user?: any; } = {}) => {
+    if (!user?.id || !SavedData || SavedData.length === 0) return;
 
-                return (
-                    <Menu.MenuItem
-                        label={`${isTagged ? "Remove from" : "Add to"} ${tag.tagName}`}
-                        key={`vc-tag-${tag.tagName}`}
-                        id={`vc-tag-${tag.tagName}`}
-                        action={() => { UserToTagID(user.id, tag.tagName, isTagged); }}
-                    />
-                );
-            })}
-        </Menu.MenuItem>;
+    children.splice(-1, 0, (
+        <Menu.MenuGroup>
+            <Menu.MenuItem
+                id="vc-tag-group"
+                label="Tag"
+            >
+                {SavedData.map(tag => {
+                    const isTagged = (tag.userIds || []).includes(user.id);
 
-    children.push({ ...buttonElement });
+                    return (
+                        <Menu.MenuItem
+                            label={`${isTagged ? "Remove from" : "Add to"} ${tag.tagName}`}
+                            key={`vc-tag-${tag.tagName}`}
+                            id={`vc-tag-${tag.tagName}`}
+                            action={() => { UserToTagID(user.id, tag.tagName, isTagged); }}
+                        />
+                    );
+                })}
+            </Menu.MenuItem>
+        </Menu.MenuGroup>
+    ));
 };
 
 export default definePlugin({
@@ -213,7 +219,8 @@ export default definePlugin({
     authors: [Devs.Samwich],
     settings,
     contextMenus: {
-        "user-context": userPatch
+        "user-context": userPatch,
+        "user-profile-actions": userPatch
     },
     patches: [
         {

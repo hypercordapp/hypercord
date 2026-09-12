@@ -37,17 +37,18 @@ export function reAddDeletedMessages(messages: LoggedMessageJSON[], deletedMessa
     const savedIDs: Id[] = [];
 
     for (let i = 0, len = messages.length; i < len; i++) {
-        const { id } = messages[i];
-        IDs.push({ id: id, time: (parseInt(id) / 4194304) + DISCORD_EPOCH });
+        const msg = messages[i];
+        if (!msg || typeof msg !== "object" || !msg.id) continue;
+        IDs.push({ id: msg.id, time: (parseInt(msg.id) / 4194304) + DISCORD_EPOCH });
     }
     for (let i = 0, len = deletedMessages.length; i < len; i++) {
         const record = deletedMessages[i];
-        if (!record) continue;
+        if (!record || typeof record !== "object" || !record.id) continue;
         savedIDs.push({ id: record.id, time: (parseInt(record.id) / 4194304) + DISCORD_EPOCH, message: record });
     }
 
     savedIDs.sort((a, b) => a.time - b.time);
-    if (!savedIDs.length) return;
+    if (!savedIDs.length || !IDs.length) return;
     const { time: lowestTime } = IDs[IDs.length - 1];
     const [{ time: highestTime }] = IDs;
     const lowestIDX = channelEnd ? 0 : savedIDs.findIndex(e => e.time > lowestTime);
@@ -59,7 +60,7 @@ export function reAddDeletedMessages(messages: LoggedMessageJSON[], deletedMessa
     reAddIDs.sort((a, b) => b.time - a.time);
     for (let i = 0, len = reAddIDs.length; i < len; i++) {
         const { id, message } = reAddIDs[i];
-        if (messages.findIndex(e => e.id === id) !== -1) continue;
+        if (messages.findIndex(e => e?.id === id) !== -1) continue;
         if (!message) continue;
         messages.splice(i, 0, message);
     }
@@ -94,7 +95,7 @@ export function shouldIgnore({ channelId, authorId, guildId, flags, bot, ghostPi
     if (channelId && guildId == null)
         guildId = getGuildIdByChannel(channelId);
 
-    const myId = UserStore.getCurrentUser().id;
+    const myId = UserStore.getCurrentUser()?.id;
     const { ignoreUsers, ignoreChannels, ignoreGuilds } = Settings.plugins.MessageLogger;
     const { ignoreBots, ignoreSelf, ignoreWebhooks } = settings.store;
 

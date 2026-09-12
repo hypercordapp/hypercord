@@ -70,11 +70,12 @@ async function showNotification(message: Message, guildId: string | undefined): 
 }
 
 function ContextCallback(name: "guild" | "user" | "channel"): NavContextMenuPatchCallback {
-    return (children, props) => {
-        const type = props[name];
-        if (!type) return;
-        const enabled = settings.store[`${name}s`].split(", ").includes(type.id);
-        if (name === "user" && type.id === UserStore.getCurrentUser().id) return;
+    return (children, props = {}) => {
+        const type = props?.[name];
+        if (!type?.id) return;
+        const currentUserId = UserStore.getCurrentUser()?.id;
+        if (name === "user" && currentUserId && type.id === currentUserId) return;
+        const enabled = (settings.store[`${name}s`] || "").split(", ").includes(type.id);
         children.splice(-1, 0, (
             <Menu.MenuGroup>
                 <Menu.MenuItem

@@ -386,11 +386,11 @@ export default definePlugin({
     // so the actual splice work only ever happens once per array.
     processedMessageArrays: new WeakSet<object>(),
     coolReAddDeletedMessages(messages: LoggedMessageJSON[] & { extra: LoggedMessageJSON[]; }, payload: LoadMessagePayload) {
-        if (this.processedMessageArrays.has(messages)) return messages;
+        if (!messages || this.processedMessageArrays.has(messages)) return messages;
 
         try {
-            if (messages.extra) {
-                reAddDeletedMessages(messages, messages.extra, !payload.hasMoreAfter && !payload.isBefore, !payload.hasMoreBefore && !payload.isAfter);
+            if (messages.extra && Array.isArray(messages.extra)) {
+                reAddDeletedMessages(messages, messages.extra, !payload?.hasMoreAfter && !payload?.isBefore, !payload?.hasMoreBefore && !payload?.isAfter);
                 this.processedMessageArrays.add(messages);
             }
         }

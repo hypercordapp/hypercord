@@ -27,10 +27,10 @@ export function saveFile(file: File) {
 
     document.body.appendChild(a);
     a.click();
-    setImmediate(() => {
+    setTimeout(() => {
         URL.revokeObjectURL(a.href);
         document.body.removeChild(a);
-    });
+    }, 0);
 }
 
 /**
@@ -50,7 +50,7 @@ export function chooseFile(mimeTypes: string) {
 
         document.body.appendChild(input);
         input.click();
-        setImmediate(() => document.body.removeChild(input));
+        setTimeout(() => document.body.removeChild(input), 0);
     });
 }
 

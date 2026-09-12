@@ -262,27 +262,29 @@ const createPopoutChatContextMenuItem = (id: string, label: string, action: () =
     );
 };
 
-const UserContextPatch: NavContextMenuPatchCallback = (children, args: { user: User; }) => {
-    const checks = [
-        args.user,
-        args.user.id !== UserStore.getCurrentUser().id,
-    ];
-    if (checks.some(check => !check)) return;
+const UserContextPatch: NavContextMenuPatchCallback = (children, args: { user?: User; } = {}) => {
+    const currentUserId = UserStore.getCurrentUser()?.id;
+    if (!args?.user?.id || !currentUserId || args.user.id === currentUserId) return;
+
     const channelId = ChannelStore.getDMFromUserId?.(args.user.id) ?? null;
     const isOpen = channelId ? isPopoutWindowOpen(channelId) : false;
 
-    children.push(createSidebarChatContextMenuItem(args.user.id, null));
-    children.push(createPopoutChatContextMenuItem(
-        args.user.id,
-        isOpen ? "Close popout chat" : "Popout chat",
-        () => {
-            if (channelId && isOpen) {
-                closePopout(channelId);
-                return;
-            }
+    children.splice(-1, 0, (
+        <Menu.MenuGroup>
+            {createSidebarChatContextMenuItem(args.user.id, null)}
+            {createPopoutChatContextMenuItem(
+                args.user.id,
+                isOpen ? "Close popout chat" : "Popout chat",
+                () => {
+                    if (channelId && isOpen) {
+                        closePopout(channelId);
+                        return;
+                    }
 
-            return openPopoutFromUserMenu(args.user.id);
-        }
+                    return openPopoutFromUserMenu(args.user!.id);
+                }
+            )}
+        </Menu.MenuGroup>
     ));
 };
 

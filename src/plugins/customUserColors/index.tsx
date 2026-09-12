@@ -40,40 +40,38 @@ const ColorIcon = () => {
     );
 };
 
-const userContextMenuPatch: NavContextMenuPatchCallback = (children, { user }: { user: User; }) => {
+const userContextMenuPatch: NavContextMenuPatchCallback = (children, { user }: { user?: User; } = {}) => {
     if (user?.id == null) return;
 
-    const setCustomColorItem = (
-        <Menu.MenuItem
-            label="Set Color"
-            id="set-color"
-            icon={ColorIcon}
-            action={async () => {
-                await requireSettingsMenu();
-                openModal(modalProps => <SetColorModal id={user.id} modalProps={modalProps} />);
-            }}
-        />
-    );
-
-    children.push(<Menu.MenuSeparator />, setCustomColorItem);
+    children.splice(-1, 0, (
+        <Menu.MenuGroup>
+            <Menu.MenuItem
+                label="Set Color"
+                id="set-color"
+                icon={ColorIcon}
+                action={() => {
+                    openModal(modalProps => <SetColorModal id={user.id} modalProps={modalProps} />);
+                }}
+            />
+        </Menu.MenuGroup>
+    ));
 };
 
-const channelContextMenuPatch: NavContextMenuPatchCallback = (children, { channel }: { channel: Channel; }) => {
+const channelContextMenuPatch: NavContextMenuPatchCallback = (children, { channel }: { channel?: Channel; } = {}) => {
     if (channel?.id == null) return;
 
-    const setCustomColorItem = (
-        <Menu.MenuItem
-            label="Set Color"
-            id="set-color"
-            icon={ColorIcon}
-            action={async () => {
-                await requireSettingsMenu();
-                openModal(modalProps => <SetColorModal id={channel.id} modalProps={modalProps} />);
-            }}
-        />
-    );
-
-    children.push(<Menu.MenuSeparator />, setCustomColorItem);
+    children.splice(-1, 0, (
+        <Menu.MenuGroup>
+            <Menu.MenuItem
+                label="Set Color"
+                id="set-color"
+                icon={ColorIcon}
+                action={() => {
+                    openModal(modalProps => <SetColorModal id={channel.id} modalProps={modalProps} />);
+                }}
+            />
+        </Menu.MenuGroup>
+    ));
 };
 
 export function getCustomColorString(id: string | undefined, withHash?: boolean): string | undefined {

@@ -27,9 +27,9 @@ export default definePlugin({
         {
             find: "#{intl::EDIT_TEXTAREA_HELP}",
             replacement: {
-                match: /(?<=,channel:\i,message:\i\}\)\.then\()(?:async\s*)?(.+?)(?=\i\.content!==this\.props\.message\.content&&\i\((.+?)\)\})/,
-                replace: (_, match, args) => "" +
-                    `async ${match}` +
+                match: /(?<=,channel:\i,message:\i\}\)\.then\()(?:async\s*)?((?:function\s*)?\([^)]*\)\s*(?:=>)?\s*\{)(?=(?:let|const|\i).*?\i\.content!==this\.props\.message\.content&&\i\((.+?)\)\})/,
+                replace: (_, fnHeader, args) => "" +
+                    `async ${fnHeader}` +
                     `if(await (globalThis.Vencord||window.Vencord).Api.MessageEvents._handlePreEdit(${args}))` +
                     "return Promise.resolve({shouldClear:false,shouldRefocus:true});"
             }

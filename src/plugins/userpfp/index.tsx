@@ -109,21 +109,21 @@ export default definePlugin({
         }
     ],
     contextMenus: {
-        "user-context": (children, { user }) => {
+        "user-context": (children, { user }: { user?: User; } = {}) => {
             if (!user?.id) return;
 
-            children.push(
-                <Menu.MenuSeparator />,
-                <Menu.MenuItem
-                    label="Set Avatar"
-                    id="set-avatar"
-                    icon={PencilIcon}
-                    action={async () => {
-                        await requireSettingsModal();
-                        openModal(modalProps => <SetAvatarModal userId={user.id} modalProps={modalProps} />);
-                    }}
-                />
-            );
+            children.splice(-1, 0, (
+                <Menu.MenuGroup>
+                    <Menu.MenuItem
+                        label="Set Avatar"
+                        id="set-avatar"
+                        icon={PencilIcon}
+                        action={() => {
+                            openModal(modalProps => <SetAvatarModal userId={user.id} modalProps={modalProps} />);
+                        }}
+                    />
+                </Menu.MenuGroup>
+            ));
         }
     },
     getAvatarHook: (original: any) => (user: User, animated: boolean, size: number) => {

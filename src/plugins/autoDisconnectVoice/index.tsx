@@ -31,28 +31,28 @@ function kickFromVoice(channel: Channel, userId: string) {
     });
 }
 
-const UserContextMenuPatch: NavContextMenuPatchCallback = (children, { user }: UserContextProps) => {
-    if (!user || UserStore.getCurrentUser().id === user.id) return;
+const UserContextMenuPatch: NavContextMenuPatchCallback = (children, { user }: { user?: User; } = {}) => {
+    const currentUserId = UserStore.getCurrentUser()?.id;
+    if (!user?.id || !currentUserId || currentUserId === user.id) return;
 
-    const [checked, setChecked] = React.useState(targetUserIds.has(user.id));
+    const isTargeted = targetUserIds.has(user.id);
 
-    children.push(
-        <Menu.MenuSeparator />,
-        <Menu.MenuCheckboxItem
-            id="adv-auto-disconnect-user"
-            label="Auto Disconnect From Voice"
-            checked={checked}
-            action={() => {
-                if (targetUserIds.has(user.id)) {
-                    targetUserIds.delete(user.id);
-                    setChecked(false);
-                } else {
-                    targetUserIds.add(user.id);
-                    setChecked(true);
-                }
-            }}
-        />
-    );
+    children.splice(-1, 0, (
+        <Menu.MenuGroup>
+            <Menu.MenuCheckboxItem
+                id="adv-auto-disconnect-user"
+                label="Auto Disconnect From Voice"
+                checked={isTargeted}
+                action={() => {
+                    if (targetUserIds.has(user.id)) {
+                        targetUserIds.delete(user.id);
+                    } else {
+                        targetUserIds.add(user.id);
+                    }
+                }}
+            />
+        </Menu.MenuGroup>
+    ));
 };
 
 export default definePlugin({

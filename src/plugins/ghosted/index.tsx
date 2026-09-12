@@ -130,13 +130,16 @@ function BooIndicator() {
     );
 }
 
-function makeContextItem(props) {
+function makeContextItem(props: any) {
+    const channelId = props?.channel?.id ?? (props?.user?.id ? ChannelStore.getDMFromUserId?.(props.user.id) : null);
+    if (!channelId) return null;
+
     return <Menu.MenuItem
         id="ec-ghosted-clear"
         key="ec-ghosted-clear"
         label="unghost"
         action={() => {
-            clearChannelFromGhost(props.channel.id);
+            clearChannelFromGhost(channelId);
         }}
     />;
 }
@@ -149,13 +152,17 @@ export default definePlugin({
     settings,
     dependencies: ["ServerListAPI"],
     contextMenus: {
-        "gdm-context": (menuItems, props) => {
+        "gdm-context": (menuItems, props = {}) => {
+            const item = makeContextItem(props);
+            if (!item) return;
             const group = findGroupChildrenByChildId("leave", menuItems, true);
-            group?.unshift(makeContextItem(props));
+            group?.unshift(item);
         },
-        "user-context": (menuItems, props) => {
+        "user-context": (menuItems, props = {}) => {
+            const item = makeContextItem(props);
+            if (!item) return;
             const group = findGroupChildrenByChildId("close-dm", menuItems);
-            group?.push(makeContextItem(props));
+            group?.push(item);
         }
     },
 

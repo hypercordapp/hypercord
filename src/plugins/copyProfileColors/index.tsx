@@ -16,18 +16,27 @@ const logger = new Logger("CopyProfileColors");
 
 function getProfileColors(userId: string, guildId?: string) {
     try {
-        const profile = guildId
+        const profile = (guildId
             ? UserProfileStore.getGuildMemberProfile(userId, guildId)
-            : UserProfileStore.getUserProfile(userId);
+            : null) ?? UserProfileStore.getUserProfile(userId);
 
-        if (!profile?.themeColors || profile.themeColors.length < 2) {
-            return null;
+        if (profile?.themeColors && profile.themeColors.length >= 2) {
+            const primaryColor = profile.themeColors[0].toString(16).padStart(6, "0");
+            const secondaryColor = profile.themeColors[1].toString(16).padStart(6, "0");
+            return { primaryColor, secondaryColor, formatted: `Primary-color #${primaryColor}, Secondary-Color #${secondaryColor}` };
         }
 
-        const primaryColor = profile.themeColors[0].toString(16).padStart(6, "0");
-        const secondaryColor = profile.themeColors[1].toString(16).padStart(6, "0");
+        if (profile?.accentColor != null) {
+            const color = profile.accentColor.toString(16).padStart(6, "0");
+            return { primaryColor: color, secondaryColor: color, formatted: `Accent-color #${color}` };
+        }
 
-        return { primaryColor, secondaryColor };
+        if (profile?.bannerColor != null) {
+            const color = profile.bannerColor.toString(16).padStart(6, "0");
+            return { primaryColor: color, secondaryColor: color, formatted: `Banner-color #${color}` };
+        }
+
+        return null;
     } catch (e) {
         logger.error("Failed to get profile colors:", e);
         return null;
@@ -46,13 +55,8 @@ function copyProfileColors(userId: string, guildId?: string) {
         return;
     }
 
-    const { primaryColor, secondaryColor } = colors;
-
-    //  Formatting
-    const formattedColors = `Primary-color #${primaryColor}, Secondary-Color #${secondaryColor}`;
-
     try {
-        copyToClipboard(formattedColors);
+        copyToClipboard(colors.formatted);
         Toasts.show({
             type: Toasts.Type.SUCCESS,
             message: "Profile colors copied to clipboard!",
@@ -80,9 +84,10 @@ export function ColorIcon() {
         </svg>
     );
 }
+
 // spawn in the context menu
-const userContextMenuPatch: NavContextMenuPatchCallback = (children, { user, guildId }: { user?: User; guildId?: string; }) => {
-    if (!user) return;
+const userContextMenuPatch: NavContextMenuPatchCallback = (children, { user, guildId }: { user?: User; guildId?: string; } = {}) => {
+    if (!user?.id) return;
 
     const effectiveGuildId = guildId ?? SelectedGuildStore.getGuildId();
     const guildProfile = effectiveGuildId
@@ -90,25 +95,24 @@ const userContextMenuPatch: NavContextMenuPatchCallback = (children, { user, gui
         : null;
     const hasGuildColors = guildProfile?.themeColors && guildProfile.themeColors.length >= 2;
 
-    children.push(
-        <Menu.MenuItem
-            id="CopyProfileColors"
-            icon={ColorIcon}
-            label="Copy Profile Colors"
-            action={() => copyProfileColors(user.id)}
-        />
-    );
-
-    if (hasGuildColors && effectiveGuildId) {
-        children.push(
+    children.splice(-1, 0, (
+        <Menu.MenuGroup>
             <Menu.MenuItem
-                id="CopyServerProfileColors"
+                id="CopyProfileColors"
                 icon={ColorIcon}
-                label="Copy Server Profile Colors"
-                action={() => copyProfileColors(user.id, effectiveGuildId)}
+                label="Copy Profile Colors"
+                action={() => copyProfileColors(user.id)}
             />
-        );
-    }
+            {hasGuildColors && effectiveGuildId ? (
+                <Menu.MenuItem
+                    id="CopyServerProfileColors"
+                    icon={ColorIcon}
+                    label="Copy Server Profile Colors"
+                    action={() => copyProfileColors(user.id, effectiveGuildId)}
+                />
+            ) : null}
+        </Menu.MenuGroup>
+    ));
 };
 
 export default definePlugin({

@@ -43,44 +43,44 @@ const settings = definePluginSettings({
     }
 });
 
-const UserContextMenuPatch: NavContextMenuPatchCallback = (children, { channel, user }: UserContextProps) => {
-    if (UserStore.getCurrentUser().id === user.id || !RelationshipStore.getFriendIDs().includes(user.id)) return;
+const UserContextMenuPatch: NavContextMenuPatchCallback = (children, { channel, user }: { channel?: Channel; user?: User; } = {}) => {
+    const currentUserId = UserStore.getCurrentUser()?.id;
+    if (!user?.id || !currentUserId || currentUserId === user.id || !RelationshipStore.getFriendIDs().includes(user.id)) return;
 
-    const [checked, setChecked] = React.useState(followedUserInfo?.userId === user.id);
+    const isFollowing = followedUserInfo?.userId === user.id;
 
-    children.push(
-        <Menu.MenuSeparator />,
-        <Menu.MenuCheckboxItem
-            id="fvu-follow-user"
-            label="Follow User"
-            checked={checked}
-            action={() => {
-                if (followedUserInfo?.userId === user.id) {
-                    followedUserInfo = null;
-                    setChecked(false);
-                    return;
-                }
+    children.splice(-1, 0, (
+        <Menu.MenuGroup>
+            <Menu.MenuCheckboxItem
+                id="fvu-follow-user"
+                label="Follow User"
+                checked={isFollowing}
+                action={() => {
+                    if (followedUserInfo?.userId === user.id) {
+                        followedUserInfo = null;
+                        return;
+                    }
 
-                // Start tracking from wherever they currently are, not just
-                // their next move, and jump there immediately if we can -
-                // otherwise "follow" only kicks in once they change channels
-                // again, which reads as broken if they're already in voice.
-                const currentChannelId = VoiceStateStore.getVoiceStateForUser(user.id)?.channelId ?? null;
-                followedUserInfo = {
-                    lastChannelId: currentChannelId,
-                    userId: user.id
-                };
-                setChecked(true);
+                    // Start tracking from wherever they currently are, not just
+                    // their next move, and jump there immediately if we can -
+                    // otherwise "follow" only kicks in once they change channels
+                    // again, which reads as broken if they're already in voice.
+                    const currentChannelId = VoiceStateStore.getVoiceStateForUser(user.id)?.channelId ?? null;
+                    followedUserInfo = {
+                        lastChannelId: currentChannelId,
+                        userId: user.id
+                    };
 
-                if (
-                    currentChannelId
-                    && (!settings.store.onlyWhenInVoice || VoiceStateStore.getVoiceStateForUser(UserStore.getCurrentUser().id))
-                ) {
-                    voiceChannelAction.selectVoiceChannel(currentChannelId);
-                }
-            }}
-        ></Menu.MenuCheckboxItem>
-    );
+                    if (
+                        currentChannelId
+                        && (!settings.store.onlyWhenInVoice || VoiceStateStore.getVoiceStateForUser(currentUserId))
+                    ) {
+                        voiceChannelAction.selectVoiceChannel(currentChannelId);
+                    }
+                }}
+            />
+        </Menu.MenuGroup>
+    ));
 };
 
 export default definePlugin({

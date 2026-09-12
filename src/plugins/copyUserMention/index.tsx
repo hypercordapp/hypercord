@@ -26,22 +26,24 @@ const MentionIcon = () => (
 );
 
 interface UserContextProps {
-    channel: Channel;
+    channel?: Channel;
     guildId?: string;
-    user: User;
+    user?: User;
 }
 
-const UserContextMenuPatch: NavContextMenuPatchCallback = (children, { user }: UserContextProps) => {
-    if (!user) return;
+const UserContextMenuPatch: NavContextMenuPatchCallback = (children, { user }: UserContextProps = {}) => {
+    if (!user?.id) return;
 
-    children.push(
-        <Menu.MenuItem
-            id="vc-copy-user-mention"
-            label="Copy User Mention"
-            action={() => copyToClipboard(`<@${user.id}>`)}
-            icon={MentionIcon}
-        />
-    );
+    children.splice(-1, 0, (
+        <Menu.MenuGroup>
+            <Menu.MenuItem
+                id="vc-copy-user-mention"
+                label="Copy User Mention"
+                action={() => copyToClipboard(`<@${user.id}>`)}
+                icon={MentionIcon}
+            />
+        </Menu.MenuGroup>
+    ));
 };
 
 export default definePlugin({
@@ -50,6 +52,7 @@ export default definePlugin({
     description: "Adds a button to copy user's mention on the user context menu, works best with ValidUser.",
     tags: ["Chat", "Utility"],
     contextMenus: {
-        "user-context": UserContextMenuPatch
+        "user-context": UserContextMenuPatch,
+        "user-profile-actions": UserContextMenuPatch
     }
 });

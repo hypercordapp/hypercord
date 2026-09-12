@@ -9,10 +9,10 @@ import { Devs } from "@utils/constants";
 import definePlugin from "@utils/types";
 import { saveFile } from "@utils/web";
 import type { User } from "@vencord/discord-types";
-import { IconUtils, Menu } from "@webpack/common";
+import { IconUtils, Menu, Toasts } from "@webpack/common";
 
 interface UserContextProps {
-    user: User;
+    user?: User;
 }
 
 async function downloadAvatar(user: User) {
@@ -20,24 +20,37 @@ async function downloadAvatar(user: User) {
 
     try {
         const res = await fetch(url);
+        if (!res.ok) throw new Error(`HTTP error ${res.status}`);
         const blob = await res.blob();
         const ext = blob.type.split("/")[1]?.split("+")[0] || "png";
         saveFile(new File([blob], `${user.username}_avatar.${ext}`, { type: blob.type }));
+        Toasts.show({
+            id: Toasts.genId(),
+            type: Toasts.Type.SUCCESS,
+            message: "Avatar saved successfully!"
+        });
     } catch (e) {
         console.error("[SaveAvatar] Failed to download avatar", e);
+        Toasts.show({
+            id: Toasts.genId(),
+            type: Toasts.Type.FAILURE,
+            message: "Failed to download avatar"
+        });
     }
 }
 
-const UserContextMenuPatch: NavContextMenuPatchCallback = (children, { user }: UserContextProps) => {
-    if (!user) return;
+const UserContextMenuPatch: NavContextMenuPatchCallback = (children, { user }: UserContextProps = {}) => {
+    if (!user?.id) return;
 
-    children.push(
-        <Menu.MenuItem
-            id="vc-save-avatar"
-            label="Save Avatar"
-            action={() => downloadAvatar(user)}
-        />
-    );
+    children.splice(-1, 0, (
+        <Menu.MenuGroup>
+            <Menu.MenuItem
+                id="vc-save-avatar"
+                label="Save Avatar"
+                action={() => downloadAvatar(user)}
+            />
+        </Menu.MenuGroup>
+    ));
 };
 
 export default definePlugin({
@@ -47,6 +60,7 @@ export default definePlugin({
     authors: [Devs.HyperCordTeam],
 
     contextMenus: {
-        "user-context": UserContextMenuPatch
+        "user-context": UserContextMenuPatch,
+        "user-profile-actions": UserContextMenuPatch
     }
 });

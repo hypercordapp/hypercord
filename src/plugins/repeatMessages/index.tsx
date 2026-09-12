@@ -88,29 +88,16 @@ function repeatMessage(msg: Message) {
         });
 }
 
-const messageCtxPatch: NavContextMenuPatchCallback = (children, { msg }: { msg: Message; }) => {
+const messageCtxPatch: NavContextMenuPatchCallback = (children, { msg }: { msg?: Message; } = {}) => {
     if (!msg) return null;
 
     const group = findGroupChildrenByChildId("copy-text", children);
     if (!group) return;
 
-    const forceUpdate = useForceUpdater();
+    const replyIdx = group.findIndex(c => c?.props?.id === "reply");
+    const insertIdx = replyIdx !== -1 ? replyIdx + 1 : group.length;
 
-    useEffect(() => {
-        const handler = () => {
-            forceUpdate();
-        };
-
-        window.addEventListener("keydown", handler);
-        window.addEventListener("keyup", handler);
-
-        return () => {
-            window.removeEventListener("keydown", handler);
-            window.removeEventListener("keyup", handler);
-        };
-    }, []);
-
-    group.splice(group.findIndex(c => c?.props?.id === "reply") + 1, 0, (
+    group.splice(insertIdx, 0, (
         <Menu.MenuItem
             id="vc-repeat"
             label={shift ? "Repeat and Reply" : "Repeat"}

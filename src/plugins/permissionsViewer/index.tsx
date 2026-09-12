@@ -89,7 +89,7 @@ function MenuItem(guildId: string, id?: string, type?: MenuItemParentType) {
 
                         return {
                             permissions,
-                            header: member.nick ?? UserStore.getUser(member.userId).username
+                            header: member?.nick ?? UserStore.getUser(member?.userId)?.username ?? member?.userId ?? "User"
                         };
                     })
                     .with(MenuItemParentType.Channel, () => {

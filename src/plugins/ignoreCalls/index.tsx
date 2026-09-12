@@ -37,16 +37,15 @@ const Deafen = findComponentByCodeLazy("0-1.02-.1H3.05a9");
 const filterOngoingRings = (currentUserId: string): CallUpdate["ongoingRings"] =>
     args.ongoingRings.filter((id: string) => id !== currentUserId);
 
-const ContextMenuPatch: NavContextMenuPatchCallback = (children, { channel }: { channel: Channel; }) => {
-    if (!channel) return;
+const ContextMenuPatch: NavContextMenuPatchCallback = (children, { channel }: { channel?: Channel; } = {}) => {
+    if (!channel?.id) return;
     const permanentlyIgnoredUsers = settings.store.permanentlyIgnoredUsers.split(",").map(s => s.trim()).filter(Boolean);
 
-    const [tempChecked, setTempChecked] = React.useState(ignoredChannelIds.has(channel.id));
-    const [permChecked, setPermChecked] = React.useState(permanentlyIgnoredUsers.includes(channel.id));
+    const tempChecked = ignoredChannelIds.has(channel.id);
+    const permChecked = permanentlyIgnoredUsers.includes(channel.id);
 
-    children.push(
-        <>
-            <Menu.MenuSeparator />
+    children.splice(-1, 0, (
+        <Menu.MenuGroup>
             <Menu.MenuCheckboxItem
                 id="vc-ignore-calls-temp"
                 label="Temporarily Ignore Calls"
@@ -56,8 +55,6 @@ const ContextMenuPatch: NavContextMenuPatchCallback = (children, { channel }: { 
                         ignoredChannelIds.delete(channel.id);
                     else
                         ignoredChannelIds.add(channel.id);
-
-                    setTempChecked(!tempChecked);
                 }}
             />
             <Menu.MenuCheckboxItem
@@ -72,12 +69,10 @@ const ContextMenuPatch: NavContextMenuPatchCallback = (children, { channel }: { 
                         updated.push(channel.id);
                     }
                     settings.store.permanentlyIgnoredUsers = updated.join(", ");
-
-                    setPermChecked(!permChecked);
                 }}
             />
-        </>
-    );
+        </Menu.MenuGroup>
+    ));
 };
 
 const settings = definePluginSettings({

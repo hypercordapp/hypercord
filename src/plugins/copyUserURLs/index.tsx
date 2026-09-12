@@ -25,22 +25,24 @@ import type { Channel, User } from "@vencord/discord-types";
 import { Menu } from "@webpack/common";
 
 interface UserContextProps {
-    channel: Channel;
+    channel?: Channel;
     guildId?: string;
-    user: User;
+    user?: User;
 }
 
-const UserContextMenuPatch: NavContextMenuPatchCallback = (children, { user }: UserContextProps) => {
-    if (!user) return;
+const UserContextMenuPatch: NavContextMenuPatchCallback = (children, { user }: UserContextProps = {}) => {
+    if (!user?.id) return;
 
-    children.push(
-        <Menu.MenuItem
-            id="vc-copy-user-url"
-            label="Copy User URL"
-            action={() => copyToClipboard(`<https://discord.com/users/${user.id}>`)}
-            icon={LinkIcon}
-        />
-    );
+    children.splice(-1, 0, (
+        <Menu.MenuGroup>
+            <Menu.MenuItem
+                id="vc-copy-user-url"
+                label="Copy User URL"
+                action={() => copyToClipboard(`<https://discord.com/users/${user.id}>`)}
+                icon={LinkIcon}
+            />
+        </Menu.MenuGroup>
+    ));
 };
 
 export default definePlugin({
@@ -49,6 +51,7 @@ export default definePlugin({
     description: "Adds a 'Copy User URL' option to the user context menu.",
     tags: ["Utility", "Friends"],
     contextMenus: {
-        "user-context": UserContextMenuPatch
+        "user-context": UserContextMenuPatch,
+        "user-profile-actions": UserContextMenuPatch
     }
 });

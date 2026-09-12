@@ -138,7 +138,8 @@ export function _usePatchContextMenu(props: ContextMenuProps) {
         children: cloneMenuChildren(props.children),
     };
 
-    props.contextMenuAPIArguments ??= [];
+    const rawArgs = props.contextMenuAPIArguments ?? [];
+    const patchArgs = rawArgs.length && rawArgs[0] != null ? rawArgs : [{}, ...rawArgs.slice(1)];
     const contextMenuPatches = navPatches.get(props.navId);
 
     if (!Array.isArray(props.children)) props.children = [props.children];
@@ -146,7 +147,7 @@ export function _usePatchContextMenu(props: ContextMenuProps) {
     if (contextMenuPatches) {
         for (const patch of contextMenuPatches) {
             try {
-                patch(props.children, ...props.contextMenuAPIArguments);
+                patch(props.children, ...patchArgs);
             } catch (err) {
                 ContextMenuLogger.error(`Patch for ${props.navId} errored,`, err);
             }
@@ -155,10 +156,37 @@ export function _usePatchContextMenu(props: ContextMenuProps) {
 
     for (const patch of globalPatches) {
         try {
-            patch(props.navId, props.children, ...props.contextMenuAPIArguments);
+            patch(props.navId, props.children, ...patchArgs);
         } catch (err) {
             ContextMenuLogger.error("Global patch errored,", err);
         }
+    }
+
+    // Modern Discord expects all top-level elements inside Menu to be MenuGroups.
+    // If any plugin pushed loose MenuItem / MenuSeparator / React elements directly into children,
+    // bundle consecutive loose elements into a MenuGroup so Discord's keyboard navigation and focus work properly.
+    if (Array.isArray(props.children)) {
+        const normalizedChildren: Array<ReactElement<any> | null> = [];
+        let looseGroup: Array<ReactElement<any>> = [];
+
+        for (const child of props.children) {
+            if (child == null) continue;
+            if (React.isValidElement(child) && child.type === Menu.MenuGroup) {
+                if (looseGroup.length > 0) {
+                    normalizedChildren.push(React.createElement(Menu.MenuGroup, { key: `vc-loose-group-${normalizedChildren.length}` }, ...looseGroup));
+                    looseGroup = [];
+                }
+                normalizedChildren.push(child);
+            } else if (React.isValidElement(child)) {
+                looseGroup.push(child);
+            }
+        }
+
+        if (looseGroup.length > 0) {
+            normalizedChildren.push(React.createElement(Menu.MenuGroup, { key: `vc-loose-group-${normalizedChildren.length}` }, ...looseGroup));
+        }
+
+        props.children = normalizedChildren;
     }
 
     return props;

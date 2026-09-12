@@ -7,7 +7,7 @@
 import { NavContextMenuPatchCallback } from "@api/ContextMenu";
 import { EquicordDevs } from "@utils/constants";
 import definePlugin from "@utils/types";
-import { Menu, NavigationRouter, RestAPI, Toasts, UserStore } from "@webpack/common";
+import { ChannelStore, Menu, NavigationRouter, RestAPI, SelectedChannelStore, Toasts, UserStore } from "@webpack/common";
 
 async function findLastMessageFromUser(guildId: string, channelId: string, userId: string) {
     try {
@@ -30,72 +30,75 @@ async function findLastMessageFromUser(guildId: string, channelId: string, userI
         console.error("Error finding last message:", error);
         Toasts.show({
             type: Toasts.Type.FAILURE,
-            message: "Failed to find messages. Check console for details.",
+            message: "Failed to search for messages.",
             id: Toasts.genId()
         });
         return null;
     }
 }
 
-async function jumpToLastActive(channel: any, targetUserId?: string) {
-    try {
-        if (!channel) {
-            Toasts.show({
-                type: Toasts.Type.FAILURE,
-                message: "Channel information not available.",
-                id: Toasts.genId()
-            });
-            return;
-        }
-        const guildId = channel.guild_id !== null ? channel.guild_id : "@me";
-        const channelId = channel.id;
-        let userId: string;
-        if (targetUserId) {
-
-            userId = targetUserId;
-        } else {
-            const currentUser = UserStore.getCurrentUser();
-            userId = currentUser.id;
-        }
-        const messageId = await findLastMessageFromUser(guildId, channelId, userId);
-        if (messageId) {
-            const url = `/channels/${guildId}/${channelId}/${messageId}`;
-            NavigationRouter.transitionTo(url);
-        }
-    } catch (error) {
-        console.error("Error in jumpToLastActive:", error);
+async function jumpToLastActive(channel: any, userId?: string) {
+    if (!channel?.guild_id || !channel?.id) {
         Toasts.show({
             type: Toasts.Type.FAILURE,
-            message: "Failed to jump to message. Check console for details.",
+            message: "This only works in server text channels.",
+            id: Toasts.genId()
+        });
+        return;
+    }
+
+    const targetUserId = userId || UserStore.getCurrentUser()?.id;
+    if (!targetUserId) return;
+
+    try {
+        const messageId = await findLastMessageFromUser(channel.guild_id, channel.id, targetUserId);
+
+        if (!messageId) return;
+
+        NavigationRouter.transitionTo(`/channels/${channel.guild_id}/${channel.id}/${messageId}`);
+    } catch (error) {
+        console.error("Error navigating to message:", error);
+        Toasts.show({
+            type: Toasts.Type.FAILURE,
+            message: "Failed to jump to message.",
             id: Toasts.genId()
         });
     }
 }
-const ChannelContextMenuPatch: NavContextMenuPatchCallback = (children, { channel }) => {
-    children.push(
-        <Menu.MenuItem
-            id="LastActive"
-            label={<span style={{ color: "#aa6746" }}>Your Last Message</span>}
-            icon={LastActiveIcon}
-            action={() => {
-                jumpToLastActive(channel);
-            }}
-        />
-    );
-};
-const UserContextMenuPatch: NavContextMenuPatchCallback = (children, { user, channel }) => {
-    if (!channel || !user?.id) return;
+const ChannelContextMenuPatch: NavContextMenuPatchCallback = (children, { channel }: any = {}) => {
+    const targetChannel = channel ?? ChannelStore.getChannel(SelectedChannelStore.getChannelId());
+    if (!targetChannel?.guild_id) return;
 
-    children.push(
-        <Menu.MenuItem
-            id="LastActive"
-            label={<span style={{ color: "#aa6746" }}>User's Last Message</span>}
-            icon={UserLastActiveIcon}
-            action={() => {
-                jumpToLastActive(channel, user.id);
-            }}
-        />
-    );
+    children.splice(-1, 0, (
+        <Menu.MenuGroup>
+            <Menu.MenuItem
+                id="LastActive"
+                label={<span style={{ color: "#aa6746" }}>Your Last Message</span>}
+                icon={LastActiveIcon}
+                action={() => {
+                    jumpToLastActive(targetChannel);
+                }}
+            />
+        </Menu.MenuGroup>
+    ));
+};
+const UserContextMenuPatch: NavContextMenuPatchCallback = (children, { user, channel }: any = {}) => {
+    if (!user?.id) return;
+    const targetChannel = channel ?? ChannelStore.getChannel(SelectedChannelStore.getChannelId());
+    if (!targetChannel?.guild_id) return;
+
+    children.splice(-1, 0, (
+        <Menu.MenuGroup>
+            <Menu.MenuItem
+                id="LastActive"
+                label={<span style={{ color: "#aa6746" }}>User's Last Message</span>}
+                icon={UserLastActiveIcon}
+                action={() => {
+                    jumpToLastActive(targetChannel, user.id);
+                }}
+            />
+        </Menu.MenuGroup>
+    ));
 };
 
 export function UserLastActiveIcon() {
