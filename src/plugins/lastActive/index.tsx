@@ -72,7 +72,7 @@ const ChannelContextMenuPatch: NavContextMenuPatchCallback = (children, { channe
     children.push(
         <Menu.MenuItem
             id="LastActive"
-            label={<span style={{ color: "#aa6746" }}>Your Last Message</span>}
+            label="Your Last Message"
             icon={LastActiveIcon}
             action={() => {
                 jumpToLastActive(targetChannel);
@@ -88,7 +88,7 @@ const UserContextMenuPatch: NavContextMenuPatchCallback = (children, { user, cha
     children.push(
         <Menu.MenuItem
             id="LastActive"
-            label={<span style={{ color: "#aa6746" }}>User's Last Message</span>}
+            label="User's Last Message"
             icon={UserLastActiveIcon}
             action={() => {
                 jumpToLastActive(targetChannel, user.id);

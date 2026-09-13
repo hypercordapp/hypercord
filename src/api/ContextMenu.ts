@@ -162,45 +162,6 @@ export function _usePatchContextMenu(props: ContextMenuProps) {
         }
     }
 
-    // Normalize context menu structure:
-    // 1. Remove nulls and empty MenuGroups
-    // 2. Group any loose top-level MenuItems into a single MenuGroup to avoid multiple divider lines and ensure proper keyboard navigation
-    if (Array.isArray(props.children)) {
-        const normalizedChildren: Array<ReactElement<any> | null> = [];
-        let looseGroup: Array<ReactElement<any>> = [];
-
-        const flushLooseGroup = () => {
-            if (looseGroup.length > 0) {
-                normalizedChildren.push(
-                    React.createElement(Menu.MenuGroup, { key: `hc-loose-group-${normalizedChildren.length}` }, ...looseGroup)
-                );
-                looseGroup = [];
-            }
-        };
-
-        for (const child of props.children) {
-            if (child == null) continue;
-            if (React.isValidElement(child)) {
-                if (child.type === Menu.MenuGroup) {
-                    const groupChildren = (child.props as any)?.children;
-                    const hasChildren = Array.isArray(groupChildren)
-                        ? groupChildren.some(c => c != null && React.isValidElement(c))
-                        : groupChildren != null && React.isValidElement(groupChildren);
-
-                    if (hasChildren) {
-                        flushLooseGroup();
-                        normalizedChildren.push(child);
-                    }
-                } else {
-                    looseGroup.push(child);
-                }
-            }
-        }
-
-        flushLooseGroup();
-        props.children = normalizedChildren;
-    }
-
     return props;
 }
 

@@ -29,11 +29,11 @@ const UserContextMenuPatch: NavContextMenuPatchCallback = (children, { user }: U
     if (!user) return;
 
     children.push(
-        <Menu.MenuGroup label="Fake Mod Actions">
+        <Menu.MenuItem id="vc-fakeperm" label="Fake Mod Actions">
             <Menu.MenuItem id="vc-fakeperm-kick" label="Kick" action={() => fakeAction(user, "kicked")} />
             <Menu.MenuItem id="vc-fakeperm-ban" label="Ban" action={() => fakeAction(user, "banned")} />
             <Menu.MenuItem id="vc-fakeperm-timeout" label="Timeout (1h)" action={() => fakeAction(user, "timed out")} />
-        </Menu.MenuGroup>
+        </Menu.MenuItem>
     );
 };
 

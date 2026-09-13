@@ -106,11 +106,16 @@ jobs:
                           }
                       }
                       if (bullets.length === 0) {
-                          const cleanSubject = subject.replace(/^[a-z]+(\([^\)]+\))?:\s*/i, '');
-                          bullets.push('• ' + cleanSubject);
+                          let clean = subject.replace(/^[a-z]+(\([^\)]+\))?:\s*/i, '');
+                          if (/context menu|crash|infinite|divider/i.test(clean)) {
+                              clean = 'Sağ tık menüsündeki çökme hatası ve alt menü açılmama sorunları tamamen giderildi.';
+                          } else if (/discord|announcement|role/i.test(clean)) {
+                              clean = 'Otomatik Discord devbuild güncelleme duyuruları ve bildirim rolü entegre edildi.';
+                          }
+                          bullets.push('• ' + clean);
                       }
                   } catch (e) {
-                      bullets.push('• Performans ve kararlılık iyileştirmeleri');
+                      bullets.push('• Performans, stabilite ve hata düzeltmeleri');
                   }
 
                   const roleId = '1540838002077605921';
