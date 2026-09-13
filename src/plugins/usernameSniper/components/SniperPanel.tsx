@@ -1,9 +1,11 @@
+import ErrorBoundary from "@components/ErrorBoundary";
 import { copyWithToast } from "@utils/discord";
 import { useEffect, useState, UserStore } from "@webpack/common";
 
 import { sniperEngine } from "../sniperEngine";
 import { AvailableCandidate, ClaimAction, SniperConfig, SniperLogEntry, SniperMode, SniperStats, SniperTier } from "../types";
 import { resolveUserTier } from "../utils/tierManager";
+
 
 const MODES: Array<{
     id: SniperMode;
@@ -55,8 +57,9 @@ const MODES: Array<{
     },
 ];
 
-export default function SniperPanel() {
+function SniperPanelContent() {
     const currentUser = UserStore.getCurrentUser();
+
     const [stats, setStats] = useState<SniperStats>(sniperEngine.getStats());
     const [logs, setLogs] = useState<SniperLogEntry[]>(sniperEngine.getLogs());
     const [config, setConfig] = useState<SniperConfig>(sniperEngine.getConfig());
@@ -533,3 +536,12 @@ export default function SniperPanel() {
         </div>
     );
 }
+
+export default function SniperPanel() {
+    return (
+        <ErrorBoundary>
+            <SniperPanelContent />
+        </ErrorBoundary>
+    );
+}
+
