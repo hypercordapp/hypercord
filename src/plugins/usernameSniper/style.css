@@ -1,0 +1,427 @@
+/*
+ * HyperCord Pomelo Username Sniper - Cyber Neon & Glassmorphism Design
+ */
+
+.hypercord-sniper-root {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding: 20px;
+    background: radial-gradient(circle at top right, rgba(0, 217, 255, 0.05), transparent 40%),
+                radial-gradient(circle at bottom left, rgba(0, 255, 136, 0.05), transparent 40%),
+                rgba(18, 20, 26, 0.85);
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(20px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+    color: #e0e6ed;
+    font-family: var(--font-primary, "gg sans", "Noto Sans", sans-serif);
+}
+
+/* Header & Tier Banner */
+.hypercord-sniper-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    padding-bottom: 16px;
+}
+
+.hypercord-sniper-title-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.hypercord-sniper-title-icon {
+    font-size: 28px;
+    filter: drop-shadow(0 0 10px rgba(0, 255, 136, 0.6));
+}
+
+.hypercord-sniper-title {
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    background: linear-gradient(135deg, #00FF88 0%, #00D9FF 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin: 0;
+}
+
+.hypercord-sniper-subtitle {
+    font-size: 13px;
+    color: #8e9297;
+    margin-top: 2px;
+}
+
+.hypercord-sniper-tier-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
+}
+
+.hypercord-sniper-tier-badge.vip {
+    background: linear-gradient(135deg, rgba(255, 170, 0, 0.2), rgba(255, 77, 0, 0.3));
+    border: 1px solid #FFAA00;
+    color: #FFAA00;
+    box-shadow: 0 0 15px rgba(255, 170, 0, 0.3);
+}
+
+.hypercord-sniper-tier-badge.supporter {
+    background: linear-gradient(135deg, rgba(0, 217, 255, 0.2), rgba(0, 102, 255, 0.3));
+    border: 1px solid #00D9FF;
+    color: #00D9FF;
+    box-shadow: 0 0 15px rgba(0, 217, 255, 0.3);
+}
+
+.hypercord-sniper-tier-badge.free {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #aaa;
+}
+
+/* Stats Row */
+.hypercord-sniper-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 14px;
+}
+
+.hypercord-sniper-stat-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 12px;
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    transition: all 0.2s ease;
+}
+
+.hypercord-sniper-stat-card:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(0, 255, 136, 0.3);
+    transform: translateY(-2px);
+}
+
+.hypercord-sniper-stat-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #8e9297;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.hypercord-sniper-stat-value {
+    font-size: 24px;
+    font-weight: 800;
+    color: #fff;
+    font-variant-numeric: tabular-nums;
+}
+
+.hypercord-sniper-stat-value.highlight-green {
+    color: #00FF88;
+    text-shadow: 0 0 12px rgba(0, 255, 136, 0.5);
+}
+
+.hypercord-sniper-stat-value.highlight-cyan {
+    color: #00D9FF;
+    text-shadow: 0 0 12px rgba(0, 217, 255, 0.5);
+}
+
+.hypercord-sniper-stat-value.highlight-gold {
+    color: #FFD700;
+    text-shadow: 0 0 12px rgba(255, 215, 0, 0.5);
+}
+
+/* Terminal Log View */
+.hypercord-sniper-terminal {
+    background: #090a0f;
+    border: 1px solid rgba(0, 255, 136, 0.2);
+    border-radius: 12px;
+    padding: 14px;
+    font-family: "JetBrains Mono", "Fira Code", "Courier New", monospace;
+    font-size: 12px;
+    height: 190px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.8);
+}
+
+.hypercord-sniper-terminal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    padding-bottom: 6px;
+    margin-bottom: 4px;
+    font-size: 11px;
+    color: #666;
+}
+
+.hypercord-sniper-log-line {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    line-height: 1.4;
+    word-break: break-all;
+}
+
+.hypercord-sniper-log-time {
+    color: #555;
+    font-size: 11px;
+    flex-shrink: 0;
+}
+
+.hypercord-sniper-log-tag {
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 10px;
+    text-transform: uppercase;
+    flex-shrink: 0;
+}
+
+.hypercord-sniper-log-tag.available {
+    background: rgba(0, 255, 136, 0.2);
+    color: #00FF88;
+    border: 1px solid #00FF88;
+}
+
+.hypercord-sniper-log-tag.claimed {
+    background: rgba(255, 215, 0, 0.25);
+    color: #FFD700;
+    border: 1px solid #FFD700;
+}
+
+.hypercord-sniper-log-tag.taken {
+    background: rgba(255, 255, 255, 0.05);
+    color: #777;
+}
+
+.hypercord-sniper-log-tag.rate_limited {
+    background: rgba(255, 170, 0, 0.2);
+    color: #FFAA00;
+    border: 1px solid #FFAA00;
+}
+
+.hypercord-sniper-log-tag.error {
+    background: rgba(255, 68, 68, 0.2);
+    color: #FF4444;
+}
+
+.hypercord-sniper-log-tag.info {
+    background: rgba(0, 217, 255, 0.2);
+    color: #00D9FF;
+}
+
+.hypercord-sniper-log-text {
+    color: #ccc;
+}
+
+/* Controls Grid */
+.hypercord-sniper-controls-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+@media (max-width: 700px) {
+    .hypercord-sniper-controls-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.hypercord-sniper-control-card {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.hypercord-sniper-control-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.hypercord-sniper-field-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #8e9297;
+    margin-bottom: 4px;
+}
+
+.hypercord-sniper-select,
+.hypercord-sniper-input,
+.hypercord-sniper-textarea {
+    width: 100%;
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 10px 12px;
+    color: #fff;
+    font-size: 13px;
+    outline: none;
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+}
+
+.hypercord-sniper-select:focus,
+.hypercord-sniper-input:focus,
+.hypercord-sniper-textarea:focus {
+    border-color: #00FF88;
+    box-shadow: 0 0 10px rgba(0, 255, 136, 0.25);
+}
+
+.hypercord-sniper-textarea {
+    height: 70px;
+    resize: vertical;
+    font-family: monospace;
+}
+
+/* Action Buttons */
+.hypercord-sniper-actions-row {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    margin-top: 10px;
+}
+
+.hypercord-sniper-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 20px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    border: none;
+    transition: all 0.25s ease;
+}
+
+.hypercord-sniper-btn.start {
+    background: linear-gradient(135deg, #00FF88 0%, #00BD65 100%);
+    color: #000;
+    box-shadow: 0 0 20px rgba(0, 255, 136, 0.4);
+}
+
+.hypercord-sniper-btn.start:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0 30px rgba(0, 255, 136, 0.7);
+}
+
+.hypercord-sniper-btn.stop {
+    background: linear-gradient(135deg, #FF4444 0%, #CC1111 100%);
+    color: #fff;
+    box-shadow: 0 0 20px rgba(255, 68, 68, 0.4);
+}
+
+.hypercord-sniper-btn.stop:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0 30px rgba(255, 68, 68, 0.7);
+}
+
+.hypercord-sniper-btn.secondary {
+    background: rgba(255, 255, 255, 0.08);
+    color: #e0e6ed;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.hypercord-sniper-btn.secondary:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+/* Available Found List */
+.hypercord-sniper-found-list {
+    background: rgba(0, 255, 136, 0.03);
+    border: 1px solid rgba(0, 255, 136, 0.2);
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.hypercord-sniper-found-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid rgba(0, 255, 136, 0.3);
+    border-radius: 8px;
+    padding: 10px 14px;
+}
+
+.hypercord-sniper-found-name {
+    font-size: 16px;
+    font-weight: 800;
+    color: #00FF88;
+    letter-spacing: 0.5px;
+}
+
+.hypercord-sniper-found-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.hypercord-sniper-quick-claim-btn {
+    background: #00FF88;
+    color: #000;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.hypercord-sniper-quick-claim-btn:hover {
+    box-shadow: 0 0 12px #00FF88;
+}
+
+/* Modal Popup */
+.hypercord-sniper-modal-root {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 18px;
+    background: radial-gradient(circle at center, rgba(0, 255, 136, 0.15), #11141c 70%);
+    border-radius: 16px;
+    border: 2px solid #00FF88;
+    box-shadow: 0 0 50px rgba(0, 255, 136, 0.4);
+    color: #fff;
+}
+
+.hypercord-sniper-modal-target-box {
+    background: rgba(0, 0, 0, 0.6);
+    border: 1px solid #00FF88;
+    border-radius: 12px;
+    padding: 14px 30px;
+    font-size: 32px;
+    font-weight: 900;
+    letter-spacing: 2px;
+    color: #00FF88;
+    text-shadow: 0 0 20px rgba(0, 255, 136, 0.8);
+}
