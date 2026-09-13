@@ -22,29 +22,32 @@ const computePermissions: (options: {
 }) => bigint = findByCodeLazy(".getCurrentUser()", ".computeLurkerPermissionsAllowList()");
 
 function openPermsModal(user: User) {
-    const channelId = SelectedChannelStore.getChannelId();
-    const channel = channelId ? ChannelStore.getChannel(channelId) : null;
-    if (!channel) return;
+    try {
+        const channelId = SelectedChannelStore.getChannelId();
+        const channel = channelId ? ChannelStore.getChannel(channelId) : null;
+        if (!channel) return;
 
-    const permissions = computePermissions({ user, context: channel, overwrites: channel.permissionOverwrites });
-    const granted = Object.entries(PermissionsBits)
-        .filter(([, bit]) => (permissions & (bit as unknown as bigint)) === (bit as unknown as bigint))
-        .map(([name]) => name);
+        const permissions = computePermissions?.({ user, context: channel, overwrites: channel.permissionOverwrites }) ?? 0n;
+        const granted = Object.entries(PermissionsBits)
+            .filter(([, bit]) => (permissions & (bit as unknown as bigint)) === (bit as unknown as bigint))
+            .map(([name]) => name);
 
-    openModal(props => (
-        <Modal
-            {...props}
-            size="md"
-            title={`${user.username}'s Permissions Here`}
-            actions={[{ text: "Close", variant: "secondary", onClick: props.onClose }]}
-        >
-            <div style={{ padding: "16px", maxHeight: 400, overflowY: "auto" }}>
-                {granted.length
-                    ? granted.map(name => <div key={name}>{name}</div>)
-                    : <div>No permissions in this channel.</div>}
-            </div>
-        </Modal>
-    ));
+        openModal(props => (
+            <Modal
+                {...props}
+                size="md"
+                title={`${user.username}'s Permissions Here`}
+            >
+                <div style={{ padding: "16px", maxHeight: 400, overflowY: "auto" }}>
+                    {granted.length
+                        ? granted.map(name => <div key={name}>{name}</div>)
+                        : <div>No permissions in this channel.</div>}
+                </div>
+            </Modal>
+        ));
+    } catch (e) {
+        console.error("Failed to open permissions modal:", e);
+    }
 }
 
 const userContextPatch: NavContextMenuPatchCallback = (children, { user }: { user?: User; }) => {

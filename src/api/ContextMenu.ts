@@ -163,26 +163,26 @@ export function _usePatchContextMenu(props: ContextMenuProps) {
     return props;
 }
 
-function cloneMenuChildren(obj: ReactElement<any> | Array<ReactElement<any> | null> | null) {
+function cloneMenuChildren(obj: any): any {
+    if (obj == null) return obj;
+
     if (Array.isArray(obj)) {
         return obj.map(cloneMenuChildren);
     }
 
     if (React.isValidElement(obj)) {
-        obj = React.cloneElement(obj);
-
+        const rawChildren = (obj.props as any)?.children;
         if (
-            obj?.props?.children &&
-            (obj.type !== Menu.MenuControlItem || (obj.type === Menu.MenuControlItem && (obj.props as any).control != null))
+            rawChildren != null &&
+            typeof rawChildren !== "function" &&
+            (obj.type !== Menu.MenuControlItem || (obj.type === Menu.MenuControlItem && (obj.props as any)?.control != null))
         ) {
-            try {
-                (obj.props as any).children = cloneMenuChildren(obj.props.children);
-            } catch {
-                obj = React.cloneElement(obj, {
-                    children: cloneMenuChildren(obj.props.children)
-                });
-            }
+            return React.cloneElement(obj, {
+                children: cloneMenuChildren(rawChildren)
+            });
         }
+
+        return React.cloneElement(obj);
     }
 
     return obj;

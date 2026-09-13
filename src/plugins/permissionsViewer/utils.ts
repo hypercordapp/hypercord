@@ -29,11 +29,12 @@ export const { getGuildPermissionSpecMap } = findByPropsLazy("getGuildPermission
 
 export const cl = classNameFactory("vc-permviewer-");
 
-export function getSortedRolesForMember({ id: guildId }: Guild, member: GuildMember) {
+export function getSortedRolesForMember({ id: guildId }: Guild, member?: GuildMember) {
+    if (!member) return [];
     // The guild id is the @everyone role
     return GuildRoleStore
         .getSortedRoles(guildId)
-        .filter(role => role.id === guildId || member.roles.includes(role.id));
+        .filter(role => role.id === guildId || (member.roles || []).includes(role.id));
 }
 
 export function sortUserRoles(roles: Role[]) {
