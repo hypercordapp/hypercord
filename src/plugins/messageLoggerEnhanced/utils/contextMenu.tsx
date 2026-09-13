@@ -161,7 +161,9 @@ export const contextMenuPath: NavContextMenuPatchCallback = (children, props) =>
                 id="message-logger"
                 label="Message Logger"
             >
-                {subItems}
+                <Menu.MenuGroup>
+                    {subItems}
+                </Menu.MenuGroup>
             </Menu.MenuItem>
         );
     }
