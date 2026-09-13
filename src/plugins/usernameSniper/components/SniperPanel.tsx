@@ -1,14 +1,9 @@
-/*
- * Vencord, a Discord client mod
- * Copyright (c) 2026 HyperCord Team and contributors
- * SPDX-License-Identifier: GPL-3.0-or-later
- */
-
 import { copyWithToast } from "@utils/discord";
 import { useEffect, useState, UserStore } from "@webpack/common";
 
 import { sniperEngine } from "../sniperEngine";
 import { AvailableCandidate, ClaimAction, SniperConfig, SniperLogEntry, SniperMode, SniperStats, SniperTier } from "../types";
+import { resolveUserTier } from "../utils/tierManager";
 
 const MODES: Array<{
     id: SniperMode;
@@ -68,13 +63,19 @@ export default function SniperPanel() {
     const [availableList, setAvailableList] = useState<AvailableCandidate[]>(sniperEngine.getAvailableList());
     const [activeTab, setActiveTab] = useState<"scanner" | "console" | "single_test" | "settings">("scanner");
 
-    // Dynamic Tier Management
-    const [tier, setTier] = useState<SniperTier>("vip");
+    // Dynamic Server Role Resolution from Discord ID
+    const [authInfo, setAuthInfo] = useState(resolveUserTier());
+    const tier = authInfo.tier;
+
     const [testInput, setTestInput] = useState("");
     const [testResult, setTestResult] = useState<{ status: string; message: string; } | null>(null);
     const [testLoading, setTestLoading] = useState(false);
 
     useEffect(() => {
+        // Refresh tier on mount
+        const currentAuth = resolveUserTier();
+        setAuthInfo(currentAuth);
+
         const unsubStats = sniperEngine.subscribeStats(newStats => setStats(newStats));
         const unsubLogs = sniperEngine.subscribeLogs(newLogs => setLogs(newLogs));
         const unsubFound = sniperEngine.subscribeFound(() => {
@@ -87,6 +88,7 @@ export default function SniperPanel() {
             unsubFound();
         };
     }, []);
+
 
     const handleConfigChange = <K extends keyof SniperConfig>(key: K, value: SniperConfig[K]) => {
         const updated = { ...config, [key]: value };
@@ -167,21 +169,15 @@ export default function SniperPanel() {
 
                 <div className="hyper-sniper-tier-controls">
                     <div className={`hyper-sniper-tier-pill ${tier}`}>
-                        {tier === "vip" && "👑 VIP AKTİF (250 TL)"}
-                        {tier === "supporter" && "🌟 DESTEKÇİ AKTİF (100 TL)"}
-                        {tier === "free" && "🔒 ÜCRETSİZ HESAP"}
+                        {tier === "vip" && "👑 VIP AKTİF (3L + 4L AÇIK)"}
+                        {tier === "supporter" && "🌟 DESTEKÇİ AKTİF (4L AÇIK)"}
+                        {tier === "free" && "🔒 ÜCRETSİZ HESAP (KİLİTLİ)"}
                     </div>
-
-                    <select
-                        className="hyper-sniper-tier-select"
-                        value={tier}
-                        onChange={e => setTier(e.target.value as SniperTier)}
-                        title="Paket / Rol Seviyesi Değiştir"
-                    >
-                        <option value="vip">👑 VIP Paketi (Tüm 3L + 4L + Wordlist)</option>
-                        <option value="supporter">🌟 Destekçi Paketi (Tüm 4L)</option>
-                        <option value="free">🔒 Ücretsiz / Kilitli Önizleme</option>
-                    </select>
+                    {authInfo.roleName ? (
+                        <div style={{ fontSize: 11, color: "var(--text-muted)" }}>
+                            Yetki: {authInfo.roleName}
+                        </div>
+                    ) : null}
                 </div>
             </div>
 

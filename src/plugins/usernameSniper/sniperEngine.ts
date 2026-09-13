@@ -9,7 +9,9 @@ import { FluxDispatcher, RestAPI, Toasts, UserStore } from "@webpack/common";
 import { AvailableCandidate, ClaimAction, SniperConfig, SniperLogEntry, SniperMode, SniperStats, SniperTier } from "./types";
 import { generateCandidatesForMode } from "./utils/generator";
 import { playAlarmBuzzer, playSuccessChime } from "./utils/sound";
+import { resolveUserTier, validateModeAccess } from "./utils/tierManager";
 import { sendWebhookAlert } from "./utils/webhook";
+
 
 type Listener<T> = (data: T) => void;
 
@@ -154,10 +156,26 @@ class SniperEngine {
     }
 
     /**
-     * Start the sniper engine
+     * Start the sniper engine with strict role verification
      */
     public async start(): Promise<boolean> {
         if (this.isRunning) return false;
+
+        const auth = resolveUserTier();
+        if (!validateModeAccess(this.config.mode, auth.tier)) {
+            const required = this.config.mode.startsWith("3l") || this.config.mode === "custom_wordlist" ? "VIP (250 TL)" : "Destekçi (100 TL)";
+            this.addLog(
+                "-",
+                "error",
+                `⛔ YETKİSİZ ERİŞİM: '${this.config.mode}' modunu çalıştırmak için ${required} rolüne sahip olmanız gereklidir!`
+            );
+            Toasts.show({
+                id: Toasts.genId(),
+                message: `⛔ Bu özellik için ${required} rolü gereklidir.`,
+                type: Toasts.Type.FAILURE,
+            });
+            return false;
+        }
 
         this.isRunning = true;
         this.shouldStop = false;
@@ -178,7 +196,7 @@ class SniperEngine {
         this.addLog(
             "-",
             "info",
-            `🚀 Tarama başlatıldı! Hedef: ${this.config.mode.toUpperCase()} (${this.currentCandidates.length.toLocaleString()} adet isim taranacak)`
+            `🚀 Tarama başlatıldı! Yetki: [${auth.tier.toUpperCase()}] | Hedef: ${this.config.mode.toUpperCase()} (${this.currentCandidates.length.toLocaleString()} adet)`
         );
 
         if (!this.minuteResetTimer) {
