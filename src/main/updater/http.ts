@@ -32,14 +32,15 @@ import { serializeErrors, VENCORD_FILES } from "./common";
 const API_BASE = `https://api.github.com/repos/${gitRemote}`;
 let PendingUpdates = [] as [string, string][];
 let ChecksumsUrl: string | undefined;
+let targetReleaseHash: string | undefined;
 
 async function githubGet<T = any>(endpoint: string) {
-    return fetchJson<T>(API_BASE + endpoint, {
+    const separator = endpoint.includes("?") ? "&" : "?";
+    return fetchJson<T>(`${API_BASE}${endpoint}${separator}t=${Date.now()}`, {
         headers: {
             Accept: "application/vnd.github+json",
-            // "All API requests MUST include a valid User-Agent header.
-            // Requests with no User-Agent header will be rejected."
-            "User-Agent": VENCORD_USER_AGENT
+            "User-Agent": VENCORD_USER_AGENT,
+            "Cache-Control": "no-cache, no-store, must-revalidate"
         }
     });
 }
@@ -51,36 +52,31 @@ async function calculateGitChanges() {
     try {
         const data = await githubGet(`/compare/${gitHash}...HEAD`);
 
-        return data.commits.map((c: any) => ({
-            // github api only sends the long sha
-            hash: c.sha.slice(0, 7),
-            author: c.author?.login ?? c.commit?.author?.name ?? "Unknown Author",
-            message: c.commit.message.split("\n")[0]
-        }));
+        if (Array.isArray(data?.commits) && data.commits.length > 0) {
+            return data.commits.map((c: any) => ({
+                // github api only sends the long sha
+                hash: c.sha.slice(0, 7),
+                author: c.author?.login ?? c.commit?.author?.name ?? "Unknown Author",
+                message: c.commit.message.split("\n")[0]
+            }));
+        }
     } catch {
         // This changelog is purely cosmetic - the actual update (fetchUpdates
         // above) already succeeded and populated PendingUpdates. A local
         // build's commit hash can vanish from the remote's history entirely
         // after a force-push/history rewrite, which 404s this compare call
         // forever for that install - don't let that block the update itself.
-        return [{ hash: gitHash, author: "HyperCord", message: "A new update is available" }];
     }
+
+    return [{ hash: targetReleaseHash ?? "latest", author: "HyperCord", message: "A new update is available" }];
 }
 
 async function fetchUpdates() {
     const data = await githubGet("/releases/latest");
 
     const hash = data.name.slice(data.name.lastIndexOf(" ") + 1);
+    targetReleaseHash = hash;
 
-    // Reset before repopulating, not just on the early "no update" return -
-    // this function (and the check that calls it) can run more than once per
-    // session (e.g. revisiting the update settings page), and without this
-    // every re-check appended another full copy of the same file list onto
-    // PendingUpdates instead of replacing it. applyUpdates() still only
-    // wrote each file's *last* queued content, so nothing corrupted, but every
-    // extra check meant every file got needlessly re-downloaded and re-hashed
-    // once per prior check, growing without bound the longer a session (and
-    // its outdated-update banner) stuck around.
     PendingUpdates = [];
 
     if (hash === gitHash) {

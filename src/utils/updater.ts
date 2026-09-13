@@ -39,21 +39,12 @@ async function Unwrap<T>(p: Promise<IpcRes<T>>) {
 
 export async function checkForUpdates() {
     changes = await Unwrap(VencordNative.updater.getUpdates());
-
-    // we only want to check this for the git updater, not the http updater
-    if (!IS_STANDALONE) {
-        if (changes.some(c => c.hash === gitHash)) {
-            isNewer = true;
-            return (isOutdated = false);
-        }
-    }
+    isNewer = false;
 
     return (isOutdated = changes.length > 0);
 }
 
 export async function update() {
-    if (!isOutdated) return true;
-
     const res = await Unwrap(VencordNative.updater.update());
 
     if (res) {
