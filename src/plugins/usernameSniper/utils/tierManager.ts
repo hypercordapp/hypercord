@@ -42,15 +42,16 @@ export function resolveUserTier(): { tier: SniperTier; reason: string; roleName?
 
                     if (!role || typeof role.name !== "string") continue;
 
-                    const nameLower = role.name.toLowerCase().trim();
+                    // Never count Nitro / Server Booster roles
+                    if (nameLower.includes("booster") || nameLower.includes("takviye") || nameLower.includes("boost")) {
+                        continue;
+                    }
 
                     // Check for VIP role (highest priority)
                     if (
                         nameLower === "vip" ||
                         nameLower.includes("👑") ||
-                        nameLower.includes("vip") ||
-                        nameLower.includes("premium") ||
-                        nameLower.includes("elmas")
+                        nameLower.includes("vip")
                     ) {
                         return {
                             tier: "vip",
@@ -59,13 +60,11 @@ export function resolveUserTier(): { tier: SniperTier; reason: string; roleName?
                         };
                     }
 
-                    // Check for Destekçi / Supporter role
+                    // Check for actual Destekçi role
                     if (
                         nameLower.includes("destekçi") ||
                         nameLower.includes("destekci") ||
-                        nameLower.includes("supporter") ||
-                        nameLower.includes("booster") ||
-                        nameLower.includes("altın")
+                        nameLower === "supporter"
                     ) {
                         return {
                             tier: "supporter",
