@@ -33,16 +33,14 @@ interface UserContextProps {
 const UserContextMenuPatch: NavContextMenuPatchCallback = (children, { user }: UserContextProps = {}) => {
     if (!user?.id) return;
 
-    children.splice(-1, 0, (
-        <Menu.MenuGroup>
-            <Menu.MenuItem
-                id="vc-copy-user-url"
-                label="Copy User URL"
-                action={() => copyToClipboard(`<https://discord.com/users/${user.id}>`)}
-                icon={LinkIcon}
-            />
-        </Menu.MenuGroup>
-    ));
+    children.push(
+        <Menu.MenuItem
+            id="vc-copy-user-url"
+            label="Copy User URL"
+            action={() => copyToClipboard(`<https://discord.com/users/${user.id}>`)}
+            icon={LinkIcon}
+        />
+    );
 };
 
 export default definePlugin({

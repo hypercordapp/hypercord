@@ -269,23 +269,21 @@ const UserContextPatch: NavContextMenuPatchCallback = (children, args: { user?: 
     const channelId = ChannelStore.getDMFromUserId?.(args.user.id) ?? null;
     const isOpen = channelId ? isPopoutWindowOpen(channelId) : false;
 
-    children.splice(-1, 0, (
-        <Menu.MenuGroup>
-            {createSidebarChatContextMenuItem(args.user.id, null)}
-            {createPopoutChatContextMenuItem(
-                args.user.id,
-                isOpen ? "Close popout chat" : "Popout chat",
-                () => {
-                    if (channelId && isOpen) {
-                        closePopout(channelId);
-                        return;
-                    }
-
-                    return openPopoutFromUserMenu(args.user!.id);
+    children.push(
+        createSidebarChatContextMenuItem(args.user.id, null),
+        createPopoutChatContextMenuItem(
+            args.user.id,
+            isOpen ? "Close popout chat" : "Popout chat",
+            () => {
+                if (channelId && isOpen) {
+                    closePopout(channelId);
+                    return;
                 }
-            )}
-        </Menu.MenuGroup>
-    ));
+
+                return openPopoutFromUserMenu(args.user!.id);
+            }
+        )
+    );
 };
 
 const ChannelContextPatch: NavContextMenuPatchCallback = (children, args: { channel: Channel; }) => {

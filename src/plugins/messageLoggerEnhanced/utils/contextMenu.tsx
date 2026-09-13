@@ -71,109 +71,94 @@ export const contextMenuPath: NavContextMenuPatchCallback = (children, props) =>
     if (!props) return;
 
     if (!children.some(child => child?.props?.id === "message-logger")) {
+        const openLogItems = Object.keys(idFunctions).map(IdType => renderOpenLogs(IdType as idKeys, props)).filter(Boolean);
+        const listOptionItems: any[] = [];
+        Object.keys(idFunctions).forEach(IdType => {
+            const blacklist = renderListOption("blacklistedIds", IdType as idKeys, props);
+            const whitelist = renderListOption("whitelistedIds", IdType as idKeys, props);
+            if (blacklist) listOptionItems.push(blacklist);
+            if (whitelist) listOptionItems.push(whitelist);
+        });
+
+        const subItems: any[] = [
+            <Menu.MenuItem
+                id="open-logs"
+                label="Open Logs"
+                action={() => openLogModal()}
+            />,
+            ...openLogItems,
+        ];
+
+        if (listOptionItems.length > 0) {
+            subItems.push(<Menu.MenuSeparator />, ...listOptionItems);
+        }
+
+        if (props.navId === "message" && (props.message?.deleted || props.message?.editHistory?.length > 0)) {
+            subItems.push(
+                <Menu.MenuSeparator />,
+                <Menu.MenuItem
+                    id="remove-message"
+                    label={props.message?.deleted ? "Remove Message (Permanent)" : "Remove Message History (Permanent)"}
+                    color="danger"
+                    action={() =>
+                        deleteMessageIDB(props.message.channel_id, props.message.id)
+                            .then(() => {
+                                if (props.message.deleted) {
+                                    FluxDispatcher.dispatch({
+                                        type: "MESSAGE_DELETE",
+                                        channelId: props.message.channel_id,
+                                        id: props.message.id,
+                                        mlDeleted: true
+                                    });
+                                } else {
+                                    const current: any = MessageStore.getMessage(props.message.channel_id, props.message.id) ?? props.message;
+                                    current.editHistory = [];
+                                    FluxDispatcher.dispatch({
+                                        type: "MESSAGE_UPDATE",
+                                        message: current
+                                    });
+                                }
+                            }).catch(() => Toasts.show({
+                                id: Toasts.genId(),
+                                type: Toasts.Type.FAILURE,
+                                message: "Failed to remove message from Message Logger"
+                            }))
+                    }
+                />
+            );
+        }
+
+        if (
+            settings.store.hideMessageFromMessageLoggers
+            && props.navId === "message"
+            && props.message?.author?.id === UserStore.getCurrentUser()?.id
+            && props.message?.deleted === false
+        ) {
+            subItems.push(
+                <Menu.MenuSeparator />,
+                <Menu.MenuItem
+                    id="hide-from-message-loggers"
+                    label="Delete Message (Hide From Message Loggers)"
+                    color="danger"
+                    action={async () => {
+                        await MessageActions.deleteMessage(props.message.channel_id, props.message.id);
+                        MessageActions._sendMessage(props.message.channel_id, {
+                            "content": settings.store.hideMessageFromMessageLoggersDeletedMessage,
+                            "tts": false,
+                            "invalidEmojis": [],
+                            "validNonShortcutEmojis": []
+                        }, { nonce: props.message.id });
+                    }}
+                />
+            );
+        }
+
         children.push(
-            <Menu.MenuSeparator />,
             <Menu.MenuItem
                 id="message-logger"
                 label="Message Logger"
             >
-
-                <Menu.MenuItem
-                    id="open-logs"
-                    label="Open Logs"
-                    action={() => openLogModal()}
-                />
-
-                {Object.keys(idFunctions).map(IdType => renderOpenLogs(IdType as idKeys, props))}
-
-                <Menu.MenuSeparator />
-
-                {Object.keys(idFunctions).map(IdType => (
-                    <React.Fragment key={IdType}>
-                        {renderListOption("blacklistedIds", IdType as idKeys, props)}
-                        {renderListOption("whitelistedIds", IdType as idKeys, props)}
-                    </React.Fragment>
-                ))}
-
-                {
-                    props.navId === "message"
-                    && (props.message?.deleted || props.message?.editHistory?.length > 0)
-                    && (
-                        <>
-                            <Menu.MenuSeparator />
-                            <Menu.MenuItem
-                                id="remove-message"
-                                label={props.message?.deleted ? "Remove Message (Permanent)" : "Remove Message History (Permanent)"}
-                                color="danger"
-                                action={() =>
-                                    deleteMessageIDB(props.message.channel_id, props.message.id)
-                                        .then(() => {
-                                            if (props.message.deleted) {
-                                                FluxDispatcher.dispatch({
-                                                    type: "MESSAGE_DELETE",
-                                                    channelId: props.message.channel_id,
-                                                    id: props.message.id,
-                                                    mlDeleted: true
-                                                });
-                                            } else {
-                                                // Mutating props.message alone never repaints anything -
-                                                // nothing here triggers a React re-render, unlike the
-                                                // deleted-message branch above (MESSAGE_DELETE is a real
-                                                // Discord flux event the message list already reacts to).
-                                                // The "edited" indicator/history this plugin renders would
-                                                // stay stuck showing the just-removed history until some
-                                                // unrelated event happened to re-render that message.
-                                                // Re-dispatching MESSAGE_UPDATE on the canonical
-                                                // MessageStore object (same proven pattern as
-                                                // messageTranslate's triggerReRender) forces an immediate
-                                                // repaint - safe against this plugin's own
-                                                // messageUpdateHandler re-logging it as a fresh edit,
-                                                // since that handler already no-ops on an empty
-                                                // editHistory (see its check a few lines down).
-                                                const current: any = MessageStore.getMessage(props.message.channel_id, props.message.id) ?? props.message;
-                                                current.editHistory = [];
-                                                FluxDispatcher.dispatch({
-                                                    type: "MESSAGE_UPDATE",
-                                                    message: current
-                                                });
-                                            }
-                                        }).catch(() => Toasts.show({
-                                            type: Toasts.Type.FAILURE,
-                                            message: "Failed to remove message",
-                                            id: Toasts.genId()
-                                        }))
-                                }
-                            />
-                        </>
-                    )
-                }
-
-                {
-                    settings.store.hideMessageFromMessageLoggers
-                    && props.navId === "message"
-                    && props.message?.author?.id === UserStore.getCurrentUser().id
-                    && props.message?.deleted === false
-                    && (
-                        <>
-                            <Menu.MenuSeparator />
-                            <Menu.MenuItem
-                                id="hide-from-message-loggers"
-                                label="Delete Message (Hide From Message Loggers)"
-                                color="danger"
-
-                                action={async () => {
-                                    await MessageActions.deleteMessage(props.message.channel_id, props.message.id);
-                                    MessageActions._sendMessage(props.message.channel_id, {
-                                        "content": settings.store.hideMessageFromMessageLoggersDeletedMessage,
-                                        "tts": false,
-                                        "invalidEmojis": [],
-                                        "validNonShortcutEmojis": []
-                                    }, { nonce: props.message.id });
-                                }}
-                            />
-                        </>
-                    )
-                }
+                {subItems}
             </Menu.MenuItem>
         );
     }

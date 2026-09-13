@@ -34,16 +34,14 @@ interface UserContextProps {
 const UserContextMenuPatch: NavContextMenuPatchCallback = (children, { user }: UserContextProps = {}) => {
     if (!user?.id) return;
 
-    children.splice(-1, 0, (
-        <Menu.MenuGroup>
-            <Menu.MenuItem
-                id="vc-copy-user-mention"
-                label="Copy User Mention"
-                action={() => copyToClipboard(`<@${user.id}>`)}
-                icon={MentionIcon}
-            />
-        </Menu.MenuGroup>
-    ));
+    children.push(
+        <Menu.MenuItem
+            id="vc-copy-user-mention"
+            label="Copy User Mention"
+            action={() => copyToClipboard(`<@${user.id}>`)}
+            icon={MentionIcon}
+        />
+    );
 };
 
 export default definePlugin({

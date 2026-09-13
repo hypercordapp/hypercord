@@ -43,35 +43,31 @@ const ColorIcon = () => {
 const userContextMenuPatch: NavContextMenuPatchCallback = (children, { user }: { user?: User; } = {}) => {
     if (user?.id == null) return;
 
-    children.splice(-1, 0, (
-        <Menu.MenuGroup>
-            <Menu.MenuItem
-                label="Set Color"
-                id="set-color"
-                icon={ColorIcon}
-                action={() => {
-                    openModal(modalProps => <SetColorModal id={user.id} modalProps={modalProps} />);
-                }}
-            />
-        </Menu.MenuGroup>
-    ));
+    children.push(
+        <Menu.MenuItem
+            label="Set Color"
+            id="set-color"
+            icon={ColorIcon}
+            action={() => {
+                openModal(modalProps => <SetColorModal id={user.id} modalProps={modalProps} />);
+            }}
+        />
+    );
 };
 
 const channelContextMenuPatch: NavContextMenuPatchCallback = (children, { channel }: { channel?: Channel; } = {}) => {
     if (channel?.id == null) return;
 
-    children.splice(-1, 0, (
-        <Menu.MenuGroup>
-            <Menu.MenuItem
-                label="Set Color"
-                id="set-color"
-                icon={ColorIcon}
-                action={() => {
-                    openModal(modalProps => <SetColorModal id={channel.id} modalProps={modalProps} />);
-                }}
-            />
-        </Menu.MenuGroup>
-    ));
+    children.push(
+        <Menu.MenuItem
+            label="Set Color"
+            id="set-color"
+            icon={ColorIcon}
+            action={() => {
+                openModal(modalProps => <SetColorModal id={channel.id} modalProps={modalProps} />);
+            }}
+        />
+    );
 };
 
 export function getCustomColorString(id: string | undefined, withHash?: boolean): string | undefined {

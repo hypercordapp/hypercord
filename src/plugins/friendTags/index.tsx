@@ -189,27 +189,25 @@ function UserToTagID(user: string, tag: string, remove: boolean) {
 const userPatch: NavContextMenuPatchCallback = (children, { user }: { user?: any; } = {}) => {
     if (!user?.id || !SavedData || SavedData.length === 0) return;
 
-    children.splice(-1, 0, (
-        <Menu.MenuGroup>
-            <Menu.MenuItem
-                id="vc-tag-group"
-                label="Tag"
-            >
-                {SavedData.map(tag => {
-                    const isTagged = (tag.userIds || []).includes(user.id);
+    children.push(
+        <Menu.MenuItem
+            id="vc-tag-group"
+            label="Tag"
+        >
+            {SavedData.map(tag => {
+                const isTagged = (tag.userIds || []).includes(user.id);
 
-                    return (
-                        <Menu.MenuItem
-                            label={`${isTagged ? "Remove from" : "Add to"} ${tag.tagName}`}
-                            key={`vc-tag-${tag.tagName}`}
-                            id={`vc-tag-${tag.tagName}`}
-                            action={() => { UserToTagID(user.id, tag.tagName, isTagged); }}
-                        />
-                    );
-                })}
-            </Menu.MenuItem>
-        </Menu.MenuGroup>
-    ));
+                return (
+                    <Menu.MenuItem
+                        label={`${isTagged ? "Remove from" : "Add to"} ${tag.tagName}`}
+                        key={`vc-tag-${tag.tagName}`}
+                        id={`vc-tag-${tag.tagName}`}
+                        action={() => { UserToTagID(user.id, tag.tagName, isTagged); }}
+                    />
+                );
+            })}
+        </Menu.MenuItem>
+    );
 };
 
 export default definePlugin({

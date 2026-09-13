@@ -68,20 +68,18 @@ const ChannelMenuPatch: NavContextMenuPatchCallback = (
     const targetChannel = thread ?? forumChild ?? channel;
     if (!targetChannel) return;
 
-    children.splice(-1, 0, (
-        <Menu.MenuGroup>
-            <Menu.MenuItem
-                id="vc-jump-to-first"
-                label="Jump To First Message"
-                action={() => jumpToFirstMessage(targetChannel.id, targetChannel.guild_id)}
-            />
-            <Menu.MenuItem
-                id="vc-jump-to-last"
-                label="Jump To Last Message"
-                action={() => jumpToLastMessage(targetChannel.id, targetChannel.guild_id)}
-            />
-        </Menu.MenuGroup>
-    ));
+    children.push(
+        <Menu.MenuItem
+            id="vc-jump-to-first"
+            label="Jump To First Message"
+            action={() => jumpToFirstMessage(targetChannel.id, targetChannel.guild_id)}
+        />,
+        <Menu.MenuItem
+            id="vc-jump-to-last"
+            label="Jump To Last Message"
+            action={() => jumpToLastMessage(targetChannel.id, targetChannel.guild_id)}
+        />
+    );
 };
 
 const UserMenuPatch: NavContextMenuPatchCallback = (children, { user, channel }: { user?: User; channel?: Channel; } = {}) => {
@@ -89,20 +87,18 @@ const UserMenuPatch: NavContextMenuPatchCallback = (children, { user, channel }:
     const targetChannel = channel ?? ChannelStore.getDMFromUserId?.(user.id) ?? ChannelStore.getChannel(SelectedChannelStore.getChannelId());
     if (!targetChannel || targetChannel.guild_id) return;
 
-    children.splice(-1, 0, (
-        <Menu.MenuGroup>
-            <Menu.MenuItem
-                id="vc-jump-to-first"
-                label="Jump To First Message"
-                action={() => jumpToFirstMessage(targetChannel.id, null)}
-            />
-            <Menu.MenuItem
-                id="vc-jump-to-last"
-                label="Jump To Last Message"
-                action={() => jumpToLastMessage(targetChannel.id, null)}
-            />
-        </Menu.MenuGroup>
-    ));
+    children.push(
+        <Menu.MenuItem
+            id="vc-jump-to-first"
+            label="Jump To First Message"
+            action={() => jumpToFirstMessage(targetChannel.id, null)}
+        />,
+        <Menu.MenuItem
+            id="vc-jump-to-last"
+            label="Jump To Last Message"
+            action={() => jumpToLastMessage(targetChannel.id, null)}
+        />
+    );
 };
 
 const MessageMenuPatch: NavContextMenuPatchCallback = (children, { message }: { message?: Message; } = {}) => {
@@ -111,20 +107,18 @@ const MessageMenuPatch: NavContextMenuPatchCallback = (children, { message }: { 
     const guildId = SelectedGuildStore.getGuildId();
     if (!channelId || !guildId) return;
 
-    children.splice(-1, 0, (
-        <Menu.MenuGroup>
-            <Menu.MenuItem
-                id="vc-jump-to-first-user"
-                label="Jump To First Message"
-                action={() => jumpToFirstMessage(channelId, guildId, message.author.id)}
-            />
-            <Menu.MenuItem
-                id="vc-jump-to-last-user"
-                label="Jump To Last Message"
-                action={() => jumpToLastMessage(channelId, guildId, message.author.id)}
-            />
-        </Menu.MenuGroup>
-    ));
+    children.push(
+        <Menu.MenuItem
+            id="vc-jump-to-first-user"
+            label="Jump To First Message"
+            action={() => jumpToFirstMessage(channelId, guildId, message.author.id)}
+        />,
+        <Menu.MenuItem
+            id="vc-jump-to-last-user"
+            label="Jump To Last Message"
+            action={() => jumpToLastMessage(channelId, guildId, message.author.id)}
+        />
+    );
 };
 
 export default definePlugin({

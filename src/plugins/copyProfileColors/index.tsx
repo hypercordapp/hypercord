@@ -95,24 +95,25 @@ const userContextMenuPatch: NavContextMenuPatchCallback = (children, { user, gui
         : null;
     const hasGuildColors = guildProfile?.themeColors && guildProfile.themeColors.length >= 2;
 
-    children.splice(-1, 0, (
-        <Menu.MenuGroup>
+    children.push(
+        <Menu.MenuItem
+            id="CopyProfileColors"
+            icon={ColorIcon}
+            label="Copy Profile Colors"
+            action={() => copyProfileColors(user.id)}
+        />
+    );
+
+    if (hasGuildColors && effectiveGuildId) {
+        children.push(
             <Menu.MenuItem
-                id="CopyProfileColors"
+                id="CopyServerProfileColors"
                 icon={ColorIcon}
-                label="Copy Profile Colors"
-                action={() => copyProfileColors(user.id)}
+                label="Copy Server Profile Colors"
+                action={() => copyProfileColors(user.id, effectiveGuildId)}
             />
-            {hasGuildColors && effectiveGuildId ? (
-                <Menu.MenuItem
-                    id="CopyServerProfileColors"
-                    icon={ColorIcon}
-                    label="Copy Server Profile Colors"
-                    action={() => copyProfileColors(user.id, effectiveGuildId)}
-                />
-            ) : null}
-        </Menu.MenuGroup>
-    ));
+        );
+    }
 };
 
 export default definePlugin({

@@ -42,15 +42,13 @@ async function downloadAvatar(user: User) {
 const UserContextMenuPatch: NavContextMenuPatchCallback = (children, { user }: UserContextProps = {}) => {
     if (!user?.id) return;
 
-    children.splice(-1, 0, (
-        <Menu.MenuGroup>
-            <Menu.MenuItem
-                id="vc-save-avatar"
-                label="Save Avatar"
-                action={() => downloadAvatar(user)}
-            />
-        </Menu.MenuGroup>
-    ));
+    children.push(
+        <Menu.MenuItem
+            id="vc-save-avatar"
+            label="Save Avatar"
+            action={() => downloadAvatar(user)}
+        />
+    );
 };
 
 export default definePlugin({

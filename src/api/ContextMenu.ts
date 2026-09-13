@@ -94,27 +94,27 @@ export function removeGlobalContextMenuPatch(patch: GlobalContextMenuPatchCallba
  */
 export function findGroupChildrenByChildId(id: string | string[], children: Array<ReactElement<any> | null | undefined>, matchSubstring = false): Array<ReactElement<any> | null | undefined> | null {
     for (const child of children) {
-        if (child == null) continue;
+        if (child == null || !React.isValidElement(child)) continue;
 
         if (Array.isArray(child)) {
             const found = findGroupChildrenByChildId(id, child, matchSubstring);
             if (found !== null) return found;
         }
 
+        const childId = child.props?.id;
         if (
-            (Array.isArray(id) && id.some(id => matchSubstring ? child.props?.id?.includes(id) : child.props?.id === id))
-            || (matchSubstring ? child.props?.id?.includes(id) : child.props?.id === id)
-        ) return children;
+            (Array.isArray(id) && id.some(targetId => matchSubstring ? childId?.includes(targetId) : childId === targetId))
+            || (matchSubstring ? childId?.includes(id as string) : childId === id)
+        ) {
+            return children;
+        }
 
-        let nextChildren = child.props?.children;
-        if (nextChildren) {
-            if (!Array.isArray(nextChildren)) {
-                nextChildren = [nextChildren];
-                child.props.children = nextChildren;
+        const nextChildren = child.props?.children;
+        if (nextChildren && typeof nextChildren !== "function") {
+            if (Array.isArray(nextChildren)) {
+                const found = findGroupChildrenByChildId(id, nextChildren, matchSubstring);
+                if (found !== null) return found;
             }
-
-            const found = findGroupChildrenByChildId(id, nextChildren, matchSubstring);
-            if (found !== null) return found;
         }
     }
 
@@ -131,7 +131,7 @@ interface ContextMenuProps {
 }
 
 export function _usePatchContextMenu(props: ContextMenuProps) {
-    if (!Menu.MenuItem) return props; // Prevent crashes in case we fail to acquire menu items for some reason
+    if (!Menu.MenuItem) return props;
 
     props = {
         ...props,
@@ -162,50 +162,48 @@ export function _usePatchContextMenu(props: ContextMenuProps) {
         }
     }
 
-    // Modern Discord expects all top-level elements inside Menu to be MenuGroups.
-    // If any plugin pushed loose MenuItem / MenuSeparator / React elements directly into children,
-    // bundle consecutive loose elements into a MenuGroup so Discord's keyboard navigation and focus work properly.
+    // Filter out completely empty MenuGroups or null elements to prevent empty border lines
     if (Array.isArray(props.children)) {
-        const normalizedChildren: Array<ReactElement<any> | null> = [];
-        let looseGroup: Array<ReactElement<any>> = [];
-
-        for (const child of props.children) {
-            if (child == null) continue;
+        props.children = props.children.filter(child => {
+            if (child == null) return false;
             if (React.isValidElement(child) && child.type === Menu.MenuGroup) {
-                if (looseGroup.length > 0) {
-                    normalizedChildren.push(React.createElement(Menu.MenuGroup, { key: `vc-loose-group-${normalizedChildren.length}` }, ...looseGroup));
-                    looseGroup = [];
+                const groupChildren = child.props?.children;
+                if (groupChildren == null) return false;
+                if (Array.isArray(groupChildren)) {
+                    return groupChildren.some(c => c != null && React.isValidElement(c));
                 }
-                normalizedChildren.push(child);
-            } else if (React.isValidElement(child)) {
-                looseGroup.push(child);
             }
-        }
-
-        if (looseGroup.length > 0) {
-            normalizedChildren.push(React.createElement(Menu.MenuGroup, { key: `vc-loose-group-${normalizedChildren.length}` }, ...looseGroup));
-        }
-
-        props.children = normalizedChildren;
+            return true;
+        });
     }
 
     return props;
 }
 
-function cloneMenuChildren(obj: ReactElement<any> | Array<ReactElement<any> | null> | null) {
+function cloneMenuChildren(obj: ReactElement<any> | Array<ReactElement<any> | null> | null): any {
+    if (obj == null) return obj;
+
     if (Array.isArray(obj)) {
         return obj.map(cloneMenuChildren);
     }
 
     if (React.isValidElement(obj)) {
-        obj = React.cloneElement(obj);
-
-        if (
-            obj?.props?.children &&
-            (obj.type !== Menu.MenuControlItem || obj.type === Menu.MenuControlItem && obj.props.control != null)
-        ) {
-            obj.props.children = cloneMenuChildren(obj.props.children);
+        const rawChildren = obj.props?.children;
+        if (rawChildren == null) {
+            return React.cloneElement(obj);
         }
+
+        // Do not mutate or clone submenu render functions
+        if (typeof rawChildren === "function") {
+            return React.cloneElement(obj);
+        }
+
+        if (obj.type !== Menu.MenuControlItem || (obj.type === Menu.MenuControlItem && obj.props.control != null)) {
+            const clonedChildren = cloneMenuChildren(rawChildren);
+            return React.cloneElement(obj, undefined, ...(Array.isArray(clonedChildren) ? clonedChildren : [clonedChildren]));
+        }
+
+        return React.cloneElement(obj);
     }
 
     return obj;

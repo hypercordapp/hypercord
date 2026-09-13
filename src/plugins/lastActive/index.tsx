@@ -69,36 +69,32 @@ const ChannelContextMenuPatch: NavContextMenuPatchCallback = (children, { channe
     const targetChannel = channel ?? ChannelStore.getChannel(SelectedChannelStore.getChannelId());
     if (!targetChannel?.guild_id) return;
 
-    children.splice(-1, 0, (
-        <Menu.MenuGroup>
-            <Menu.MenuItem
-                id="LastActive"
-                label={<span style={{ color: "#aa6746" }}>Your Last Message</span>}
-                icon={LastActiveIcon}
-                action={() => {
-                    jumpToLastActive(targetChannel);
-                }}
-            />
-        </Menu.MenuGroup>
-    ));
+    children.push(
+        <Menu.MenuItem
+            id="LastActive"
+            label={<span style={{ color: "#aa6746" }}>Your Last Message</span>}
+            icon={LastActiveIcon}
+            action={() => {
+                jumpToLastActive(targetChannel);
+            }}
+        />
+    );
 };
 const UserContextMenuPatch: NavContextMenuPatchCallback = (children, { user, channel }: any = {}) => {
     if (!user?.id) return;
     const targetChannel = channel ?? ChannelStore.getChannel(SelectedChannelStore.getChannelId());
     if (!targetChannel?.guild_id) return;
 
-    children.splice(-1, 0, (
-        <Menu.MenuGroup>
-            <Menu.MenuItem
-                id="LastActive"
-                label={<span style={{ color: "#aa6746" }}>User's Last Message</span>}
-                icon={UserLastActiveIcon}
-                action={() => {
-                    jumpToLastActive(targetChannel, user.id);
-                }}
-            />
-        </Menu.MenuGroup>
-    ));
+    children.push(
+        <Menu.MenuItem
+            id="LastActive"
+            label={<span style={{ color: "#aa6746" }}>User's Last Message</span>}
+            icon={UserLastActiveIcon}
+            action={() => {
+                jumpToLastActive(targetChannel, user.id);
+            }}
+        />
+    );
 };
 
 export function UserLastActiveIcon() {
