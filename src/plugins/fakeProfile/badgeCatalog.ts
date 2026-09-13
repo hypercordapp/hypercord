@@ -211,6 +211,70 @@ export const BADGE_CATALOG: CatalogCategory[] = [
             { key: "gifter_legend", label: "Gift Giver — Legend", iconSrc: "https://api.hypercord.pro/img/69a25f7d8dcb0c1ed07d8eba4a783c7b0d0a85c7118995c1c5ff8aad2fbd2f17.png" },
         ]
     },
+    {
+        title: "Account Age",
+        exclusive: true,
+        badges: [
+            { key: "account_age_seed", label: "Account Age — Seed (1 Year)", iconSrc: "https://raw.githubusercontent.com/dev-hoehle/discord-badges/main/png/account_age_seed.png" },
+            { key: "account_age_sprout", label: "Account Age — Sprout (2 Years)", iconSrc: "https://raw.githubusercontent.com/dev-hoehle/discord-badges/main/png/account_age_sprout.png" },
+            { key: "account_age_bud", label: "Account Age — Bud (3 Years)", iconSrc: "https://raw.githubusercontent.com/dev-hoehle/discord-badges/main/png/account_age_bud.png" },
+            { key: "account_age_sapling", label: "Account Age — Sapling (4 Years)", iconSrc: "https://raw.githubusercontent.com/dev-hoehle/discord-badges/main/png/account_age_sapling.png" },
+            { key: "account_age_blossom", label: "Account Age — Blossom (5 Years)", iconSrc: "https://raw.githubusercontent.com/dev-hoehle/discord-badges/main/png/account_age_blossom.png" },
+            { key: "account_age_redwood", label: "Account Age — Redwood (6 Years)", iconSrc: "https://raw.githubusercontent.com/dev-hoehle/discord-badges/main/png/account_age_redwood.png" },
+            { key: "account_age_sequoia", label: "Account Age — Sequoia (7 Years)", iconSrc: "https://raw.githubusercontent.com/dev-hoehle/discord-badges/main/png/account_age_sequoia.png" },
+            { key: "account_age_bristlecone", label: "Account Age — Bristlecone (8 Years)", iconSrc: "https://raw.githubusercontent.com/dev-hoehle/discord-badges/main/png/account_age_bristlecone.png" },
+            { key: "account_age_stromatolite", label: "Account Age — Stromatolite (9 Years)", iconSrc: "https://raw.githubusercontent.com/dev-hoehle/discord-badges/main/png/account_age_stromatolite.png" },
+            { key: "account_age_primordial", label: "Account Age — Primordial (10+ Years)", iconSrc: "https://raw.githubusercontent.com/dev-hoehle/discord-badges/main/png/account_age_primordial.png" },
+        ]
+    },
+    {
+        title: "Streaming",
+        exclusive: true,
+        badges: [
+            { key: "streaming_newcomer", label: "Streaming — Newcomer (1 Hour)", iconSrc: "https://raw.githubusercontent.com/dev-hoehle/discord-badges/main/png/streaming_newcomer.png" },
+            { key: "streaming_fledgling", label: "Streaming — Fledgling (5 Hours)", iconSrc: "https://raw.githubusercontent.com/dev-hoehle/discord-badges/main/png/streaming_fledgling.png" },
+            { key: "streaming_breakout", label: "Streaming — Breakout (20 Hours)", iconSrc: "https://raw.githubusercontent.com/dev-hoehle/discord-badges/main/png/streaming_breakout.png" },
+            { key: "streaming_standout", label: "Streaming — Standout (75 Hours)", iconSrc: "https://raw.githubusercontent.com/dev-hoehle/discord-badges/main/png/streaming_standout.png" },
+            { key: "streaming_trendsetter", label: "Streaming — Trendsetter (150 Hours)", iconSrc: "https://raw.githubusercontent.com/dev-hoehle/discord-badges/main/png/streaming_trendsetter.png" },
+            { key: "streaming_headliner", label: "Streaming — Headliner (300 Hours)", iconSrc: "https://raw.githubusercontent.com/dev-hoehle/discord-badges/main/png/streaming_headliner.png" },
+            { key: "streaming_star", label: "Streaming — Star (500 Hours)", iconSrc: "https://raw.githubusercontent.com/dev-hoehle/discord-badges/main/png/streaming_star.png" },
+            { key: "streaming_sensation", label: "Streaming — Sensation (1,000 Hours)", iconSrc: "https://raw.githubusercontent.com/dev-hoehle/discord-badges/main/png/streaming_sensation.png" },
+            { key: "streaming_visionary", label: "Streaming — Visionary (2,000 Hours)", iconSrc: "https://raw.githubusercontent.com/dev-hoehle/discord-badges/main/png/streaming_visionary.png" },
+            { key: "streaming_phenomenon", label: "Streaming — Phenomenon (5,000+ Hours)", iconSrc: "https://raw.githubusercontent.com/dev-hoehle/discord-badges/main/png/streaming_phenomenon.png" },
+        ]
+    },
+    {
+        title: "Game Time",
+        exclusive: true,
+        badges: [
+            { key: "game_time_casual", label: "Game Time — Casual (1 Hour)", iconSrc: "https://raw.githubusercontent.com/dev-hoehle/discord-badges/main/png/game_time_casual.png" },
+            { key: "game_time_recreational", label: "Game Time — Recreational (5 Hours)", iconSrc: "https://raw.githubusercontent.com/dev-hoehle/discord-badges/main/png/game_time_recreational.png" },
+            { key: "game_time_dedicated", label: "Game Time — Dedicated (20 Hours)", iconSrc: "https://raw.githubusercontent.com/dev-hoehle/discord-badges/main/png/game_time_dedicated.png" },
+            { key: "game_time_committed", label: "Game Time — Committed (75 Hours)", iconSrc: "https://raw.githubusercontent.com/dev-hoehle/discord-badges/main/png/game_time_committed.png" },
+            { key: "game_time_serious", label: "Game Time — Serious (150 Hours)", iconSrc: "https://raw.githubusercontent.com/dev-hoehle/discord-badges/main/png/game_time_serious.png" },
+            { key: "game_time_devoted", label: "Game Time — Devoted (300 Hours)", iconSrc: "https://raw.githubusercontent.com/dev-hoehle/discord-badges/main/png/game_time_devoted.png" },
+            { key: "game_time_seasoned", label: "Game Time — Seasoned (500 Hours)", iconSrc: "https://raw.githubusercontent.com/dev-hoehle/discord-badges/main/png/game_time_seasoned.png" },
+            { key: "game_time_ironclad", label: "Game Time — Ironclad (1,000 Hours)", iconSrc: "https://raw.githubusercontent.com/dev-hoehle/discord-badges/main/png/game_time_ironclad.png" },
+            { key: "game_time_unshakeable", label: "Game Time — Unshakeable (2,000 Hours)", iconSrc: "https://raw.githubusercontent.com/dev-hoehle/discord-badges/main/png/game_time_unshakeable.png" },
+            { key: "game_time_eternal", label: "Game Time — Eternal (5,000+ Hours)", iconSrc: "https://raw.githubusercontent.com/dev-hoehle/discord-badges/main/png/game_time_eternal.png" },
+        ]
+    },
+    {
+        title: "Game Variety",
+        exclusive: true,
+        badges: [
+            { key: "game_variety_sampler", label: "Game Variety — Sampler (2 Games)", iconSrc: "https://raw.githubusercontent.com/dev-hoehle/discord-badges/main/png/game_variety_sampler.png" },
+            { key: "game_variety_dabbler", label: "Game Variety — Dabbler (5 Games)", iconSrc: "https://raw.githubusercontent.com/dev-hoehle/discord-badges/main/png/game_variety_dabbler.png" },
+            { key: "game_variety_enthusiast", label: "Game Variety — Enthusiast (10 Games)", iconSrc: "https://raw.githubusercontent.com/dev-hoehle/discord-badges/main/png/game_variety_enthusiast.png" },
+            { key: "game_variety_ranger", label: "Game Variety — Ranger (15 Games)", iconSrc: "https://raw.githubusercontent.com/dev-hoehle/discord-badges/main/png/game_variety_ranger.png" },
+            { key: "game_variety_explorer", label: "Game Variety — Explorer (20 Games)", iconSrc: "https://raw.githubusercontent.com/dev-hoehle/discord-badges/main/png/game_variety_explorer.png" },
+            { key: "game_variety_adventurer", label: "Game Variety — Adventurer (30 Games)", iconSrc: "https://raw.githubusercontent.com/dev-hoehle/discord-badges/main/png/game_variety_adventurer.png" },
+            { key: "game_variety_voyager", label: "Game Variety — Voyager (40 Games)", iconSrc: "https://raw.githubusercontent.com/dev-hoehle/discord-badges/main/png/game_variety_voyager.png" },
+            { key: "game_variety_maverick", label: "Game Variety — Maverick (60 Games)", iconSrc: "https://raw.githubusercontent.com/dev-hoehle/discord-badges/main/png/game_variety_maverick.png" },
+            { key: "game_variety_polymath", label: "Game Variety — Polymath (80 Games)", iconSrc: "https://raw.githubusercontent.com/dev-hoehle/discord-badges/main/png/game_variety_polymath.png" },
+            { key: "game_variety_universalist", label: "Game Variety — Universalist (100+ Games)", iconSrc: "https://raw.githubusercontent.com/dev-hoehle/discord-badges/main/png/game_variety_universalist.png" },
+        ]
+    },
 ];
 
 // Object.create(null) (no Object.prototype) rather than a plain {} - this
@@ -253,6 +317,10 @@ const DISPLAY_ORDER = [
     "quest", "active_developer",
     "last_meadow_online",
     "orbs_apprentice",
+    "account_age_seed", "account_age_sprout", "account_age_bud", "account_age_sapling", "account_age_blossom", "account_age_redwood", "account_age_sequoia", "account_age_bristlecone", "account_age_stromatolite", "account_age_primordial",
+    "streaming_newcomer", "streaming_fledgling", "streaming_breakout", "streaming_standout", "streaming_trendsetter", "streaming_headliner", "streaming_star", "streaming_sensation", "streaming_visionary", "streaming_phenomenon",
+    "game_time_casual", "game_time_recreational", "game_time_dedicated", "game_time_committed", "game_time_serious", "game_time_devoted", "game_time_seasoned", "game_time_ironclad", "game_time_unshakeable", "game_time_eternal",
+    "game_variety_sampler", "game_variety_dabbler", "game_variety_enthusiast", "game_variety_ranger", "game_variety_explorer", "game_variety_adventurer", "game_variety_voyager", "game_variety_maverick", "game_variety_polymath", "game_variety_universalist",
     "gifter_patron", "gifter_champion", "gifter_luminary", "gifter_icon", "gifter_hero", "gifter_legend",
 ];
 

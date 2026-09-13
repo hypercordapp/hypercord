@@ -75,7 +75,7 @@ export function BadgePicker() {
                 return (
                     <div key={category.title} className={cl("category")}>
                         <Text variant="text-xs/semibold" className={cl("category-title")}>
-                            {category.title}
+                            {t(category.title)}
                         </Text>
                         <div className={cl("grid")}>
                             {visibleBadges.map(badge => (
