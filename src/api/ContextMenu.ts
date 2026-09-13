@@ -129,25 +129,18 @@ interface ContextMenuProps {
     onClose: (callback: (...args: Array<any>) => any) => void;
 }
 
-const patchedMenuCache = new WeakMap<object, ContextMenuProps>();
-
 export function _usePatchContextMenu(props: ContextMenuProps) {
     if (!Menu.MenuItem) return props; // Prevent crashes in case we fail to acquire menu items for some reason
 
-    if (props && props.children && typeof props.children === "object" && patchedMenuCache.has(props.children)) {
-        return patchedMenuCache.get(props.children)!;
-    }
-
-    const originalChildrenKey = props.children;
-
-    const cloned = cloneMenuChildren(props.children);
     props = {
         ...props,
-        children: Array.isArray(cloned) ? cloned : cloned ? [cloned] : [],
+        children: cloneMenuChildren(props.children),
     };
 
     props.contextMenuAPIArguments ??= [];
     const contextMenuPatches = navPatches.get(props.navId);
+
+    if (!Array.isArray(props.children)) props.children = [props.children];
 
     if (contextMenuPatches) {
         for (const patch of contextMenuPatches) {
@@ -167,39 +160,29 @@ export function _usePatchContextMenu(props: ContextMenuProps) {
         }
     }
 
-    if (originalChildrenKey && typeof originalChildrenKey === "object") {
-        patchedMenuCache.set(originalChildrenKey, props);
-    }
-
     return props;
 }
 
-function cloneMenuChildren(obj: any): any {
-    if (obj == null) return obj;
-
+function cloneMenuChildren(obj: ReactElement<any> | Array<ReactElement<any> | null> | null) {
     if (Array.isArray(obj)) {
         return obj.map(cloneMenuChildren);
     }
 
     if (React.isValidElement(obj)) {
-        const rawChildren = (obj.props as any)?.children;
-        if (rawChildren == null) {
-            return React.cloneElement(obj);
-        }
+        obj = React.cloneElement(obj);
 
-        // If children is a function (render prop/lazy), do not clone children
-        if (typeof rawChildren === "function") {
-            return React.cloneElement(obj);
+        if (
+            obj?.props?.children &&
+            (obj.type !== Menu.MenuControlItem || (obj.type === Menu.MenuControlItem && (obj.props as any).control != null))
+        ) {
+            try {
+                (obj.props as any).children = cloneMenuChildren(obj.props.children);
+            } catch {
+                obj = React.cloneElement(obj, {
+                    children: cloneMenuChildren(obj.props.children)
+                });
+            }
         }
-
-        if (obj.type !== Menu.MenuControlItem || (obj.type === Menu.MenuControlItem && (obj.props as any)?.control != null)) {
-            const clonedChildren = cloneMenuChildren(rawChildren);
-            return React.cloneElement(obj as ReactElement<any>, {
-                children: Array.isArray(clonedChildren) ? clonedChildren : [clonedChildren]
-            });
-        }
-
-        return React.cloneElement(obj as ReactElement<any>);
     }
 
     return obj;
