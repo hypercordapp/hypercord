@@ -70,7 +70,7 @@ function renderOpenLogs(idType: idKeys, props: any) {
 export const contextMenuPath: NavContextMenuPatchCallback = (children, props) => {
     if (!props) return;
 
-    if (!children.some(child => child?.props?.id === "message-logger")) {
+    if (!children.some(child => child?.props?.id === "message-logger-group" || child?.props?.id === "message-logger")) {
         const openLogItems = Object.keys(idFunctions).map(IdType => renderOpenLogs(IdType as idKeys, props)).filter(Boolean);
         const listOptionItems: any[] = [];
         Object.keys(idFunctions).forEach(IdType => {
@@ -157,12 +157,14 @@ export const contextMenuPath: NavContextMenuPatchCallback = (children, props) =>
         }
 
         children.push(
-            <Menu.MenuItem
-                id="message-logger"
-                label="Message Logger"
-            >
-                {subItems}
-            </Menu.MenuItem>
+            <Menu.MenuGroup id="message-logger-group">
+                <Menu.MenuItem
+                    id="message-logger"
+                    label="Message Logger"
+                >
+                    {subItems}
+                </Menu.MenuItem>
+            </Menu.MenuGroup>
         );
     }
 };
