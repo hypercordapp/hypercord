@@ -38,7 +38,7 @@ export async function sendWebhookAlert(webhookUrl: string, payload: {
                         { name: "Zaman", value: `<t:${Math.floor(payload.timestamp / 1000)}:R>`, inline: true },
                     ],
                     footer: {
-                        text: "HyperCord Pomelo Sniper Studio • DevBuild",
+                        text: "HyperCord Username Sniper • VIP",
                     },
                     timestamp: new Date(payload.timestamp).toISOString(),
                 },

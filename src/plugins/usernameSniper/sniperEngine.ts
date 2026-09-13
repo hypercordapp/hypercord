@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { RestAPI, Toasts, UserStore } from "@webpack/common";
+import { FluxDispatcher, RestAPI, Toasts, UserStore } from "@webpack/common";
 
 import { AvailableCandidate, ClaimAction, SniperConfig, SniperLogEntry, SniperMode, SniperStats, SniperTier } from "./types";
 import { generateCandidatesForMode } from "./utils/generator";
@@ -12,6 +12,22 @@ import { playAlarmBuzzer, playSuccessChime } from "./utils/sound";
 import { sendWebhookAlert } from "./utils/webhook";
 
 type Listener<T> = (data: T) => void;
+
+function sendDesktopNotification(title: string, body: string) {
+    try {
+        if ("Notification" in window) {
+            if (Notification.permission === "granted") {
+                new Notification(title, { body });
+            } else if (Notification.permission !== "denied") {
+                Notification.requestPermission().then(permission => {
+                    if (permission === "granted") {
+                        new Notification(title, { body });
+                    }
+                });
+            }
+        }
+    } catch {}
+}
 
 class SniperEngine {
     private isRunning = false;
@@ -105,7 +121,7 @@ class SniperEngine {
         this.logListeners.forEach(l => l(logsCopy));
     }
 
-    private addLog(username: string, status: SniperLogEntry["status"], message?: string) {
+    public addLog(username: string, status: SniperLogEntry["status"], message?: string) {
         const entry: SniperLogEntry = {
             id: Math.random().toString(36).slice(2, 9),
             timestamp: Date.now(),
@@ -162,7 +178,7 @@ class SniperEngine {
         this.addLog(
             "-",
             "info",
-            `🚀 Tarama başlatıldı! Mod: ${this.config.mode.toUpperCase()} (${this.currentCandidates.length.toLocaleString()} aday yüklendi)`
+            `🚀 Tarama başlatıldı! Hedef: ${this.config.mode.toUpperCase()} (${this.currentCandidates.length.toLocaleString()} adet isim taranacak)`
         );
 
         if (!this.minuteResetTimer) {
@@ -190,7 +206,7 @@ class SniperEngine {
             clearInterval(this.minuteResetTimer);
             this.minuteResetTimer = null;
         }
-        this.addLog("-", "info", "⏹️ Tarama kullanıcı tarafından durduruldu.");
+        this.addLog("-", "info", "⏹️ Tarama durduruldu.");
         this.emitStats();
     }
 
@@ -227,6 +243,17 @@ class SniperEngine {
 
                     this.addLog(targetUsername, "available", `🎉 BOŞTA BULUNDU! (@${targetUsername})`);
 
+                    Toasts.show({
+                        id: Toasts.genId(),
+                        message: `🎯 BOŞTA KULLANICI ADI BULUNDU: @${targetUsername}`,
+                        type: Toasts.Type.SUCCESS,
+                    });
+
+                    sendDesktopNotification(
+                        `🎯 Boşta Kullanıcı Adı: @${targetUsername}`,
+                        "Hyper Username Sniper boşta nick yakaladı! Discord'u açın."
+                    );
+
                     // Execute chosen claim action
                     await this.handleAvailableDiscovery(candidate);
                 } else if (result.status === "taken") {
@@ -246,7 +273,7 @@ class SniperEngine {
 
                     if (this.config.autoRestartOnCooldown) {
                         await this.sleep(waitSec * 1000);
-                        this.addLog("-", "info", "⏱️ Soğuma süresi bitti, tarama devam ediyor.");
+                        this.addLog("-", "info", "⏱️ Soğuma süresi tamamlandı, taramaya devam ediliyor.");
                     } else {
                         this.stop();
                         break;
@@ -258,20 +285,20 @@ class SniperEngine {
                 this.addLog(targetUsername, "error", err?.message || "İstek hatası");
             }
 
-            // Adaptive delay with slight random jitter to mimic natural interaction
+            // Adaptive delay with slight random jitter
             const jitter = Math.floor(Math.random() * 200) - 100;
             const actualDelay = Math.max(1200, this.config.delayMs + jitter);
             await this.sleep(actualDelay);
         }
 
         if (this.currentIndex >= this.currentCandidates.length && this.isRunning) {
-            this.addLog("-", "info", "✅ Listedeki tüm kullanıcı adları tarandı.");
+            this.addLog("-", "info", "✅ Listedeki tüm kullanıcı adları kontrol edildi.");
             this.stop();
         }
     }
 
     /**
-     * Checks availability of a username via Discord's pomelo-attempt REST endpoint
+     * Checks availability of a username via Discord's real pomelo-attempt REST endpoint
      */
     public async checkUsername(username: string): Promise<{
         status: "available" | "taken" | "rate_limited" | "error";
@@ -305,6 +332,32 @@ class SniperEngine {
             }
 
             return { status: "error", error: err?.message || `HTTP ${err?.status}` };
+        }
+    }
+
+    /**
+     * Test a single username immediately (Manual Instant Check)
+     */
+    public async testSingleUsername(username: string): Promise<{ status: "available" | "taken" | "rate_limited" | "error"; message: string; }> {
+        const clean = username.trim().toLowerCase();
+        if (!clean) return { status: "error", message: "Geçerli bir kullanıcı adı girin" };
+
+        this.addLog(clean, "info", `🔍 Tekli Canlı Test: @${clean} Discord sunucularında sorgulanıyor...`);
+        const result = await this.checkUsername(clean);
+
+        if (result.status === "available") {
+            this.addLog(clean, "available", `🎉 CANLI TEST SONUCU: @${clean} ŞU ANDA BOŞTA!`);
+            playSuccessChime();
+            return { status: "available", message: `@${clean} boşta! Alabilirsiniz.` };
+        } else if (result.status === "taken") {
+            this.addLog(clean, "taken", `Canlı Test Sonucu: @${clean} Discord'da dolu (alınmış).`);
+            return { status: "taken", message: `@${clean} şu anda dolu.` };
+        } else if (result.status === "rate_limited") {
+            this.addLog(clean, "rate_limited", `Rate-Limit: ${result.retryAfter} saniye bekleyin.`);
+            return { status: "rate_limited", message: `Discord rate-limit uyguladı (${result.retryAfter}s bekleyin).` };
+        } else {
+            this.addLog(clean, "error", `Hata: ${result.error}`);
+            return { status: "error", message: result.error || "Hata oluştu" };
         }
     }
 
@@ -362,7 +415,7 @@ class SniperEngine {
      */
     public async claimUsername(username: string, password?: string): Promise<boolean> {
         try {
-            this.addLog(username, "info", `⚡ @${username} hesaba alınıyor (Claim başlatıldı)...`);
+            this.addLog(username, "info", `⚡ @${username} hesaba alınıyor (Claim işlemi başlatıldı)...`);
 
             const body: any = {
                 username,
@@ -376,14 +429,29 @@ class SniperEngine {
                 body,
             });
 
-            if (res && res.body && res.body.username === username) {
+            if (res && res.body && (res.body.username === username || res.ok)) {
                 this.stats.claimedCount++;
                 this.addLog(username, "claimed", `👑 BAŞARILI! @${username} HESABINIZA GEÇİRİLDİ!`);
+
+                // Dispatch to Discord Flux Store so UI updates immediately everywhere
+                try {
+                    FluxDispatcher.dispatch({
+                        type: "CURRENT_USER_UPDATE",
+                        user: res.body,
+                    });
+                } catch {}
+
                 Toasts.show({
                     id: Toasts.genId(),
                     message: `🎉 Tebrikler! @${username} kullanıcı adı hesabınıza tanımlandı!`,
                     type: Toasts.Type.SUCCESS,
                 });
+
+                sendDesktopNotification(
+                    `👑 Kullanıcı Adı Alındı: @${username}`,
+                    "Tebrikler! Kullanıcı adınız başarıyla değiştirildi."
+                );
+
                 this.emitStats();
                 return true;
             }
@@ -402,3 +470,4 @@ class SniperEngine {
 }
 
 export const sniperEngine = new SniperEngine();
+

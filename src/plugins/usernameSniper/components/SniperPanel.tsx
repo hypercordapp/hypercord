@@ -17,8 +17,10 @@ export default function SniperPanel() {
     const [logs, setLogs] = useState<SniperLogEntry[]>(sniperEngine.getLogs());
     const [config, setConfig] = useState<SniperConfig>(sniperEngine.getConfig());
     const [availableList, setAvailableList] = useState<AvailableCandidate[]>(sniperEngine.getAvailableList());
+    const [testInput, setTestInput] = useState("");
+    const [testLoading, setTestLoading] = useState(false);
 
-    // Tier management - defaults to VIP in development/purchased mode
+    // Tier management - VIP active
     const [tier, setTier] = useState<SniperTier>("vip");
 
     useEffect(() => {
@@ -57,6 +59,13 @@ export default function SniperPanel() {
         }
     };
 
+    const handleSingleTest = async () => {
+        if (!testInput.trim()) return;
+        setTestLoading(true);
+        await sniperEngine.testSingleUsername(testInput);
+        setTestLoading(false);
+    };
+
     return (
         <div className="hypercord-sniper-root">
             {/* Header */}
@@ -68,7 +77,7 @@ export default function SniperPanel() {
                     <div>
                         <h1 className="hypercord-sniper-title">Hyper Username Sniper</h1>
                         <div className="hypercord-sniper-subtitle">
-                            Discord 3L & 4L Nadir Kullanıcı Adı Avcısı ve Otomatik Alma Stüdyosu
+                            Discord 3L & 4L Nadir Kullanıcı Adı Avcısı ve Otomatik Yakalama Sistemi
                         </div>
                     </div>
                 </div>
@@ -191,6 +200,29 @@ export default function SniperPanel() {
                             <option value="auto_claim">🚀 Milisaniyelik Otomatik Al (Instant Claim)</option>
                             <option value="notify_only">📢 Sadece Webhook & Ses ile Bildir</option>
                         </select>
+                    </div>
+
+                    {/* Live Single Test Box */}
+                    <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: 12, marginTop: 4 }}>
+                        <div className="hypercord-sniper-field-label">🔍 Canlı Tekli Nick Testi (Discord API Doğrulama)</div>
+                        <div style={{ display: "flex", gap: 8 }}>
+                            <input
+                                type="text"
+                                className="hypercord-sniper-input"
+                                placeholder="Test etmek istediğiniz nick..."
+                                value={testInput}
+                                onChange={e => setTestInput(e.target.value)}
+                                onKeyDown={e => e.key === "Enter" && handleSingleTest()}
+                            />
+                            <button
+                                className="hypercord-sniper-quick-claim-btn"
+                                onClick={handleSingleTest}
+                                disabled={testLoading}
+                                style={{ flexShrink: 0, padding: "0 16px" }}
+                            >
+                                {testLoading ? "..." : "Sorgula"}
+                            </button>
+                        </div>
                     </div>
                 </div>
 
