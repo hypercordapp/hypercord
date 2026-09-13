@@ -32,7 +32,7 @@ function SniperIcon(props: any) {
 export default definePlugin({
     name: "HyperUsernameSniper",
     description: "Discord 3L & 4L nadir kullanıcı adı avcısı ve otomatik talep sistemi (Shopier Destekçi & VIP Özel).",
-    tags: ["Utility", "Special"],
+    tags: ["Utility", "Customisation"],
     authors: [Devs.HyperCordTeam],
 
     toolboxActions: {

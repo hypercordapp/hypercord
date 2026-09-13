@@ -4,9 +4,9 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { FluxDispatcher, RestAPI, Toasts, UserStore } from "@webpack/common";
+import { FluxDispatcher, RestAPI, Toasts } from "@webpack/common";
 
-import { AvailableCandidate, ClaimAction, SniperConfig, SniperLogEntry, SniperMode, SniperStats, SniperTier } from "./types";
+import { AvailableCandidate, SniperConfig, SniperLogEntry, SniperStats } from "./types";
 import { generateCandidatesForMode } from "./utils/generator";
 import { playAlarmBuzzer, playSuccessChime } from "./utils/sound";
 import { resolveUserTier, validateModeAccess } from "./utils/tierManager";
@@ -277,7 +277,7 @@ class SniperEngine {
                 } else if (result.status === "taken") {
                     this.stats.totalChecked++;
                     this.checksInLastMinute++;
-                    this.addLog(targetUsername, "taken", `Dolu`);
+                    this.addLog(targetUsername, "taken", "Dolu");
                     this.emitStats();
                 } else if (result.status === "rate_limited") {
                     this.stats.rateLimitsHit++;
@@ -285,7 +285,7 @@ class SniperEngine {
                     const waitSec = result.retryAfter || this.config.cooldownWaitSeconds || 60;
                     this.addLog(
                         targetUsername,
-                        "rate_limited",
+                        "rate-limited",
                         `⚠️ Discord Rate-Limit! (${waitSec}s bekleniyor...)`
                     );
 
@@ -371,7 +371,7 @@ class SniperEngine {
             this.addLog(clean, "taken", `Canlı Test Sonucu: @${clean} Discord'da dolu (alınmış).`);
             return { status: "taken", message: `@${clean} şu anda dolu.` };
         } else if (result.status === "rate_limited") {
-            this.addLog(clean, "rate_limited", `Rate-Limit: ${result.retryAfter} saniye bekleyin.`);
+            this.addLog(clean, "rate-limited", `Rate-Limit: ${result.retryAfter} saniye bekleyin.`);
             return { status: "rate_limited", message: `Discord rate-limit uyguladı (${result.retryAfter}s bekleyin).` };
         } else {
             this.addLog(clean, "error", `Hata: ${result.error}`);
@@ -474,7 +474,7 @@ class SniperEngine {
                 return true;
             }
 
-            this.addLog(username, "error", `Claim başarısız oldu (Şifre gerekebilir veya başkası aldı)`);
+            this.addLog(username, "error", "Claim başarısız oldu (Şifre gerekebilir veya başkası aldı)");
             return false;
         } catch (err: any) {
             this.addLog(username, "error", `Claim hatası: ${err?.body?.message || err?.message || "Bilinmeyen hata"}`);

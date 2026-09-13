@@ -1,10 +1,15 @@
-import ErrorBoundary from "@components/ErrorBoundary";
-import { copyWithToast } from "@utils/discord";
-import { useEffect, useState, UserStore } from "@webpack/common";
+/*
+ * Vencord, a Discord client mod
+ * Copyright (c) 2026 Vendicated and contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
 
-import { sniperEngine } from "../sniperEngine";
-import { AvailableCandidate, ClaimAction, SniperConfig, SniperLogEntry, SniperMode, SniperStats, SniperTier } from "../types";
-import { resolveUserTier } from "../utils/tierManager";
+import ErrorBoundary from "@components/ErrorBoundary";
+import { sniperEngine } from "@plugins/usernameSniper/sniperEngine";
+import { AvailableCandidate, ClaimAction, SniperConfig, SniperLogEntry, SniperMode, SniperStats } from "@plugins/usernameSniper/types";
+import { resolveUserTier } from "@plugins/usernameSniper/utils/tierManager";
+import { copyWithToast } from "@utils/discord";
+import { useEffect, UserStore,useState } from "@webpack/common";
 
 
 const MODES: Array<{
@@ -68,7 +73,7 @@ function SniperPanelContent() {
 
     // Dynamic Server Role Resolution from Discord ID
     const [authInfo, setAuthInfo] = useState(resolveUserTier());
-    const tier = authInfo.tier;
+    const { tier } = authInfo;
 
     const [testInput, setTestInput] = useState("");
     const [testResult, setTestResult] = useState<{ status: string; message: string; } | null>(null);

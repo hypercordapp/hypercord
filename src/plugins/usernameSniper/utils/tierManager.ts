@@ -4,9 +4,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+import { SniperTier } from "@plugins/usernameSniper/types";
 import { GuildMemberStore, GuildRoleStore, GuildStore, UserStore } from "@webpack/common";
-
-import { SniperTier } from "../types";
 
 export const DESTEKCI_ROLE_ID = "1548470161366065172";
 
@@ -32,7 +31,8 @@ export function resolveUserTier(): { tier: SniperTier; reason: string; roleName?
                 }
 
                 // First pass: Check for VIP role across all member roles
-                const rolesMap = GuildRoleStore?.getRolesSnapshot?.(guildId) || GuildRoleStore?.getRoles?.(guildId) || {};
+                const roleStore = GuildRoleStore as any;
+                const rolesMap = roleStore?.getRolesSnapshot?.(guildId) || roleStore?.getRoles?.(guildId) || {};
 
                 for (const roleId of member.roles) {
                     let role = rolesMap[roleId];

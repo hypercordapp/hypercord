@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { SniperMode } from "../types";
+import { SniperMode } from "@plugins/usernameSniper/types";
 
 const LETTERS = "abcdefghijklmnopqrstuvwxyz";
 const DIGITS = "0123456789";

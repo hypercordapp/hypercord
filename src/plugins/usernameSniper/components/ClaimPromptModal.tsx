@@ -4,9 +4,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+import { AvailableCandidate } from "@plugins/usernameSniper/types";
 import { Modal, useState } from "@webpack/common";
-
-import { AvailableCandidate } from "../types";
 
 export function ClaimPromptModal({
     candidate,

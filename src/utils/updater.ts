@@ -16,8 +16,6 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-import gitHash from "~git-hash";
-
 import { Logger } from "./Logger";
 import { relaunch } from "./native";
 import { IpcRes } from "./types";

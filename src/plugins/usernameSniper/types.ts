@@ -21,7 +21,7 @@ export interface SniperLogEntry {
     id: string;
     timestamp: number;
     username: string;
-    status: "available" | "taken" | "claimed" | "rate_limited" | "error" | "info";
+    status: "available" | "taken" | "claimed" | "rate-limited" | "error" | "info";
     message?: string;
 }
 

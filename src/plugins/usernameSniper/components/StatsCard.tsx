@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { SniperStats } from "../types";
+import { SniperStats } from "@plugins/usernameSniper/types";
 
 export function StatsGrid({ stats }: { stats: SniperStats; }) {
     return (

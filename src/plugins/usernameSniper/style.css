@@ -17,9 +17,9 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: linear-gradient(135deg, rgba(88, 101, 242, 0.12) 0%, rgba(139, 92, 246, 0.08) 50%, rgba(6, 182, 212, 0.05) 100%),
+    background: linear-gradient(135deg, rgb(88 101 242 / 12%) 0%, rgb(139 92 246 / 8%) 50%, rgb(6 182 212 / 5%) 100%),
                 var(--background-secondary-alt, #1e1f22);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid rgb(255 255 255 / 8%);
     border-radius: 12px;
     padding: 16px 20px;
     gap: 16px;
@@ -36,7 +36,7 @@
     width: 44px;
     height: 44px;
     border-radius: 50%;
-    border: 2px solid rgba(139, 92, 246, 0.5);
+    border: 2px solid rgb(139 92 246 / 50%);
     background: var(--background-tertiary, #111214);
 }
 
@@ -73,26 +73,26 @@
 }
 
 .hyper-sniper-tier-pill.vip {
-    background: rgba(245, 158, 11, 0.15);
+    background: rgb(245 158 11 / 15%);
     border: 1px solid #f59e0b;
     color: #fbbf24;
 }
 
 .hyper-sniper-tier-pill.supporter {
-    background: rgba(59, 130, 246, 0.15);
+    background: rgb(59 130 246 / 15%);
     border: 1px solid #3b82f6;
     color: #60a5fa;
 }
 
 .hyper-sniper-tier-pill.free {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: rgb(255 255 255 / 5%);
+    border: 1px solid rgb(255 255 255 / 15%);
     color: #949ba4;
 }
 
 .hyper-sniper-tier-select {
     background: var(--background-tertiary, #111214);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid rgb(255 255 255 / 10%);
     color: var(--text-normal, #dbdee1);
     padding: 6px 10px;
     border-radius: 8px;
@@ -107,7 +107,7 @@
     background: var(--background-secondary, #2b2d31);
     padding: 4px;
     border-radius: 10px;
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    border: 1px solid rgb(255 255 255 / 5%);
 }
 
 .hyper-sniper-tab-btn {
@@ -129,13 +129,13 @@
 
 .hyper-sniper-tab-btn:hover {
     color: var(--text-normal, #dbdee1);
-    background: rgba(255, 255, 255, 0.03);
+    background: rgb(255 255 255 / 3%);
 }
 
 .hyper-sniper-tab-btn.active {
     background: var(--brand-experiment, #5865f2);
-    color: #ffffff;
-    box-shadow: 0 2px 8px rgba(88, 101, 242, 0.35);
+    color: #fff;
+    box-shadow: 0 2px 8px rgb(88 101 242 / 35%);
 }
 
 /* Metrics Row */
@@ -147,7 +147,7 @@
 
 .hyper-sniper-metric-card {
     background: var(--background-secondary, #2b2d31);
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    border: 1px solid rgb(255 255 255 / 5%);
     border-radius: 10px;
     padding: 12px 16px;
     display: flex;
@@ -185,7 +185,7 @@
 /* Main Content Cards */
 .hyper-sniper-card {
     background: var(--background-secondary, #2b2d31);
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    border: 1px solid rgb(255 255 255 / 6%);
     border-radius: 12px;
     padding: 18px;
     display: flex;
@@ -217,7 +217,7 @@
 .hyper-sniper-input-textarea {
     width: 100%;
     background: var(--background-tertiary, #111214);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid rgb(255 255 255 / 8%);
     border-radius: 8px;
     padding: 10px 14px;
     color: var(--text-normal, #dbdee1);
@@ -227,16 +227,16 @@
     box-sizing: border-box;
 }
 
-.hyper-sniper-input-select:focus,
-.hyper-sniper-input-text:focus,
-.hyper-sniper-input-textarea:focus {
-    border-color: var(--brand-experiment, #5865f2);
-}
-
 .hyper-sniper-input-textarea {
     height: 70px;
     resize: vertical;
     font-family: monospace;
+}
+
+.hyper-sniper-input-select:focus,
+.hyper-sniper-input-text:focus,
+.hyper-sniper-input-textarea:focus {
+    border-color: var(--brand-experiment, #5865f2);
 }
 
 /* Options Grid */
@@ -248,7 +248,7 @@
 
 .hyper-sniper-mode-option {
     background: var(--background-tertiary, #111214);
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    border: 1px solid rgb(255 255 255 / 6%);
     border-radius: 8px;
     padding: 12px 14px;
     display: flex;
@@ -260,18 +260,18 @@
 
 .hyper-sniper-mode-option:hover:not(.disabled) {
     border-color: var(--brand-experiment, #5865f2);
-    background: rgba(88, 101, 242, 0.06);
+    background: rgb(88 101 242 / 6%);
 }
 
 .hyper-sniper-mode-option.selected {
     border-color: var(--brand-experiment, #5865f2);
-    background: rgba(88, 101, 242, 0.12);
+    background: rgb(88 101 242 / 12%);
 }
 
 .hyper-sniper-mode-option.disabled {
     opacity: 0.55;
     cursor: not-allowed;
-    background: rgba(0, 0, 0, 0.2);
+    background: rgb(0 0 0 / 20%);
 }
 
 .hyper-sniper-mode-name {
@@ -288,24 +288,24 @@
 }
 
 .hyper-sniper-mode-badge.vip {
-    background: rgba(245, 158, 11, 0.2);
+    background: rgb(245 158 11 / 20%);
     color: #fbbf24;
 }
 
 .hyper-sniper-mode-badge.supporter {
-    background: rgba(59, 130, 246, 0.2);
+    background: rgb(59 130 246 / 20%);
     color: #60a5fa;
 }
 
 .hyper-sniper-mode-badge.locked {
-    background: rgba(239, 68, 68, 0.2);
+    background: rgb(239 68 68 / 20%);
     color: #f87171;
 }
 
 /* Action Buttons */
 .hyper-sniper-btn-primary {
     background: var(--brand-experiment, #5865f2);
-    color: #ffffff;
+    color: #fff;
     border: none;
     border-radius: 8px;
     padding: 11px 20px;
@@ -325,7 +325,7 @@
 
 .hyper-sniper-btn-danger {
     background: var(--status-danger, #da373c);
-    color: #ffffff;
+    color: #fff;
     border: none;
     border-radius: 8px;
     padding: 11px 20px;
@@ -344,9 +344,9 @@
 }
 
 .hyper-sniper-btn-secondary {
-    background: rgba(255, 255, 255, 0.06);
+    background: rgb(255 255 255 / 6%);
     color: var(--text-normal, #dbdee1);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid rgb(255 255 255 / 10%);
     border-radius: 8px;
     padding: 11px 18px;
     font-size: 13.5px;
@@ -356,13 +356,13 @@
 }
 
 .hyper-sniper-btn-secondary:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgb(255 255 255 / 10%);
 }
 
 /* Terminal & Log Area */
 .hyper-sniper-console {
     background: #090a0d;
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid rgb(255 255 255 / 8%);
     border-radius: 10px;
     padding: 14px;
     font-family: "JetBrains Mono", Consolas, "Courier New", monospace;
@@ -379,7 +379,7 @@
 }
 
 .hyper-sniper-console::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.15);
+    background: rgb(255 255 255 / 15%);
     border-radius: 3px;
 }
 
@@ -387,7 +387,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    border-bottom: 1px solid rgb(255 255 255 / 6%);
     padding-bottom: 6px;
     margin-bottom: 4px;
     color: #64748b;
@@ -411,41 +411,41 @@
 }
 
 .hyper-sniper-tag.available {
-    background: rgba(35, 165, 90, 0.2);
+    background: rgb(35 165 90 / 20%);
     color: #23a55a;
     border: 1px solid #23a55a;
 }
 
 .hyper-sniper-tag.claimed {
-    background: rgba(240, 178, 50, 0.2);
+    background: rgb(240 178 50 / 20%);
     color: #f0b232;
     border: 1px solid #f0b232;
 }
 
 .hyper-sniper-tag.taken {
-    background: rgba(255, 255, 255, 0.05);
+    background: rgb(255 255 255 / 5%);
     color: #949ba4;
 }
 
-.hyper-sniper-tag.rate_limited {
-    background: rgba(245, 158, 11, 0.2);
+.hyper-sniper-tag.rate-limited {
+    background: rgb(245 158 11 / 20%);
     color: #f59e0b;
 }
 
 .hyper-sniper-tag.error {
-    background: rgba(218, 55, 60, 0.2);
+    background: rgb(218 55 60 / 20%);
     color: #da373c;
 }
 
 .hyper-sniper-tag.info {
-    background: rgba(88, 101, 242, 0.2);
+    background: rgb(88 101 242 / 20%);
     color: #5865f2;
 }
 
 /* Locked Upgrade Notice */
 .hyper-sniper-locked-notice {
-    background: rgba(245, 158, 11, 0.08);
-    border: 1px solid rgba(245, 158, 11, 0.25);
+    background: rgb(245 158 11 / 8%);
+    border: 1px solid rgb(245 158 11 / 25%);
     border-radius: 10px;
     padding: 14px 18px;
     display: flex;

@@ -4,9 +4,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { useEffect, useRef } from "@webpack/common";
-
-import { SniperLogEntry } from "../types";
+import { SniperLogEntry } from "@plugins/usernameSniper/types";
+import { useRef } from "@webpack/common";
 
 export function TerminalLog({ logs, currentUsername, isRunning }: {
     logs: SniperLogEntry[];
