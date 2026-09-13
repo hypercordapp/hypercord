@@ -98,8 +98,9 @@ function openImage(url: string, width: number, height?: number) {
 const UserContext: NavContextMenuPatchCallback = (children, { user, guildId }: UserContextProps) => {
     if (!user) return;
     const memberAvatar = GuildMemberStore.getMember(guildId!, user.id)?.avatar || null;
+    const group = findGroupChildrenByChildId("user-profile", children) ?? children;
 
-    children.push(
+    group.push(
         <Menu.MenuItem
             id="view-avatar"
             label="View Avatar"
@@ -109,7 +110,7 @@ const UserContext: NavContextMenuPatchCallback = (children, { user, guildId }: U
     );
 
     if (memberAvatar) {
-        children.push(
+        group.push(
             <Menu.MenuItem
                 id="view-server-avatar"
                 label="View Server Avatar"
@@ -131,8 +132,10 @@ const GuildContext: NavContextMenuPatchCallback = (children, { guild }: GuildCon
     const { id, icon, banner } = guild;
     if (!banner && !icon) return;
 
+    const group = findGroupChildrenByChildId("privacy", children) ?? children;
+
     if (icon) {
-        children.push(
+        group.push(
             <Menu.MenuItem
                 id="view-icon"
                 label="View Icon"
@@ -149,7 +152,7 @@ const GuildContext: NavContextMenuPatchCallback = (children, { guild }: GuildCon
     }
 
     if (banner) {
-        children.push(
+        group.push(
             <Menu.MenuItem
                 id="view-banner"
                 label="View Banner"
