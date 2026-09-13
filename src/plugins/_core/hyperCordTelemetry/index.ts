@@ -66,7 +66,11 @@ function ping() {
 // the fact so the crash list stays a useful signal.
 const BENIGN_NOISE_PATTERNS = [
     /^ResizeObserver loop completed with undelivered notifications\.?$/,
-    /^The play\(\) request was interrupted by/,
+    /^The play\(\) request was interrupted/,
+    /^play\(\) failed because the user didn't interact/,
+    /^HTTPResponseError: (GET|POST|PUT|PATCH|DELETE) \/.* \[\d+\]/,
+    /^Captcha cancelled$/,
+    /^User changed\.$/,
 ];
 
 function isBenignNoise(message: string): boolean {
