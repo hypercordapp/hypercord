@@ -186,6 +186,32 @@ export const BADGE_CATALOG: CatalogCategory[] = [
         ]
     },
     {
+        // Not a real Discord badge category (Discord has no persistent
+        // "gifted Nitro to someone" badge) - a fake tenure-style tier ladder
+        // requested by users. Custom-made icons, not reused Discord CDN
+        // assets like the other categories.
+        //
+        // Was raw.githubusercontent.com directly - moved to badge-api's own
+        // cached CDN 2026-08-17 after a real GitHub-wide raw-content outage
+        // broke most of the client's images at once (see _api/badges'
+        // CONTRIBUTOR_BADGE comment for the full story). Versioned source
+        // filenames (gifting-*-v3.png, not the original names) still matter
+        // if these ever need re-uploading - overwriting the same filename's
+        // bytes wasn't enough to make clients pick up a re-padded PNG,
+        // likely a same-URL image cache (Electron/Chromium disk cache,
+        // keyed by URL) serving the old bytes indefinitely.
+        title: "Gift Giving",
+        exclusive: true,
+        badges: [
+            { key: "gifter_patron", label: "Gift Giver — Patron", iconSrc: "https://api.hypercord.pro/img/255740292e4eacbae3e3f5b9820e334db74b5e9b6efa97eb964f57aa259aa8b3.png" },
+            { key: "gifter_champion", label: "Gift Giver — Champion", iconSrc: "https://api.hypercord.pro/img/37e7244ebfb22a32b8d05d41520c4dc1280abd6524aaa86d3230f82d7381bac6.png" },
+            { key: "gifter_luminary", label: "Gift Giver — Luminary", iconSrc: "https://api.hypercord.pro/img/a060605ffade81a96b0ba214d4ab7237f61ffa01c41de095ec2ad72409ebc94d.png" },
+            { key: "gifter_icon", label: "Gift Giver — Icon", iconSrc: "https://api.hypercord.pro/img/3e592edaf60361649d4e351482f9ac241c754a789185383c059864e947253a93.png" },
+            { key: "gifter_hero", label: "Gift Giver — Hero", iconSrc: "https://api.hypercord.pro/img/a2511028d164ec0930ca8be46b6d9fc028eb34f1a06b81a28b05c13eafbf13e6.png" },
+            { key: "gifter_legend", label: "Gift Giver — Legend", iconSrc: "https://api.hypercord.pro/img/69a25f7d8dcb0c1ed07d8eba4a783c7b0d0a85c7118995c1c5ff8aad2fbd2f17.png" },
+        ]
+    },
+    {
         title: "Account Age",
         exclusive: true,
         badges: [
@@ -249,32 +275,6 @@ export const BADGE_CATALOG: CatalogCategory[] = [
             { key: "game_variety_universalist", label: "Game Variety — Universalist (100+ Games)", iconSrc: "https://raw.githubusercontent.com/dev-hoehle/discord-badges/main/png/game_variety_universalist.png" },
         ]
     },
-    {
-        // Not a real Discord badge category (Discord has no persistent
-        // "gifted Nitro to someone" badge) - a fake tenure-style tier ladder
-        // requested by users. Custom-made icons, not reused Discord CDN
-        // assets like the other categories.
-        //
-        // Was raw.githubusercontent.com directly - moved to badge-api's own
-        // cached CDN 2026-08-17 after a real GitHub-wide raw-content outage
-        // broke most of the client's images at once (see _api/badges'
-        // CONTRIBUTOR_BADGE comment for the full story). Versioned source
-        // filenames (gifting-*-v3.png, not the original names) still matter
-        // if these ever need re-uploading - overwriting the same filename's
-        // bytes wasn't enough to make clients pick up a re-padded PNG,
-        // likely a same-URL image cache (Electron/Chromium disk cache,
-        // keyed by URL) serving the old bytes indefinitely.
-        title: "Gift Giving",
-        exclusive: true,
-        badges: [
-            { key: "gifter_patron", label: "Gift Giver — Patron", iconSrc: "https://api.hypercord.pro/img/255740292e4eacbae3e3f5b9820e334db74b5e9b6efa97eb964f57aa259aa8b3.png" },
-            { key: "gifter_champion", label: "Gift Giver — Champion", iconSrc: "https://api.hypercord.pro/img/37e7244ebfb22a32b8d05d41520c4dc1280abd6524aaa86d3230f82d7381bac6.png" },
-            { key: "gifter_luminary", label: "Gift Giver — Luminary", iconSrc: "https://api.hypercord.pro/img/a060605ffade81a96b0ba214d4ab7237f61ffa01c41de095ec2ad72409ebc94d.png" },
-            { key: "gifter_icon", label: "Gift Giver — Icon", iconSrc: "https://api.hypercord.pro/img/3e592edaf60361649d4e351482f9ac241c754a789185383c059864e947253a93.png" },
-            { key: "gifter_hero", label: "Gift Giver — Hero", iconSrc: "https://api.hypercord.pro/img/a2511028d164ec0930ca8be46b6d9fc028eb34f1a06b81a28b05c13eafbf13e6.png" },
-            { key: "gifter_legend", label: "Gift Giver — Legend", iconSrc: "https://api.hypercord.pro/img/69a25f7d8dcb0c1ed07d8eba4a783c7b0d0a85c7118995c1c5ff8aad2fbd2f17.png" },
-        ]
-    },
 ];
 
 // Object.create(null) (no Object.prototype) rather than a plain {} - this
@@ -317,11 +317,11 @@ const DISPLAY_ORDER = [
     "quest", "active_developer",
     "last_meadow_online",
     "orbs_apprentice",
+    "gifter_patron", "gifter_champion", "gifter_luminary", "gifter_icon", "gifter_hero", "gifter_legend",
     "account_age_seed", "account_age_sprout", "account_age_bud", "account_age_sapling", "account_age_blossom", "account_age_redwood", "account_age_sequoia", "account_age_bristlecone", "account_age_stromatolite", "account_age_primordial",
     "streaming_newcomer", "streaming_fledgling", "streaming_breakout", "streaming_standout", "streaming_trendsetter", "streaming_headliner", "streaming_star", "streaming_sensation", "streaming_visionary", "streaming_phenomenon",
     "game_time_casual", "game_time_recreational", "game_time_dedicated", "game_time_committed", "game_time_serious", "game_time_devoted", "game_time_seasoned", "game_time_ironclad", "game_time_unshakeable", "game_time_eternal",
     "game_variety_sampler", "game_variety_dabbler", "game_variety_enthusiast", "game_variety_ranger", "game_variety_explorer", "game_variety_adventurer", "game_variety_voyager", "game_variety_maverick", "game_variety_polymath", "game_variety_universalist",
-    "gifter_patron", "gifter_champion", "gifter_luminary", "gifter_icon", "gifter_hero", "gifter_legend",
 ];
 
 /** Reorders badge keys to match real Discord's display order, regardless of what order they were picked in. */

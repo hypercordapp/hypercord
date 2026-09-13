@@ -420,18 +420,16 @@ const enum BadgePriority {
     ActiveDeveloper = 14,
     LastMeadowOnline = 15,
     OrbsApprentice = 16,
-    AccountAge = 17,
-    Streaming = 18,
-    GameTime = 19,
-    GameVariety = 20,
-    // Fake-only tier ladder (see badgeCatalog.ts's "Gift Giving" category) -
-    // shows after the 17th / experimental categories in Patron -> Legend order.
-    GifterPatron = 21,
-    GifterChampion = 22,
-    GifterLuminary = 23,
-    GifterIcon = 24,
-    GifterHero = 25,
-    GifterLegend = 26,
+    GifterPatron = 17,
+    GifterChampion = 18,
+    GifterLuminary = 19,
+    GifterIcon = 20,
+    GifterHero = 21,
+    GifterLegend = 22,
+    AccountAge = 23,
+    Streaming = 24,
+    GameTime = 25,
+    GameVariety = 26,
     Unknown = 99,
 }
 
