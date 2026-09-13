@@ -73,3 +73,30 @@ jobs:
                   files: dist/*
               env:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+            - name: Send Discord Announcement
+              if: github.repository == 'hypercordapp/hypercord'
+              env:
+                  DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+                  DISCORD_CHANNEL_ID: ${{ secrets.DISCORD_DEVBUILD_CHANNEL_ID }}
+              run: |
+                  node -e "
+                  const token = process.env.DISCORD_BOT_TOKEN;
+                  const channelId = process.env.DISCORD_CHANNEL_ID || '1529223931851182181';
+                  if (!token) {
+                      console.log('DISCORD_BOT_TOKEN secret not present, skipping Discord announcement');
+                      process.exit(0);
+                  }
+                  const tag = process.env.release_tag || '${{ env.release_tag }}';
+                  const msg = '🚀 New devbuild published: \`DevBuild ' + tag + '\`\nChangelog: <https://hypercord.pro/changelog>\nDownload: <https://github.com/hypercordapp/hypercord/releases/tag/devbuild>';
+                  fetch('https://discord.com/api/v10/channels/' + channelId + '/messages', {
+                      method: 'POST',
+                      headers: {
+                          'Authorization': 'Bot ' + token,
+                          'Content-Type': 'application/json'
+                      },
+                      body: JSON.stringify({ content: msg })
+                  }).then(r => {
+                      console.log('Discord announcement status:', r.status);
+                  }).catch(console.error);
+                  "
