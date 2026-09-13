@@ -262,7 +262,7 @@ const userContextMenuPatch: NavContextMenuPatchCallback = (children, { user }: {
         />
     );
 
-    children.push(<Menu.MenuSeparator />, setTimezoneItem);
+    children.push(setTimezoneItem);
 };
 
 migratePluginSetting("Timezones", "showOwnTimezone", "Show Own Timezone");

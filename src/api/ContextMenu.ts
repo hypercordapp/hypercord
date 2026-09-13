@@ -165,35 +165,33 @@ export function _usePatchContextMenu(props: ContextMenuProps) {
     return props;
 }
 
-function cloneMenuChildren(children: any): any {
-    if (!children) return children;
+function cloneMenuChildren(obj: any): any {
+    if (obj == null) return obj;
 
-    if (Array.isArray(children)) {
-        return children.map(child => {
-            if (!child || !React.isValidElement(child)) return child;
-            if (child.type === Menu.MenuGroup) {
-                const groupChildren = (child.props as any)?.children;
-                if (Array.isArray(groupChildren)) {
-                    return React.cloneElement(child as ReactElement<any>, {
-                        children: [...groupChildren]
-                    });
-                } else if (groupChildren && React.isValidElement(groupChildren)) {
-                    return React.cloneElement(child as ReactElement<any>, {
-                        children: [groupChildren]
-                    });
-                }
-                return React.cloneElement(child as ReactElement<any>, { children: [] });
-            }
-            return child;
-        });
-    } else if (React.isValidElement(children) && children.type === Menu.MenuGroup) {
-        const groupChildren = (children as any).props?.children;
-        return [
-            React.cloneElement(children as ReactElement<any>, {
-                children: Array.isArray(groupChildren) ? [...groupChildren] : groupChildren ? [groupChildren] : []
-            })
-        ];
+    if (Array.isArray(obj)) {
+        return obj.map(cloneMenuChildren);
     }
 
-    return children;
+    if (React.isValidElement(obj)) {
+        const rawChildren = (obj.props as any)?.children;
+        if (rawChildren == null) {
+            return React.cloneElement(obj);
+        }
+
+        // Submenu render functions or lazy functions must remain untouched
+        if (typeof rawChildren === "function") {
+            return React.cloneElement(obj);
+        }
+
+        if (obj.type !== Menu.MenuControlItem || (obj.type === Menu.MenuControlItem && (obj.props as any)?.control != null)) {
+            const clonedChildren = cloneMenuChildren(rawChildren);
+            return React.cloneElement(obj as ReactElement<any>, {
+                children: clonedChildren
+            });
+        }
+
+        return React.cloneElement(obj as ReactElement<any>);
+    }
+
+    return obj;
 }
