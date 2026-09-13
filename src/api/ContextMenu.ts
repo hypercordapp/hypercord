@@ -94,7 +94,7 @@ export function removeGlobalContextMenuPatch(patch: GlobalContextMenuPatchCallba
  */
 export function findGroupChildrenByChildId(id: string | string[], children: Array<ReactElement<any> | null | undefined>, matchSubstring = false): Array<ReactElement<any> | null | undefined> | null {
     for (const child of children) {
-        if (child == null || !React.isValidElement(child)) continue;
+        if (child == null) continue;
 
         if (Array.isArray(child)) {
             const found = findGroupChildrenByChildId(id, child, matchSubstring);
@@ -109,12 +109,15 @@ export function findGroupChildrenByChildId(id: string | string[], children: Arra
             return children;
         }
 
-        const nextChildren = (child.props as any)?.children;
+        let nextChildren = (child.props as any)?.children;
         if (nextChildren && typeof nextChildren !== "function") {
-            if (Array.isArray(nextChildren)) {
-                const found = findGroupChildrenByChildId(id, nextChildren, matchSubstring);
-                if (found !== null) return found;
+            if (!Array.isArray(nextChildren)) {
+                nextChildren = [nextChildren];
+                (child.props as any).children = nextChildren;
             }
+
+            const found = findGroupChildrenByChildId(id, nextChildren, matchSubstring);
+            if (found !== null) return found;
         }
     }
 
@@ -135,27 +138,22 @@ const patchedMenuCache = new WeakMap<object, ContextMenuProps>();
 export function _usePatchContextMenu(props: ContextMenuProps) {
     if (!Menu.MenuItem) return props;
 
-    // Cache patched menu properties by original children reference or props reference.
+    // Cache patched menu properties by original children reference.
     // When Discord re-renders Menu internally during hover / focus / keyboard navigation,
     // returning the exact same cached props object prevents React from triggering infinite
-    // re-renders (Minified React error #185) and ensures all submenus and actions stay stable.
-    if (props && typeof props === "object") {
-        if (props.children && typeof props.children === "object" && patchedMenuCache.has(props.children)) {
-            return patchedMenuCache.get(props.children)!;
-        }
-        if (patchedMenuCache.has(props)) {
-            return patchedMenuCache.get(props)!;
-        }
+    // re-renders (Minified React error #185) while letting submenus open seamlessly.
+    if (props && props.children && typeof props.children === "object" && patchedMenuCache.has(props.children)) {
+        return patchedMenuCache.get(props.children)!;
     }
 
     const originalChildrenKey = props.children;
-    const originalPropsKey = props;
 
-    const clonedChildren = cloneMenuChildren(props.children);
     props = {
         ...props,
-        children: Array.isArray(clonedChildren) ? clonedChildren : [clonedChildren],
+        children: cloneMenuChildren(props.children),
     };
+
+    if (!Array.isArray(props.children)) props.children = [props.children];
 
     const rawArgs = props.contextMenuAPIArguments ?? [];
     const patchArgs = rawArgs.length && rawArgs[0] != null ? rawArgs : [{}, ...rawArgs.slice(1)];
@@ -182,48 +180,37 @@ export function _usePatchContextMenu(props: ContextMenuProps) {
     if (originalChildrenKey && typeof originalChildrenKey === "object") {
         patchedMenuCache.set(originalChildrenKey, props);
     }
-    if (originalPropsKey && typeof originalPropsKey === "object") {
-        patchedMenuCache.set(originalPropsKey, props);
-    }
 
     return props;
 }
 
-function cloneMenuChildren(children: any): any {
-    if (!children) return children;
+function cloneMenuChildren(obj: any): any {
+    if (obj == null) return obj;
 
-    if (Array.isArray(children)) {
-        return children.map(child => {
-            if (!child || !React.isValidElement(child)) return child;
-
-            // Only clone MenuGroup containers so plugins can push/splice into their children array.
-            // NEVER clone or mutate MenuItem elements (which include submenus like Roles, Apps, Invite, Message Logger).
-            if (child.type === Menu.MenuGroup) {
-                const groupChildren = (child.props as any)?.children;
-                if (Array.isArray(groupChildren)) {
-                    return React.cloneElement(child as ReactElement<any>, {
-                        children: [...groupChildren]
-                    });
-                } else if (groupChildren && React.isValidElement(groupChildren)) {
-                    return React.cloneElement(child as ReactElement<any>, {
-                        children: [groupChildren]
-                    });
-                }
-                return child;
-            }
-
-            return child;
-        });
+    if (Array.isArray(obj)) {
+        return obj.map(cloneMenuChildren);
     }
 
-    if (React.isValidElement(children) && children.type === Menu.MenuGroup) {
-        const groupChildren = (children.props as any)?.children;
-        return [
-            React.cloneElement(children as ReactElement<any>, {
-                children: Array.isArray(groupChildren) ? [...groupChildren] : groupChildren ? [groupChildren] : []
-            })
-        ];
+    if (React.isValidElement(obj)) {
+        const rawChildren = (obj.props as any)?.children;
+        if (rawChildren == null) {
+            return React.cloneElement(obj);
+        }
+
+        // If children is a function (render prop/lazy), do not clone children
+        if (typeof rawChildren === "function") {
+            return React.cloneElement(obj);
+        }
+
+        if (obj.type !== Menu.MenuControlItem || (obj.type === Menu.MenuControlItem && (obj.props as any)?.control != null)) {
+            const clonedChildren = cloneMenuChildren(rawChildren);
+            return React.cloneElement(obj as ReactElement<any>, {
+                children: clonedChildren
+            });
+        }
+
+        return React.cloneElement(obj as ReactElement<any>);
     }
 
-    return children;
+    return obj;
 }
