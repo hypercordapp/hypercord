@@ -82,6 +82,7 @@ export const contextMenuPath: NavContextMenuPatchCallback = (children, props) =>
 
         const subItems: any[] = [
             <Menu.MenuItem
+                key="open-logs"
                 id="open-logs"
                 label="Open Logs"
                 action={() => openLogModal()}
@@ -90,13 +91,14 @@ export const contextMenuPath: NavContextMenuPatchCallback = (children, props) =>
         ];
 
         if (listOptionItems.length > 0) {
-            subItems.push(<Menu.MenuSeparator />, ...listOptionItems);
+            subItems.push(<Menu.MenuSeparator key="list-sep" />, ...listOptionItems);
         }
 
         if (props.navId === "message" && (props.message?.deleted || props.message?.editHistory?.length > 0)) {
             subItems.push(
-                <Menu.MenuSeparator />,
+                <Menu.MenuSeparator key="remove-sep" />,
                 <Menu.MenuItem
+                    key="remove-message"
                     id="remove-message"
                     label={props.message?.deleted ? "Remove Message (Permanent)" : "Remove Message History (Permanent)"}
                     color="danger"
@@ -135,8 +137,9 @@ export const contextMenuPath: NavContextMenuPatchCallback = (children, props) =>
             && props.message?.deleted === false
         ) {
             subItems.push(
-                <Menu.MenuSeparator />,
+                <Menu.MenuSeparator key="hide-sep" />,
                 <Menu.MenuItem
+                    key="hide-from-message-loggers"
                     id="hide-from-message-loggers"
                     label="Delete Message (Hide From Message Loggers)"
                     color="danger"

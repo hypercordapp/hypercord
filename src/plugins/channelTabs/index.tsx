@@ -36,11 +36,7 @@ const contextMenuPatch: NavContextMenuPatchCallback = (children, props: { channe
     if (group) {
         group.push(menuItem);
     } else {
-        children.splice(-1, 0, (
-            <Menu.MenuGroup>
-                {menuItem}
-            </Menu.MenuGroup>
-        ));
+        children.push(menuItem);
     }
 };
 

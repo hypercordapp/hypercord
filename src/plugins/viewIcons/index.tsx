@@ -99,29 +99,30 @@ const UserContext: NavContextMenuPatchCallback = (children, { user, guildId }: U
     if (!user) return;
     const memberAvatar = GuildMemberStore.getMember(guildId!, user.id)?.avatar || null;
 
-    children.splice(-1, 0, (
-        <Menu.MenuGroup>
+    children.push(
+        <Menu.MenuItem
+            id="view-avatar"
+            label="View Avatar"
+            action={() => openAvatar(IconUtils.getUserAvatarURL(user, true))}
+            icon={ImageIcon}
+        />
+    );
+
+    if (memberAvatar) {
+        children.push(
             <Menu.MenuItem
-                id="view-avatar"
-                label="View Avatar"
-                action={() => openAvatar(IconUtils.getUserAvatarURL(user, true))}
+                id="view-server-avatar"
+                label="View Server Avatar"
+                action={() => openAvatar(IconUtils.getGuildMemberAvatarURLSimple({
+                    userId: user.id,
+                    avatar: memberAvatar,
+                    guildId: guildId!,
+                    canAnimate: true
+                }))}
                 icon={ImageIcon}
             />
-            {memberAvatar && (
-                <Menu.MenuItem
-                    id="view-server-avatar"
-                    label="View Server Avatar"
-                    action={() => openAvatar(IconUtils.getGuildMemberAvatarURLSimple({
-                        userId: user.id,
-                        avatar: memberAvatar,
-                        guildId: guildId!,
-                        canAnimate: true
-                    }))}
-                    icon={ImageIcon}
-                />
-            )}
-        </Menu.MenuGroup>
-    ));
+        );
+    }
 };
 
 const GuildContext: NavContextMenuPatchCallback = (children, { guild }: GuildContextProps) => {
@@ -130,51 +131,50 @@ const GuildContext: NavContextMenuPatchCallback = (children, { guild }: GuildCon
     const { id, icon, banner } = guild;
     if (!banner && !icon) return;
 
-    children.splice(-1, 0, (
-        <Menu.MenuGroup>
-            {icon ? (
-                <Menu.MenuItem
-                    id="view-icon"
-                    label="View Icon"
-                    action={() =>
-                        openAvatar(IconUtils.getGuildIconURL({
-                            id,
-                            icon,
-                            canAnimate: true
-                        })!)
-                    }
-                    icon={ImageIcon}
-                />
-            ) : null}
-            {banner ? (
-                <Menu.MenuItem
-                    id="view-banner"
-                    label="View Banner"
-                    action={() =>
-                        openBanner(IconUtils.getGuildBannerURL(guild, true)!)
-                    }
-                    icon={ImageIcon}
-                />
-            ) : null}
-        </Menu.MenuGroup>
-    ));
+    if (icon) {
+        children.push(
+            <Menu.MenuItem
+                id="view-icon"
+                label="View Icon"
+                action={() =>
+                    openAvatar(IconUtils.getGuildIconURL({
+                        id,
+                        icon,
+                        canAnimate: true
+                    })!)
+                }
+                icon={ImageIcon}
+            />
+        );
+    }
+
+    if (banner) {
+        children.push(
+            <Menu.MenuItem
+                id="view-banner"
+                label="View Banner"
+                action={() =>
+                    openBanner(IconUtils.getGuildBannerURL(guild, true)!)
+                }
+                icon={ImageIcon}
+            />
+        );
+    }
 };
 
 const GroupDMContext: NavContextMenuPatchCallback = (children, { channel }: GroupDMContextProps) => {
     if (!channel) return;
 
-    children.splice(-1, 0, (
-        <Menu.MenuGroup>
-            <Menu.MenuItem
-                id="view-group-channel-icon"
-                label="View Icon"
-                action={() =>
-                    openAvatar(IconUtils.getChannelIconURL(channel)!)
-                }
-                icon={ImageIcon}
-            />
-        </Menu.MenuGroup>
-    ));
+    children.push(
+        <Menu.MenuItem
+            id="view-group-channel-icon"
+            label="View Icon"
+            action={() =>
+                openAvatar(IconUtils.getChannelIconURL(channel)!)
+            }
+            icon={ImageIcon}
+        />
+    );
 };
 
 export default definePlugin({

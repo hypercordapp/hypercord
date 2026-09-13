@@ -112,18 +112,16 @@ export default definePlugin({
         "user-context": (children, { user }: { user?: User; } = {}) => {
             if (!user?.id) return;
 
-            children.splice(-1, 0, (
-                <Menu.MenuGroup>
-                    <Menu.MenuItem
-                        label="Set Avatar"
-                        id="set-avatar"
-                        icon={PencilIcon}
-                        action={() => {
-                            openModal(modalProps => <SetAvatarModal userId={user.id} modalProps={modalProps} />);
-                        }}
-                    />
-                </Menu.MenuGroup>
-            ));
+            children.push(
+                <Menu.MenuItem
+                    label="Set Avatar"
+                    id="set-avatar"
+                    icon={PencilIcon}
+                    action={() => {
+                        openModal(modalProps => <SetAvatarModal userId={user.id} modalProps={modalProps} />);
+                    }}
+                />
+            );
         }
     },
     getAvatarHook: (original: any) => (user: User, animated: boolean, size: number) => {

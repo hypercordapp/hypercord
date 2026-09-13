@@ -150,9 +150,9 @@ function makeContextMenuPatch(childId: string | string[], type?: MenuItemParentT
             return group.push(item);
         }
 
-        // "roles" may not be present due to the member not having any roles. In that case, add it above "Copy ID"
+        // "roles" may not be present due to the member not having any roles. In that case, add it directly to children
         if (childId === "roles" && props.guildId) {
-            children.splice(-1, 0, <Menu.MenuGroup>{item}</Menu.MenuGroup>);
+            children.push(item);
         }
     };
 }

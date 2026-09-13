@@ -44,35 +44,33 @@ const ContextMenuPatch: NavContextMenuPatchCallback = (children, { channel }: { 
     const tempChecked = ignoredChannelIds.has(channel.id);
     const permChecked = permanentlyIgnoredUsers.includes(channel.id);
 
-    children.splice(-1, 0, (
-        <Menu.MenuGroup>
-            <Menu.MenuCheckboxItem
-                id="vc-ignore-calls-temp"
-                label="Temporarily Ignore Calls"
-                checked={tempChecked}
-                action={() => {
-                    if (tempChecked)
-                        ignoredChannelIds.delete(channel.id);
-                    else
-                        ignoredChannelIds.add(channel.id);
-                }}
-            />
-            <Menu.MenuCheckboxItem
-                id="vc-ignore-calls-perm"
-                label="Permanently Ignore Calls"
-                checked={permChecked}
-                action={() => {
-                    let updated = permanentlyIgnoredUsers.slice();
-                    if (permChecked) {
-                        updated = updated.filter(id => id !== channel.id);
-                    } else {
-                        updated.push(channel.id);
-                    }
-                    settings.store.permanentlyIgnoredUsers = updated.join(", ");
-                }}
-            />
-        </Menu.MenuGroup>
-    ));
+    children.push(
+        <Menu.MenuCheckboxItem
+            id="vc-ignore-calls-temp"
+            label="Temporarily Ignore Calls"
+            checked={tempChecked}
+            action={() => {
+                if (tempChecked)
+                    ignoredChannelIds.delete(channel.id);
+                else
+                    ignoredChannelIds.add(channel.id);
+            }}
+        />,
+        <Menu.MenuCheckboxItem
+            id="vc-ignore-calls-perm"
+            label="Permanently Ignore Calls"
+            checked={permChecked}
+            action={() => {
+                let updated = permanentlyIgnoredUsers.slice();
+                if (permChecked) {
+                    updated = updated.filter(id => id !== channel.id);
+                } else {
+                    updated.push(channel.id);
+                }
+                settings.store.permanentlyIgnoredUsers = updated.join(", ");
+            }}
+        />
+    );
 };
 
 const settings = definePluginSettings({

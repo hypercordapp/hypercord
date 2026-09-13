@@ -37,22 +37,20 @@ const UserContextMenuPatch: NavContextMenuPatchCallback = (children, { user }: {
 
     const isTargeted = targetUserIds.has(user.id);
 
-    children.splice(-1, 0, (
-        <Menu.MenuGroup>
-            <Menu.MenuCheckboxItem
-                id="adv-auto-disconnect-user"
-                label="Auto Disconnect From Voice"
-                checked={isTargeted}
-                action={() => {
-                    if (targetUserIds.has(user.id)) {
-                        targetUserIds.delete(user.id);
-                    } else {
-                        targetUserIds.add(user.id);
-                    }
-                }}
-            />
-        </Menu.MenuGroup>
-    ));
+    children.push(
+        <Menu.MenuCheckboxItem
+            id="adv-auto-disconnect-user"
+            label="Auto Disconnect From Voice"
+            checked={isTargeted}
+            action={() => {
+                if (targetUserIds.has(user.id)) {
+                    targetUserIds.delete(user.id);
+                } else {
+                    targetUserIds.add(user.id);
+                }
+            }}
+        />
+    );
 };
 
 export default definePlugin({

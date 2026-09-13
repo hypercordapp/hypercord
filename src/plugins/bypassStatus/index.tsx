@@ -76,21 +76,19 @@ function ContextCallback(name: "guild" | "user" | "channel"): NavContextMenuPatc
         const currentUserId = UserStore.getCurrentUser()?.id;
         if (name === "user" && currentUserId && type.id === currentUserId) return;
         const enabled = (settings.store[`${name}s`] || "").split(", ").includes(type.id);
-        children.splice(-1, 0, (
-            <Menu.MenuGroup>
-                <Menu.MenuItem
-                    id={`status-${name}-bypass`}
-                    label={`${enabled ? "Remove" : "Add"} Status Bypass`}
-                    icon={() => Icon(enabled)}
-                    action={() => {
-                        let bypasses: string[] = settings.store[`${name}s`].split(", ");
-                        if (enabled) bypasses = bypasses.filter(id => id !== type.id);
-                        else bypasses.push(type.id);
-                        settings.store[`${name}s`] = bypasses.filter(id => id.trim() !== "").join(", ");
-                    }}
-                />
-            </Menu.MenuGroup>
-        ));
+        children.push(
+            <Menu.MenuItem
+                id={`status-${name}-bypass`}
+                label={`${enabled ? "Remove" : "Add"} Status Bypass`}
+                icon={() => Icon(enabled)}
+                action={() => {
+                    let bypasses: string[] = settings.store[`${name}s`].split(", ");
+                    if (enabled) bypasses = bypasses.filter(id => id !== type.id);
+                    else bypasses.push(type.id);
+                    settings.store[`${name}s`] = bypasses.filter(id => id.trim() !== "").join(", ");
+                }}
+            />
+        );
     };
 }
 

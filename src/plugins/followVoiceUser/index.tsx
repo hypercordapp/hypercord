@@ -49,38 +49,36 @@ const UserContextMenuPatch: NavContextMenuPatchCallback = (children, { channel, 
 
     const isFollowing = followedUserInfo?.userId === user.id;
 
-    children.splice(-1, 0, (
-        <Menu.MenuGroup>
-            <Menu.MenuCheckboxItem
-                id="fvu-follow-user"
-                label="Follow User"
-                checked={isFollowing}
-                action={() => {
-                    if (followedUserInfo?.userId === user.id) {
-                        followedUserInfo = null;
-                        return;
-                    }
+    children.push(
+        <Menu.MenuCheckboxItem
+            id="fvu-follow-user"
+            label="Follow User"
+            checked={isFollowing}
+            action={() => {
+                if (followedUserInfo?.userId === user.id) {
+                    followedUserInfo = null;
+                    return;
+                }
 
-                    // Start tracking from wherever they currently are, not just
-                    // their next move, and jump there immediately if we can -
-                    // otherwise "follow" only kicks in once they change channels
-                    // again, which reads as broken if they're already in voice.
-                    const currentChannelId = VoiceStateStore.getVoiceStateForUser(user.id)?.channelId ?? null;
-                    followedUserInfo = {
-                        lastChannelId: currentChannelId,
-                        userId: user.id
-                    };
+                // Start tracking from wherever they currently are, not just
+                // their next move, and jump there immediately if we can -
+                // otherwise "follow" only kicks in once they change channels
+                // again, which reads as broken if they're already in voice.
+                const currentChannelId = VoiceStateStore.getVoiceStateForUser(user.id)?.channelId ?? null;
+                followedUserInfo = {
+                    lastChannelId: currentChannelId,
+                    userId: user.id
+                };
 
-                    if (
-                        currentChannelId
-                        && (!settings.store.onlyWhenInVoice || VoiceStateStore.getVoiceStateForUser(currentUserId))
-                    ) {
-                        voiceChannelAction.selectVoiceChannel(currentChannelId);
-                    }
-                }}
-            />
-        </Menu.MenuGroup>
-    ));
+                if (
+                    currentChannelId
+                    && currentChannelId !== VoiceStateStore.getVoiceStateForUser(currentUserId)?.channelId
+                ) {
+                    voiceChannelAction.selectVoiceChannel(currentChannelId);
+                }
+            }}
+        />
+    );
 };
 
 export default definePlugin({

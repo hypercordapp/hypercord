@@ -101,7 +101,7 @@ export function findGroupChildrenByChildId(id: string | string[], children: Arra
             if (found !== null) return found;
         }
 
-        const childId = child.props?.id;
+        const childId = (child.props as any)?.id;
         if (
             (Array.isArray(id) && id.some(targetId => matchSubstring ? childId?.includes(targetId) : childId === targetId))
             || (matchSubstring ? childId?.includes(id as string) : childId === id)
@@ -109,7 +109,7 @@ export function findGroupChildrenByChildId(id: string | string[], children: Arra
             return children;
         }
 
-        const nextChildren = child.props?.children;
+        const nextChildren = (child.props as any)?.children;
         if (nextChildren && typeof nextChildren !== "function") {
             if (Array.isArray(nextChildren)) {
                 const found = findGroupChildrenByChildId(id, nextChildren, matchSubstring);
@@ -162,49 +162,77 @@ export function _usePatchContextMenu(props: ContextMenuProps) {
         }
     }
 
-    // Filter out completely empty MenuGroups or null elements to prevent empty border lines
+    // Normalize context menu structure:
+    // 1. Remove nulls and empty MenuGroups
+    // 2. Group any loose top-level MenuItems into a single MenuGroup to avoid multiple divider lines and ensure proper keyboard navigation
     if (Array.isArray(props.children)) {
-        props.children = props.children.filter(child => {
-            if (child == null) return false;
-            if (React.isValidElement(child) && child.type === Menu.MenuGroup) {
-                const groupChildren = child.props?.children;
-                if (groupChildren == null) return false;
-                if (Array.isArray(groupChildren)) {
-                    return groupChildren.some(c => c != null && React.isValidElement(c));
+        const normalizedChildren: Array<ReactElement<any> | null> = [];
+        let looseGroup: Array<ReactElement<any>> = [];
+
+        const flushLooseGroup = () => {
+            if (looseGroup.length > 0) {
+                normalizedChildren.push(
+                    React.createElement(Menu.MenuGroup, { key: `hc-loose-group-${normalizedChildren.length}` }, ...looseGroup)
+                );
+                looseGroup = [];
+            }
+        };
+
+        for (const child of props.children) {
+            if (child == null) continue;
+            if (React.isValidElement(child)) {
+                if (child.type === Menu.MenuGroup) {
+                    const groupChildren = (child.props as any)?.children;
+                    const hasChildren = Array.isArray(groupChildren)
+                        ? groupChildren.some(c => c != null && React.isValidElement(c))
+                        : groupChildren != null && React.isValidElement(groupChildren);
+
+                    if (hasChildren) {
+                        flushLooseGroup();
+                        normalizedChildren.push(child);
+                    }
+                } else {
+                    looseGroup.push(child);
                 }
             }
-            return true;
-        });
+        }
+
+        flushLooseGroup();
+        props.children = normalizedChildren;
     }
 
     return props;
 }
 
-function cloneMenuChildren(obj: ReactElement<any> | Array<ReactElement<any> | null> | null): any {
-    if (obj == null) return obj;
+function cloneMenuChildren(children: any): any {
+    if (!children) return children;
 
-    if (Array.isArray(obj)) {
-        return obj.map(cloneMenuChildren);
+    if (Array.isArray(children)) {
+        return children.map(child => {
+            if (!child || !React.isValidElement(child)) return child;
+            if (child.type === Menu.MenuGroup) {
+                const groupChildren = (child.props as any)?.children;
+                if (Array.isArray(groupChildren)) {
+                    return React.cloneElement(child as ReactElement<any>, {
+                        children: [...groupChildren]
+                    });
+                } else if (groupChildren && React.isValidElement(groupChildren)) {
+                    return React.cloneElement(child as ReactElement<any>, {
+                        children: [groupChildren]
+                    });
+                }
+                return React.cloneElement(child as ReactElement<any>, { children: [] });
+            }
+            return child;
+        });
+    } else if (React.isValidElement(children) && children.type === Menu.MenuGroup) {
+        const groupChildren = (children as any).props?.children;
+        return [
+            React.cloneElement(children as ReactElement<any>, {
+                children: Array.isArray(groupChildren) ? [...groupChildren] : groupChildren ? [groupChildren] : []
+            })
+        ];
     }
 
-    if (React.isValidElement(obj)) {
-        const rawChildren = obj.props?.children;
-        if (rawChildren == null) {
-            return React.cloneElement(obj);
-        }
-
-        // Do not mutate or clone submenu render functions
-        if (typeof rawChildren === "function") {
-            return React.cloneElement(obj);
-        }
-
-        if (obj.type !== Menu.MenuControlItem || (obj.type === Menu.MenuControlItem && obj.props.control != null)) {
-            const clonedChildren = cloneMenuChildren(rawChildren);
-            return React.cloneElement(obj, undefined, ...(Array.isArray(clonedChildren) ? clonedChildren : [clonedChildren]));
-        }
-
-        return React.cloneElement(obj);
-    }
-
-    return obj;
+    return children;
 }

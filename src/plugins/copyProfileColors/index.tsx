@@ -31,8 +31,8 @@ function getProfileColors(userId: string, guildId?: string) {
             return { primaryColor: color, secondaryColor: color, formatted: `Accent-color #${color}` };
         }
 
-        if (profile?.bannerColor != null) {
-            const color = profile.bannerColor.toString(16).padStart(6, "0");
+        if ((profile as any)?.bannerColor != null) {
+            const color = (profile as any).bannerColor.toString(16).padStart(6, "0");
             return { primaryColor: color, secondaryColor: color, formatted: `Banner-color #${color}` };
         }
 
