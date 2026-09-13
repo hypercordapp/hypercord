@@ -165,22 +165,41 @@ export function _usePatchContextMenu(props: ContextMenuProps) {
     return props;
 }
 
-function cloneMenuChildren(obj: any): any {
-    if (obj == null) return obj;
+function cloneMenuChildren(children: any): any {
+    if (!children) return children;
 
-    if (Array.isArray(obj)) {
-        return obj.map(cloneMenuChildren);
+    if (Array.isArray(children)) {
+        return children.map(child => {
+            if (!child || !React.isValidElement(child)) return child;
+
+            // Only clone MenuGroup containers so plugins can push/splice into their children array.
+            // NEVER clone or mutate MenuItem elements (which include submenus like Roles, Apps, Invite, Message Logger).
+            if (child.type === Menu.MenuGroup) {
+                const groupChildren = (child.props as any)?.children;
+                if (Array.isArray(groupChildren)) {
+                    return React.cloneElement(child as ReactElement<any>, {
+                        children: [...groupChildren]
+                    });
+                } else if (groupChildren && React.isValidElement(groupChildren)) {
+                    return React.cloneElement(child as ReactElement<any>, {
+                        children: [groupChildren]
+                    });
+                }
+                return child;
+            }
+
+            return child;
+        });
     }
 
-    if (React.isValidElement(obj)) {
-        const rawChildren = (obj.props as any)?.children;
-        if (Array.isArray(rawChildren)) {
-            return React.cloneElement(obj as ReactElement<any>, {
-                children: cloneMenuChildren(rawChildren)
-            });
-        }
-        return obj;
+    if (React.isValidElement(children) && children.type === Menu.MenuGroup) {
+        const groupChildren = (children.props as any)?.children;
+        return [
+            React.cloneElement(children as ReactElement<any>, {
+                children: Array.isArray(groupChildren) ? [...groupChildren] : groupChildren ? [groupChildren] : []
+            })
+        ];
     }
 
-    return obj;
+    return children;
 }
