@@ -130,19 +130,36 @@ interface ContextMenuProps {
     onClose: (callback: (...args: Array<any>) => any) => void;
 }
 
+const patchedMenuCache = new WeakMap<object, ContextMenuProps>();
+
 export function _usePatchContextMenu(props: ContextMenuProps) {
     if (!Menu.MenuItem) return props;
 
+    // Cache patched menu properties by original children reference or props reference.
+    // When Discord re-renders Menu internally during hover / focus / keyboard navigation,
+    // returning the exact same cached props object prevents React from triggering infinite
+    // re-renders (Minified React error #185) and ensures all submenus and actions stay stable.
+    if (props && typeof props === "object") {
+        if (props.children && typeof props.children === "object" && patchedMenuCache.has(props.children)) {
+            return patchedMenuCache.get(props.children)!;
+        }
+        if (patchedMenuCache.has(props)) {
+            return patchedMenuCache.get(props)!;
+        }
+    }
+
+    const originalChildrenKey = props.children;
+    const originalPropsKey = props;
+
+    const clonedChildren = cloneMenuChildren(props.children);
     props = {
         ...props,
-        children: cloneMenuChildren(props.children),
+        children: Array.isArray(clonedChildren) ? clonedChildren : [clonedChildren],
     };
 
     const rawArgs = props.contextMenuAPIArguments ?? [];
     const patchArgs = rawArgs.length && rawArgs[0] != null ? rawArgs : [{}, ...rawArgs.slice(1)];
     const contextMenuPatches = navPatches.get(props.navId);
-
-    if (!Array.isArray(props.children)) props.children = [props.children];
 
     if (contextMenuPatches) {
         for (const patch of contextMenuPatches) {
@@ -160,6 +177,13 @@ export function _usePatchContextMenu(props: ContextMenuProps) {
         } catch (err) {
             ContextMenuLogger.error("Global patch errored,", err);
         }
+    }
+
+    if (originalChildrenKey && typeof originalChildrenKey === "object") {
+        patchedMenuCache.set(originalChildrenKey, props);
+    }
+    if (originalPropsKey && typeof originalPropsKey === "object") {
+        patchedMenuCache.set(originalPropsKey, props);
     }
 
     return props;
