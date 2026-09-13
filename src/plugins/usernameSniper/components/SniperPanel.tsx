@@ -5,28 +5,79 @@
  */
 
 import { copyWithToast } from "@utils/discord";
-import { useEffect, useState } from "@webpack/common";
+import { useEffect, useState, UserStore } from "@webpack/common";
 
 import { sniperEngine } from "../sniperEngine";
 import { AvailableCandidate, ClaimAction, SniperConfig, SniperLogEntry, SniperMode, SniperStats, SniperTier } from "../types";
-import { StatsGrid } from "./StatsCard";
-import { TerminalLog } from "./TerminalLog";
+
+const MODES: Array<{
+    id: SniperMode;
+    name: string;
+    desc: string;
+    requiredTier: "supporter" | "vip";
+}> = [
+    {
+        id: "4l_letters",
+        name: "4-Letter Sadece Harfler",
+        desc: "aaaa - zzzz arası tüm 4 harfli kombinasyonlar",
+        requiredTier: "supporter",
+    },
+    {
+        id: "4l_alphanumeric",
+        name: "4-Letter Harf + Rakam",
+        desc: "a-z ve 0-9 karışık 4 haneli kombinasyonlar",
+        requiredTier: "supporter",
+    },
+    {
+        id: "4l_repeating",
+        name: "4-Letter Nadir Desenler",
+        desc: "aaaa, abab, aabb, abba gibi estetik desenler",
+        requiredTier: "supporter",
+    },
+    {
+        id: "3l_letters",
+        name: "3-Letter Sadece Harfler",
+        desc: "aaa - zzz arası tüm süper nadir 3 harfli kombinasyonlar",
+        requiredTier: "vip",
+    },
+    {
+        id: "3l_alphanumeric",
+        name: "3-Letter Harf + Rakam",
+        desc: "a-z ve 0-9 karışık nadir 3 haneli kombinasyonlar",
+        requiredTier: "vip",
+    },
+    {
+        id: "3l_repeating",
+        name: "3-Letter Nadir & Tekrarlayan",
+        desc: "777, 101, aba, aaa gibi ultra nadir desenler",
+        requiredTier: "vip",
+    },
+    {
+        id: "custom_wordlist",
+        name: "Özel İsim Listesi (Wordlist)",
+        desc: "Kendi belirlediğiniz hedef kullanıcı adı listesi",
+        requiredTier: "vip",
+    },
+];
 
 export default function SniperPanel() {
+    const currentUser = UserStore.getCurrentUser();
     const [stats, setStats] = useState<SniperStats>(sniperEngine.getStats());
     const [logs, setLogs] = useState<SniperLogEntry[]>(sniperEngine.getLogs());
     const [config, setConfig] = useState<SniperConfig>(sniperEngine.getConfig());
     const [availableList, setAvailableList] = useState<AvailableCandidate[]>(sniperEngine.getAvailableList());
-    const [testInput, setTestInput] = useState("");
-    const [testLoading, setTestLoading] = useState(false);
+    const [activeTab, setActiveTab] = useState<"scanner" | "console" | "single_test" | "settings">("scanner");
 
-    // Tier management - VIP active
+    // Dynamic Tier Management
     const [tier, setTier] = useState<SniperTier>("vip");
+    const [testInput, setTestInput] = useState("");
+    const [testResult, setTestResult] = useState<{ status: string; message: string; } | null>(null);
+    const [testLoading, setTestLoading] = useState(false);
 
     useEffect(() => {
         const unsubStats = sniperEngine.subscribeStats(newStats => setStats(newStats));
         const unsubLogs = sniperEngine.subscribeLogs(newLogs => setLogs(newLogs));
-        const unsubFound = sniperEngine.subscribeFound(candidate => {
+        const unsubFound = sniperEngine.subscribeFound(() => {
             setAvailableList(sniperEngine.getAvailableList());
         });
 
@@ -43,7 +94,26 @@ export default function SniperPanel() {
         sniperEngine.updateConfig(updated);
     };
 
+    const isModeAllowedForTier = (modeTier: "supporter" | "vip"): boolean => {
+        if (tier === "vip") return true;
+        if (tier === "supporter") return modeTier === "supporter";
+        return false;
+    };
+
+    const handleSelectMode = (m: typeof MODES[0]) => {
+        if (!isModeAllowedForTier(m.requiredTier)) {
+            return;
+        }
+        handleConfigChange("mode", m.id);
+    };
+
     const handleToggleStart = () => {
+        const currentModeObj = MODES.find(m => m.id === config.mode);
+        if (currentModeObj && !isModeAllowedForTier(currentModeObj.requiredTier)) {
+            sniperEngine.addLog("-", "error", `Bu modu kullanabilmek için ${currentModeObj.requiredTier.toUpperCase()} paketi gereklidir.`);
+            return;
+        }
+
         if (stats.isRunning) {
             sniperEngine.stop();
         } else {
@@ -62,126 +132,186 @@ export default function SniperPanel() {
     const handleSingleTest = async () => {
         if (!testInput.trim()) return;
         setTestLoading(true);
-        await sniperEngine.testSingleUsername(testInput);
+        const res = await sniperEngine.testSingleUsername(testInput);
+        setTestResult(res);
         setTestLoading(false);
     };
 
+    const formatTime = (ts: number) => {
+        const d = new Date(ts);
+        return `${d.getHours().toString().padStart(2, "0")}:${d.getMinutes().toString().padStart(2, "0")}:${d.getSeconds().toString().padStart(2, "0")}`;
+    };
+
+    const selectedModeObj = MODES.find(m => m.id === config.mode) || MODES[0];
+    const isCurrentModeLocked = !isModeAllowedForTier(selectedModeObj.requiredTier);
+
     return (
-        <div className="hypercord-sniper-root">
-            {/* Header */}
-            <div className="hypercord-sniper-header">
-                <div className="hypercord-sniper-title-group">
-                    <div className="hypercord-sniper-title-icon-wrapper">
-                        <span className="hypercord-sniper-title-icon">⚡</span>
-                    </div>
+        <div className="hyper-sniper-container">
+            {/* Hero Header */}
+            <div className="hyper-sniper-hero">
+                <div className="hyper-sniper-user-info">
+                    {currentUser && (
+                        <img
+                            className="hyper-sniper-avatar"
+                            src={currentUser.getAvatarURL?.(undefined, 80) || "https://cdn.discordapp.com/embed/avatars/0.png"}
+                            alt="User"
+                        />
+                    )}
                     <div>
-                        <h1 className="hypercord-sniper-title">Hyper Username Sniper</h1>
-                        <div className="hypercord-sniper-subtitle">
+                        <div className="hyper-sniper-heading-title">Hyper Username Sniper</div>
+                        <div className="hyper-sniper-heading-desc">
                             Discord 3L & 4L Nadir Kullanıcı Adı Avcısı ve Otomatik Yakalama Sistemi
                         </div>
                     </div>
                 </div>
 
-                <div className="hypercord-sniper-tier-badge vip">
-                    👑 VIP ULTRA AKTİF (250 TL PAKET)
+                <div className="hyper-sniper-tier-controls">
+                    <div className={`hyper-sniper-tier-pill ${tier}`}>
+                        {tier === "vip" && "👑 VIP AKTİF (250 TL)"}
+                        {tier === "supporter" && "🌟 DESTEKÇİ AKTİF (100 TL)"}
+                        {tier === "free" && "🔒 ÜCRETSİZ HESAP"}
+                    </div>
+
+                    <select
+                        className="hyper-sniper-tier-select"
+                        value={tier}
+                        onChange={e => setTier(e.target.value as SniperTier)}
+                        title="Paket / Rol Seviyesi Değiştir"
+                    >
+                        <option value="vip">👑 VIP Paketi (Tüm 3L + 4L + Wordlist)</option>
+                        <option value="supporter">🌟 Destekçi Paketi (Tüm 4L)</option>
+                        <option value="free">🔒 Ücretsiz / Kilitli Önizleme</option>
+                    </select>
                 </div>
             </div>
 
-            {/* Live Metrics Grid */}
-            <StatsGrid stats={stats} />
-
-            {/* Live Terminal Log */}
-            <TerminalLog
-                logs={logs}
-                currentUsername={stats.currentUsername}
-                isRunning={stats.isRunning}
-            />
-
-            {/* Action Buttons */}
-            <div className="hypercord-sniper-actions-row">
+            {/* Segmented Navigation Tabs */}
+            <div className="hyper-sniper-tabs">
                 <button
-                    className={`hypercord-sniper-btn ${stats.isRunning ? "stop" : "start"}`}
-                    onClick={handleToggleStart}
+                    className={`hyper-sniper-tab-btn ${activeTab === "scanner" ? "active" : ""}`}
+                    onClick={() => setActiveTab("scanner")}
                 >
-                    {stats.isRunning ? "⏹️ TARAMAYI DURDUR" : "🚀 TARAMAYI BAŞLAT"}
+                    ⚡ Avcı Paneli
                 </button>
-
                 <button
-                    className="hypercord-sniper-btn secondary"
-                    onClick={() => sniperEngine.resetStats()}
-                    disabled={stats.isRunning}
+                    className={`hyper-sniper-tab-btn ${activeTab === "console" ? "active" : ""}`}
+                    onClick={() => setActiveTab("console")}
                 >
-                    🔄 İstatistikleri Sıfırla
+                    📟 Canlı Konsol ({logs.length})
+                </button>
+                <button
+                    className={`hyper-sniper-tab-btn ${activeTab === "single_test" ? "active" : ""}`}
+                    onClick={() => setActiveTab("single_test")}
+                >
+                    🔍 Tekli Canlı Test
+                </button>
+                <button
+                    className={`hyper-sniper-tab-btn ${activeTab === "settings" ? "active" : ""}`}
+                    onClick={() => setActiveTab("settings")}
+                >
+                    ⚙️ Bildirim & Güvenlik
                 </button>
             </div>
 
-            {/* Found Usernames List */}
-            {availableList.length > 0 && (
-                <div className="hypercord-sniper-found-list">
-                    <div style={{ fontWeight: 800, color: "#10B981", fontSize: 14 }}>
-                        🎉 BOŞTA TESPİT EDİLEN KULLANICI ADLARI ({availableList.length})
+            {/* Metrics Row */}
+            <div className="hyper-sniper-metrics-grid">
+                <div className="hyper-sniper-metric-card">
+                    <span className="hyper-sniper-metric-title">Toplam Taranan</span>
+                    <span className="hyper-sniper-metric-value cyan">
+                        {stats.totalChecked.toLocaleString()}
+                    </span>
+                </div>
+
+                <div className="hyper-sniper-metric-card">
+                    <span className="hyper-sniper-metric-title">Boşta Bulunan</span>
+                    <span className="hyper-sniper-metric-value green">
+                        {stats.availableFound}
+                    </span>
+                </div>
+
+                <div className="hyper-sniper-metric-card">
+                    <span className="hyper-sniper-metric-title">Hesaba Alınan</span>
+                    <span className="hyper-sniper-metric-value gold">
+                        {stats.claimedCount}
+                    </span>
+                </div>
+
+                <div className="hyper-sniper-metric-card">
+                    <span className="hyper-sniper-metric-title">Tarama Hızı</span>
+                    <span className="hyper-sniper-metric-value">
+                        {stats.checksPerMinute}/dk
+                    </span>
+                </div>
+
+                <div className="hyper-sniper-metric-card">
+                    <span className="hyper-sniper-metric-title">Rate-Limit</span>
+                    <span className="hyper-sniper-metric-value" style={{ color: stats.rateLimitsHit > 0 ? "#f59e0b" : "#64748b" }}>
+                        {stats.rateLimitsHit}
+                    </span>
+                </div>
+            </div>
+
+            {/* Tab 1: Scanner Panel */}
+            {activeTab === "scanner" && (
+                <div className="hyper-sniper-card">
+                    <div className="hyper-sniper-card-title">
+                        <span>🎯</span> Tarama Modu Seçimi
                     </div>
-                    {availableList.map((item, idx) => (
-                        <div className="hypercord-sniper-found-item" key={idx}>
-                            <span className="hypercord-sniper-found-name">@{item.username}</span>
-                            <div className="hypercord-sniper-found-actions">
-                                <button
-                                    className="hypercord-sniper-quick-claim-btn"
-                                    onClick={() => copyWithToast(item.username)}
-                                    style={{ background: "rgba(255,255,255,0.1)", color: "#fff" }}
+
+                    <div className="hyper-sniper-options-grid">
+                        {MODES.map(m => {
+                            const allowed = isModeAllowedForTier(m.requiredTier);
+                            const isSelected = config.mode === m.id;
+
+                            return (
+                                <div
+                                    key={m.id}
+                                    className={`hyper-sniper-mode-option ${isSelected ? "selected" : ""} ${!allowed ? "disabled" : ""}`}
+                                    onClick={() => handleSelectMode(m)}
                                 >
-                                    Kopyala
-                                </button>
-                                {!item.claimed ? (
-                                    <button
-                                        className="hypercord-sniper-quick-claim-btn"
-                                        onClick={() => handleManualClaim(item)}
-                                    >
-                                        ⚡ Hesaba Al (Claim)
-                                    </button>
-                                ) : (
-                                    <span style={{ color: "#10B981", fontWeight: 700, fontSize: 12, padding: "6px 8px" }}>
-                                        ✓ Hesaba Alındı
-                                    </span>
-                                )}
+                                    <div>
+                                        <div className="hyper-sniper-mode-name">{m.name}</div>
+                                        <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>{m.desc}</div>
+                                    </div>
+
+                                    <div>
+                                        {allowed ? (
+                                            <span className={`hyper-sniper-mode-badge ${m.requiredTier}`}>
+                                                {m.requiredTier === "vip" ? "VIP" : "100 TL"}
+                                            </span>
+                                        ) : (
+                                            <span className="hyper-sniper-mode-badge locked">
+                                                🔒 {m.requiredTier.toUpperCase()}
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+
+                    {isCurrentModeLocked && (
+                        <div className="hyper-sniper-locked-notice">
+                            <div className="hyper-sniper-locked-text">
+                                ⚠️ Seçili tarama modu <strong>{selectedModeObj.requiredTier.toUpperCase()}</strong> paketi gerektirir.
                             </div>
+                            <a
+                                href="https://shopier.com"
+                                target="_blank"
+                                rel="noreferrer"
+                                className="hyper-sniper-shopier-link"
+                            >
+                                Shopier'den Yükselt
+                            </a>
                         </div>
-                    ))}
-                </div>
-            )}
-
-            {/* Configuration Controls */}
-            <div className="hypercord-sniper-controls-grid">
-                {/* Left Column: Mode & Claim Action */}
-                <div className="hypercord-sniper-control-card">
-                    <div className="hypercord-sniper-control-title">
-                        <span>🎯</span> Tarama Modu ve Hedef Listesi
-                    </div>
-
-                    <div>
-                        <div className="hypercord-sniper-field-label">Kombinasyon Tipi</div>
-                        <select
-                            className="hypercord-sniper-select"
-                            value={config.mode}
-                            onChange={e => handleConfigChange("mode", e.target.value as SniperMode)}
-                            disabled={stats.isRunning}
-                        >
-                            <option value="3l_letters">👑 3-Letter Sadece Harfler (aaa - zzz) [VIP 250 TL]</option>
-                            <option value="3l_alphanumeric">👑 3-Letter Harf + Rakam (a-z, 0-9) [VIP 250 TL]</option>
-                            <option value="3l_repeating">👑 3-Letter Nadir Desenler (777, aba) [VIP 250 TL]</option>
-                            <option value="4l_letters">🌟 4-Letter Sadece Harfler (aaaa - zzzz) [100 TL Destekçi]</option>
-                            <option value="4l_alphanumeric">🌟 4-Letter Harf + Rakam (a-z, 0-9) [100 TL Destekçi]</option>
-                            <option value="4l_repeating">🌟 4-Letter Nadir Desenler (abab, aabb) [100 TL Destekçi]</option>
-                            <option value="custom_wordlist">👑 Özel İsim Listesi (Wordlist) [VIP 250 TL]</option>
-                        </select>
-                    </div>
+                    )}
 
                     {config.mode === "custom_wordlist" && (
                         <div>
-                            <div className="hypercord-sniper-field-label">Özel Kelimeler (Virgül veya Satır Başı ile Ayrılmış)</div>
+                            <div className="hyper-sniper-label">Özel Hedef Kelimeler (Virgül veya Alt Alta)</div>
                             <textarea
-                                className="hypercord-sniper-textarea"
-                                placeholder="hyper, shadow, blade, valorant, viper, zero..."
+                                className="hyper-sniper-input-textarea"
+                                placeholder="hyper, shadow, blade, viper, zero, alpha..."
                                 value={config.customWordlist}
                                 onChange={e => handleConfigChange("customWordlist", e.target.value)}
                                 disabled={stats.isRunning}
@@ -189,51 +319,134 @@ export default function SniperPanel() {
                         </div>
                     )}
 
-                    <div>
-                        <div className="hypercord-sniper-field-label">Boşta Nick Bulunduğunda Yapılacak İşlem</div>
-                        <select
-                            className="hypercord-sniper-select"
-                            value={config.claimAction}
-                            onChange={e => handleConfigChange("claimAction", e.target.value as ClaimAction)}
-                        >
-                            <option value="prompt_modal">🔔 Ekranda Acil Onay Penceresi Aç (Önerilen)</option>
-                            <option value="auto_claim">🚀 Milisaniyelik Otomatik Al (Instant Claim)</option>
-                            <option value="notify_only">📢 Sadece Webhook & Ses ile Bildir</option>
-                        </select>
-                    </div>
-
-                    {/* Live Single Test Box */}
-                    <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: 12, marginTop: 4 }}>
-                        <div className="hypercord-sniper-field-label">🔍 Canlı Tekli Nick Testi (Discord API Doğrulama)</div>
-                        <div style={{ display: "flex", gap: 8 }}>
-                            <input
-                                type="text"
-                                className="hypercord-sniper-input"
-                                placeholder="Test etmek istediğiniz nick..."
-                                value={testInput}
-                                onChange={e => setTestInput(e.target.value)}
-                                onKeyDown={e => e.key === "Enter" && handleSingleTest()}
-                            />
-                            <button
-                                className="hypercord-sniper-quick-claim-btn"
-                                onClick={handleSingleTest}
-                                disabled={testLoading}
-                                style={{ flexShrink: 0, padding: "0 16px" }}
+                    <div style={{ display: "flex", gap: 12, alignItems: "center", marginTop: 6 }}>
+                        <div style={{ flex: 1 }}>
+                            <div className="hyper-sniper-label">Boşta Nick Bulunduğunda Yapılacak İşlem</div>
+                            <select
+                                className="hyper-sniper-input-select"
+                                value={config.claimAction}
+                                onChange={e => handleConfigChange("claimAction", e.target.value as ClaimAction)}
                             >
-                                {testLoading ? "..." : "Sorgula"}
+                                <option value="prompt_modal">🔔 Ekranda Acil Onay Penceresi Aç (Önerilen)</option>
+                                <option value="auto_claim">🚀 Milisaniyelik Otomatik Al (Instant Claim)</option>
+                                <option value="notify_only">📢 Sadece Webhook & Sesli Bildirim Gönder</option>
+                            </select>
+                        </div>
+
+                        <div style={{ flex: 1, display: "flex", gap: 8, marginTop: 18 }}>
+                            <button
+                                className={stats.isRunning ? "hyper-sniper-btn-danger" : "hyper-sniper-btn-primary"}
+                                style={{ flex: 2 }}
+                                onClick={handleToggleStart}
+                                disabled={isCurrentModeLocked && !stats.isRunning}
+                            >
+                                {stats.isRunning ? "⏹️ Taramayı Durdur" : "🚀 Taramayı Başlat"}
+                            </button>
+                            <button
+                                className="hyper-sniper-btn-secondary"
+                                style={{ flex: 1 }}
+                                onClick={() => sniperEngine.resetStats()}
+                                disabled={stats.isRunning}
+                            >
+                                🔄 Sıfırla
                             </button>
                         </div>
                     </div>
                 </div>
+            )}
 
-                {/* Right Column: Speed & Alerts */}
-                <div className="hypercord-sniper-control-card">
-                    <div className="hypercord-sniper-control-title">
-                        <span>⚙️</span> Hız, Güvenlik ve Bildirimler
+            {/* Tab 2: Live Console Log */}
+            {activeTab === "console" && (
+                <div className="hyper-sniper-card">
+                    <div className="hyper-sniper-console">
+                        <div className="hyper-sniper-console-header">
+                            <span>CANLI İSTEK VE KONSOL RADARI</span>
+                            <span>
+                                {stats.isRunning ? (
+                                    <span style={{ color: "#23a55a" }}>● TARANIYOR: @{stats.currentUsername || "..."}</span>
+                                ) : (
+                                    <span>○ BEKLEMEDE</span>
+                                )}
+                            </span>
+                        </div>
+
+                        {logs.length === 0 ? (
+                            <div style={{ color: "#64748b", fontStyle: "italic", textAlign: "center", margin: "auto" }}>
+                                Canlı istek ve tarama logları burada görüntülenecektir...
+                            </div>
+                        ) : (
+                            logs.map(log => (
+                                <div className="hyper-sniper-console-line" key={log.id}>
+                                    <span style={{ color: "#475569", fontSize: 11 }}>[{formatTime(log.timestamp)}]</span>
+                                    <span className={`hyper-sniper-tag ${log.status}`}>{log.status}</span>
+                                    <span style={{ color: "var(--text-normal)" }}>
+                                        {log.username !== "-" ? `@${log.username} ` : ""}
+                                        {log.message || ""}
+                                    </span>
+                                </div>
+                            ))
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* Tab 3: Single Live Test */}
+            {activeTab === "single_test" && (
+                <div className="hyper-sniper-card">
+                    <div className="hyper-sniper-card-title">
+                        <span>🔍</span> Canlı Tekli Kullanıcı Adı Testi (Discord API Doğrulama)
+                    </div>
+
+                    <p style={{ color: "var(--text-muted)", fontSize: 13, margin: 0 }}>
+                        Sistemin Discord REST API'sini gerçek zamanlı sorguladığını doğrulamak için dilediğiniz bir kullanıcı adını yazıp sorgulayın:
+                    </p>
+
+                    <div style={{ display: "flex", gap: 10, maxWidth: 500 }}>
+                        <input
+                            type="text"
+                            className="hyper-sniper-input-text"
+                            placeholder="Örn: ahmet, 9x9, shadow, test_user..."
+                            value={testInput}
+                            onChange={e => setTestInput(e.target.value)}
+                            onKeyDown={e => e.key === "Enter" && handleSingleTest()}
+                        />
+                        <button
+                            className="hyper-sniper-btn-primary"
+                            onClick={handleSingleTest}
+                            disabled={testLoading}
+                            style={{ flexShrink: 0 }}
+                        >
+                            {testLoading ? "Sorgulanıyor..." : "Canlı Sorgula"}
+                        </button>
+                    </div>
+
+                    {testResult && (
+                        <div
+                            style={{
+                                padding: "12px 16px",
+                                borderRadius: 8,
+                                background: testResult.status === "available" ? "rgba(35, 165, 90, 0.15)" : "rgba(255, 255, 255, 0.05)",
+                                border: testResult.status === "available" ? "1px solid #23a55a" : "1px solid rgba(255, 255, 255, 0.1)",
+                                color: testResult.status === "available" ? "#23a55a" : "var(--text-normal)",
+                                fontSize: 14,
+                                fontWeight: 600,
+                            }}
+                        >
+                            {testResult.message}
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* Tab 4: Settings & Webhook */}
+            {activeTab === "settings" && (
+                <div className="hyper-sniper-card">
+                    <div className="hyper-sniper-card-title">
+                        <span>⚙️</span> Hız, Güvenlik ve Bildirim Ayarları
                     </div>
 
                     <div>
-                        <div className="hypercord-sniper-field-label">
+                        <div className="hyper-sniper-label">
                             İstek Gecikmesi: {config.delayMs}ms (~{Math.round(60000 / config.delayMs)} istek/dk)
                         </div>
                         <input
@@ -241,7 +454,7 @@ export default function SniperPanel() {
                             min={1200}
                             max={5000}
                             step={100}
-                            style={{ width: "100%", accentColor: "#8B5CF6" }}
+                            style={{ width: "100%", accentColor: "var(--brand-experiment, #5865f2)" }}
                             value={config.delayMs}
                             onChange={e => handleConfigChange("delayMs", Number(e.target.value))}
                             disabled={stats.isRunning}
@@ -249,10 +462,10 @@ export default function SniperPanel() {
                     </div>
 
                     <div>
-                        <div className="hypercord-sniper-field-label">Discord Webhook URL (Telefon/Özel Kanal Bildirimi)</div>
+                        <div className="hyper-sniper-label">Discord Webhook URL (Telefon / Özel Kanal Bildirimi)</div>
                         <input
                             type="text"
-                            className="hypercord-sniper-input"
+                            className="hyper-sniper-input-text"
                             placeholder="https://discord.com/api/webhooks/..."
                             value={config.webhookUrl}
                             onChange={e => handleConfigChange("webhookUrl", e.target.value)}
@@ -260,17 +473,67 @@ export default function SniperPanel() {
                     </div>
 
                     <div>
-                        <div className="hypercord-sniper-field-label">Discord Hesap Şifresi (Otomatik Claim İçin Opsiyonel)</div>
+                        <div className="hyper-sniper-label">Discord Hesap Şifresi (Otomatik Claim İçin Gerekirse)</div>
                         <input
                             type="password"
-                            className="hypercord-sniper-input"
-                            placeholder="Otomatik talep için gerekirse girin..."
+                            className="hyper-sniper-input-text"
+                            placeholder="Otomatik talep için hesap şifreniz (opsiyonel)..."
                             value={config.accountPassword || ""}
                             onChange={e => handleConfigChange("accountPassword", e.target.value)}
                         />
                     </div>
                 </div>
-            </div>
+            )}
+
+            {/* Available Discovered Usernames List */}
+            {availableList.length > 0 && (
+                <div className="hyper-sniper-card" style={{ borderColor: "#23a55a" }}>
+                    <div style={{ fontWeight: 800, color: "#23a55a", fontSize: 14 }}>
+                        🎉 BOŞTA YAKALANAN KULLANICI ADLARI ({availableList.length})
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                        {availableList.map((item, idx) => (
+                            <div
+                                key={idx}
+                                style={{
+                                    display: "flex",
+                                    justifyContent: "space-between",
+                                    alignItems: "center",
+                                    background: "var(--background-tertiary, #111214)",
+                                    padding: "10px 14px",
+                                    borderRadius: 8,
+                                }}
+                            >
+                                <span style={{ fontSize: 16, fontWeight: 800, color: "#23a55a" }}>
+                                    @{item.username}
+                                </span>
+                                <div style={{ display: "flex", gap: 8 }}>
+                                    <button
+                                        className="hyper-sniper-btn-secondary"
+                                        style={{ padding: "6px 12px", fontSize: 12 }}
+                                        onClick={() => copyWithToast(item.username)}
+                                    >
+                                        Kopyala
+                                    </button>
+                                    {!item.claimed ? (
+                                        <button
+                                            className="hyper-sniper-btn-primary"
+                                            style={{ padding: "6px 12px", fontSize: 12 }}
+                                            onClick={() => handleManualClaim(item)}
+                                        >
+                                            ⚡ Hesaba Al
+                                        </button>
+                                    ) : (
+                                        <span style={{ color: "#23a55a", fontWeight: 700, fontSize: 12, padding: "6px 8px" }}>
+                                            ✓ Hesaba Alındı
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
