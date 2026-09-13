@@ -94,26 +94,25 @@ export function removeGlobalContextMenuPatch(patch: GlobalContextMenuPatchCallba
  */
 export function findGroupChildrenByChildId(id: string | string[], children: Array<ReactElement<any> | null | undefined>, matchSubstring = false): Array<ReactElement<any> | null | undefined> | null {
     for (const child of children) {
-        if (child == null) continue;
+        if (child == null || !React.isValidElement(child)) continue;
 
         if (Array.isArray(child)) {
             const found = findGroupChildrenByChildId(id, child, matchSubstring);
             if (found !== null) return found;
         }
 
+        const childId = (child.props as any)?.id;
         if (
-            (Array.isArray(id) && id.some(targetId => matchSubstring ? child.props?.id?.includes(targetId) : child.props?.id === targetId))
-            || (matchSubstring ? child.props?.id?.includes(id as string) : child.props?.id === id)
-        ) return children;
+            (Array.isArray(id) && id.some(targetId => matchSubstring ? childId?.includes(targetId) : childId === targetId))
+            || (matchSubstring ? childId?.includes(id as string) : childId === id)
+        ) {
+            return children;
+        }
 
-        let nextChildren = child.props?.children;
-        if (nextChildren) {
-            if (!Array.isArray(nextChildren)) {
-                nextChildren = [nextChildren];
-                (child.props as any).children = nextChildren;
-            }
-
-            const found = findGroupChildrenByChildId(id, nextChildren, matchSubstring);
+        const nextChildren = (child.props as any)?.children;
+        if (nextChildren && typeof nextChildren !== "function") {
+            const arr = Array.isArray(nextChildren) ? nextChildren : [nextChildren];
+            const found = findGroupChildrenByChildId(id, arr, matchSubstring);
             if (found !== null) return found;
         }
     }
@@ -141,15 +140,14 @@ export function _usePatchContextMenu(props: ContextMenuProps) {
 
     const originalChildrenKey = props.children;
 
+    const cloned = cloneMenuChildren(props.children);
     props = {
         ...props,
-        children: cloneMenuChildren(props.children),
+        children: Array.isArray(cloned) ? cloned : cloned ? [cloned] : [],
     };
 
     props.contextMenuAPIArguments ??= [];
     const contextMenuPatches = navPatches.get(props.navId);
-
-    if (!Array.isArray(props.children)) props.children = [props.children];
 
     if (contextMenuPatches) {
         for (const patch of contextMenuPatches) {
@@ -176,20 +174,32 @@ export function _usePatchContextMenu(props: ContextMenuProps) {
     return props;
 }
 
-function cloneMenuChildren(obj: ReactElement<any> | Array<ReactElement<any> | null> | null): any {
+function cloneMenuChildren(obj: any): any {
+    if (obj == null) return obj;
+
     if (Array.isArray(obj)) {
         return obj.map(cloneMenuChildren);
     }
 
     if (React.isValidElement(obj)) {
-        obj = React.cloneElement(obj);
-
-        if (
-            obj?.props?.children &&
-            (obj.type !== Menu.MenuControlItem || obj.type === Menu.MenuControlItem && (obj.props as any)?.control != null)
-        ) {
-            (obj.props as any).children = cloneMenuChildren(obj.props.children);
+        const rawChildren = (obj.props as any)?.children;
+        if (rawChildren == null) {
+            return React.cloneElement(obj);
         }
+
+        // If children is a function (render prop/lazy), do not clone children
+        if (typeof rawChildren === "function") {
+            return React.cloneElement(obj);
+        }
+
+        if (obj.type !== Menu.MenuControlItem || (obj.type === Menu.MenuControlItem && (obj.props as any)?.control != null)) {
+            const clonedChildren = cloneMenuChildren(rawChildren);
+            return React.cloneElement(obj as ReactElement<any>, {
+                children: Array.isArray(clonedChildren) ? clonedChildren : [clonedChildren]
+            });
+        }
+
+        return React.cloneElement(obj as ReactElement<any>);
     }
 
     return obj;
