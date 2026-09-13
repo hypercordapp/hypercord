@@ -30,13 +30,13 @@ function SniperIcon(props: any) {
 }
 
 export default definePlugin({
-    name: "UsernameSniper",
-    description: "Discord 3L & 4L Pomelo username checker and instant auto-claimer (Shopier Supporter & VIP exclusive).",
+    name: "HyperUsernameSniper",
+    description: "Discord 3L & 4L nadir kullanıcı adı avcısı ve otomatik talep stüdyosu (Shopier Destekçi & VIP Özel).",
     tags: ["Utility", "Special"],
     authors: [Devs.HyperCordTeam],
 
     toolboxActions: {
-        "Open Pomelo Sniper": () => {
+        "Open Hyper Username Sniper": () => {
             SettingsRouter.openUserSettings("hypercord_username_sniper");
         },
     },
@@ -45,7 +45,7 @@ export default definePlugin({
         // Register custom settings tab
         SettingsPlugin.customEntries.push({
             key: "hypercord_username_sniper",
-            title: "Pomelo Sniper (3L/4L)",
+            title: "Hyper Username Sniper",
             Component: SniperPanel,
             Icon: SniperIcon,
         });
@@ -68,4 +68,5 @@ export default definePlugin({
         removeFromArray(SettingsPlugin.customEntries, e => e.key === "hypercord_username_sniper");
     },
 });
+
 

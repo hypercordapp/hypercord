@@ -23,12 +23,15 @@ export function TerminalLog({ logs, currentUsername, isRunning }: {
     return (
         <div className="hypercord-sniper-terminal" ref={terminalRef}>
             <div className="hypercord-sniper-terminal-header">
-                <span>CANLI RADAR / POMELO CHECKER CONSOLE</span>
+                <span>HYPER SNIPER // CANLI İSTEK VE KONSOL RADARI</span>
                 <span>
                     {isRunning ? (
-                        <span style={{ color: "#00FF88" }}>● TARANIYOR: @{currentUsername || "..."}</span>
+                        <span style={{ color: "#10B981" }}>
+                            <span className="hypercord-sniper-pulse-dot" />
+                            TARANIYOR: @{currentUsername || "..."}
+                        </span>
                     ) : (
-                        <span style={{ color: "#888" }}>○ BEKLEMEDE</span>
+                        <span style={{ color: "#64748b" }}>○ BEKLEMEDE</span>
                     )}
                 </span>
             </div>

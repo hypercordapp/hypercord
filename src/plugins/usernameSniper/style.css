@@ -1,21 +1,36 @@
 /*
- * HyperCord Pomelo Username Sniper - Cyber Neon & Glassmorphism Design
+ * HyperCord Ultra-Premium Theme - Hyper Username Sniper
+ * Signature Colors: Hyper Violet (#8B5CF6), Electric Cyan (#06B6D4), Emerald (#10B981)
  */
 
 .hypercord-sniper-root {
     display: flex;
     flex-direction: column;
-    gap: 20px;
-    padding: 20px;
-    background: radial-gradient(circle at top right, rgba(0, 217, 255, 0.05), transparent 40%),
-                radial-gradient(circle at bottom left, rgba(0, 255, 136, 0.05), transparent 40%),
-                rgba(18, 20, 26, 0.85);
-    border-radius: 16px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    backdrop-filter: blur(20px);
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
-    color: #e0e6ed;
-    font-family: var(--font-primary, "gg sans", "Noto Sans", sans-serif);
+    gap: 22px;
+    padding: 24px;
+    background: radial-gradient(circle at 100% 0%, rgba(139, 92, 246, 0.12) 0%, transparent 50%),
+                radial-gradient(circle at 0% 100%, rgba(6, 182, 212, 0.10) 0%, transparent 50%),
+                radial-gradient(circle at 50% 50%, rgba(16, 185, 129, 0.04) 0%, transparent 60%),
+                linear-gradient(180deg, #0d111a 0%, #090b10 100%);
+    border-radius: 20px;
+    border: 1px solid rgba(139, 92, 246, 0.22);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    color: #e2e8f0;
+    font-family: var(--font-primary, "gg sans", "Inter", "Noto Sans", sans-serif);
+    position: relative;
+    overflow: hidden;
+}
+
+/* Ambient glow accent top line */
+.hypercord-sniper-root::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 10%;
+    right: 10%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, #8B5CF6, #06B6D4, transparent);
+    opacity: 0.8;
 }
 
 /* Header & Tier Banner */
@@ -24,137 +39,173 @@
     justify-content: space-between;
     align-items: center;
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    padding-bottom: 16px;
+    padding-bottom: 18px;
+    gap: 16px;
+    flex-wrap: wrap;
 }
 
 .hypercord-sniper-title-group {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 14px;
+}
+
+.hypercord-sniper-title-icon-wrapper {
+    width: 46px;
+    height: 46px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.25), rgba(6, 182, 212, 0.25));
+    border: 1px solid rgba(139, 92, 246, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 20px rgba(139, 92, 246, 0.35);
 }
 
 .hypercord-sniper-title-icon {
-    font-size: 28px;
-    filter: drop-shadow(0 0 10px rgba(0, 255, 136, 0.6));
+    font-size: 24px;
 }
 
 .hypercord-sniper-title {
-    font-size: 22px;
+    font-size: 24px;
     font-weight: 800;
-    letter-spacing: -0.5px;
-    background: linear-gradient(135deg, #00FF88 0%, #00D9FF 100%);
+    letter-spacing: -0.6px;
+    background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 50%, #8b5cf6 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     margin: 0;
+    line-height: 1.2;
 }
 
 .hypercord-sniper-subtitle {
     font-size: 13px;
-    color: #8e9297;
-    margin-top: 2px;
+    color: #94a3b8;
+    margin-top: 3px;
+    font-weight: 500;
 }
 
 .hypercord-sniper-tier-badge {
     display: flex;
     align-items: center;
-    gap: 6px;
-    padding: 6px 14px;
-    border-radius: 20px;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: 9999px;
     font-size: 12px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.8px;
-    box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
+    font-weight: 800;
+    letter-spacing: 0.6px;
+    backdrop-filter: blur(12px);
+    transition: all 0.25s ease;
 }
 
 .hypercord-sniper-tier-badge.vip {
-    background: linear-gradient(135deg, rgba(255, 170, 0, 0.2), rgba(255, 77, 0, 0.3));
-    border: 1px solid #FFAA00;
-    color: #FFAA00;
-    box-shadow: 0 0 15px rgba(255, 170, 0, 0.3);
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.18), rgba(217, 119, 6, 0.28));
+    border: 1px solid rgba(245, 158, 11, 0.6);
+    color: #fbbf24;
+    box-shadow: 0 0 25px rgba(245, 158, 11, 0.25);
 }
 
 .hypercord-sniper-tier-badge.supporter {
-    background: linear-gradient(135deg, rgba(0, 217, 255, 0.2), rgba(0, 102, 255, 0.3));
-    border: 1px solid #00D9FF;
-    color: #00D9FF;
-    box-shadow: 0 0 15px rgba(0, 217, 255, 0.3);
-}
-
-.hypercord-sniper-tier-badge.free {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    color: #aaa;
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.18), rgba(59, 130, 246, 0.28));
+    border: 1px solid rgba(6, 182, 212, 0.6);
+    color: #38bdf8;
+    box-shadow: 0 0 25px rgba(6, 182, 212, 0.25);
 }
 
 /* Stats Row */
 .hypercord-sniper-stats-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-    gap: 14px;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 12px;
 }
 
 .hypercord-sniper-stat-card {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 12px;
-    padding: 14px 16px;
+    background: rgba(18, 22, 34, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 14px;
+    padding: 16px 18px;
     display: flex;
     flex-direction: column;
-    gap: 4px;
-    transition: all 0.2s ease;
+    gap: 6px;
+    backdrop-filter: blur(10px);
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.hypercord-sniper-stat-card::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, transparent 100%);
+    pointer-events: none;
 }
 
 .hypercord-sniper-stat-card:hover {
-    background: rgba(255, 255, 255, 0.06);
-    border-color: rgba(0, 255, 136, 0.3);
-    transform: translateY(-2px);
+    background: rgba(26, 32, 48, 0.8);
+    border-color: rgba(139, 92, 246, 0.35);
+    transform: translateY(-3px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
 }
 
 .hypercord-sniper-stat-label {
     font-size: 11px;
-    font-weight: 600;
-    color: #8e9297;
+    font-weight: 700;
+    color: #94a3b8;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.6px;
 }
 
 .hypercord-sniper-stat-value {
-    font-size: 24px;
+    font-size: 26px;
     font-weight: 800;
-    color: #fff;
+    color: #f8fafc;
     font-variant-numeric: tabular-nums;
+    line-height: 1.1;
 }
 
 .hypercord-sniper-stat-value.highlight-green {
-    color: #00FF88;
-    text-shadow: 0 0 12px rgba(0, 255, 136, 0.5);
+    color: #10B981;
+    text-shadow: 0 0 16px rgba(16, 185, 129, 0.6);
 }
 
 .hypercord-sniper-stat-value.highlight-cyan {
-    color: #00D9FF;
-    text-shadow: 0 0 12px rgba(0, 217, 255, 0.5);
+    color: #38BDF8;
+    text-shadow: 0 0 16px rgba(56, 189, 248, 0.6);
 }
 
 .hypercord-sniper-stat-value.highlight-gold {
-    color: #FFD700;
-    text-shadow: 0 0 12px rgba(255, 215, 0, 0.5);
+    color: #FBBF24;
+    text-shadow: 0 0 16px rgba(251, 191, 36, 0.6);
+}
+
+.hypercord-sniper-stat-value.highlight-violet {
+    color: #A78BFA;
+    text-shadow: 0 0 16px rgba(167, 139, 250, 0.6);
 }
 
 /* Terminal Log View */
 .hypercord-sniper-terminal {
-    background: #090a0f;
-    border: 1px solid rgba(0, 255, 136, 0.2);
-    border-radius: 12px;
-    padding: 14px;
-    font-family: "JetBrains Mono", "Fira Code", "Courier New", monospace;
-    font-size: 12px;
-    height: 190px;
+    background: #06080d;
+    border: 1px solid rgba(139, 92, 246, 0.25);
+    border-radius: 14px;
+    padding: 16px;
+    font-family: "JetBrains Mono", "Fira Code", Consolas, monospace;
+    font-size: 12.5px;
+    height: 210px;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
     gap: 6px;
-    box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.8);
+    box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.9), 0 0 15px rgba(139, 92, 246, 0.08);
+}
+
+.hypercord-sniper-terminal::-webkit-scrollbar {
+    width: 6px;
+}
+
+.hypercord-sniper-terminal::-webkit-scrollbar-thumb {
+    background: rgba(139, 92, 246, 0.3);
+    border-radius: 4px;
 }
 
 .hypercord-sniper-terminal-header {
@@ -162,70 +213,92 @@
     justify-content: space-between;
     align-items: center;
     border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-    padding-bottom: 6px;
-    margin-bottom: 4px;
+    padding-bottom: 8px;
+    margin-bottom: 6px;
     font-size: 11px;
-    color: #666;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    color: #64748b;
+}
+
+.hypercord-sniper-pulse-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #10B981;
+    margin-right: 6px;
+    box-shadow: 0 0 10px #10B981;
+    animation: hyper-pulse 1.5s infinite;
+}
+
+@keyframes hyper-pulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.3); opacity: 0.6; }
 }
 
 .hypercord-sniper-log-line {
     display: flex;
     align-items: center;
     gap: 8px;
-    line-height: 1.4;
+    line-height: 1.5;
     word-break: break-all;
 }
 
 .hypercord-sniper-log-time {
-    color: #555;
+    color: #475569;
     font-size: 11px;
     flex-shrink: 0;
 }
 
 .hypercord-sniper-log-tag {
-    font-weight: 700;
-    padding: 2px 6px;
-    border-radius: 4px;
+    font-weight: 800;
+    padding: 2px 7px;
+    border-radius: 5px;
     font-size: 10px;
     text-transform: uppercase;
     flex-shrink: 0;
 }
 
 .hypercord-sniper-log-tag.available {
-    background: rgba(0, 255, 136, 0.2);
-    color: #00FF88;
-    border: 1px solid #00FF88;
+    background: rgba(16, 185, 129, 0.2);
+    color: #10B981;
+    border: 1px solid #10B981;
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.3);
 }
 
 .hypercord-sniper-log-tag.claimed {
-    background: rgba(255, 215, 0, 0.25);
-    color: #FFD700;
-    border: 1px solid #FFD700;
+    background: rgba(251, 191, 36, 0.2);
+    color: #FBBF24;
+    border: 1px solid #FBBF24;
+    box-shadow: 0 0 10px rgba(251, 191, 36, 0.3);
 }
 
 .hypercord-sniper-log-tag.taken {
-    background: rgba(255, 255, 255, 0.05);
-    color: #777;
+    background: rgba(255, 255, 255, 0.04);
+    color: #64748b;
 }
 
 .hypercord-sniper-log-tag.rate_limited {
-    background: rgba(255, 170, 0, 0.2);
-    color: #FFAA00;
-    border: 1px solid #FFAA00;
+    background: rgba(245, 158, 11, 0.2);
+    color: #F59E0B;
+    border: 1px solid #F59E0B;
 }
 
 .hypercord-sniper-log-tag.error {
-    background: rgba(255, 68, 68, 0.2);
-    color: #FF4444;
+    background: rgba(239, 68, 68, 0.2);
+    color: #EF4444;
+    border: 1px solid #EF4444;
 }
 
 .hypercord-sniper-log-tag.info {
-    background: rgba(0, 217, 255, 0.2);
-    color: #00D9FF;
+    background: rgba(139, 92, 246, 0.2);
+    color: #A78BFA;
+    border: 1px solid rgba(139, 92, 246, 0.5);
 }
 
 .hypercord-sniper-log-text {
-    color: #ccc;
+    color: #cbd5e1;
 }
 
 /* Controls Grid */
@@ -235,47 +308,48 @@
     gap: 16px;
 }
 
-@media (max-width: 700px) {
+@media (max-width: 768px) {
     .hypercord-sniper-controls-grid {
         grid-template-columns: 1fr;
     }
 }
 
 .hypercord-sniper-control-card {
-    background: rgba(255, 255, 255, 0.02);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 12px;
-    padding: 16px;
+    background: rgba(15, 19, 29, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 14px;
+    padding: 18px;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 14px;
+    backdrop-filter: blur(10px);
 }
 
 .hypercord-sniper-control-title {
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 700;
-    color: #fff;
+    color: #f8fafc;
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
 }
 
 .hypercord-sniper-field-label {
     font-size: 12px;
     font-weight: 600;
-    color: #8e9297;
-    margin-bottom: 4px;
+    color: #94a3b8;
+    margin-bottom: 6px;
 }
 
 .hypercord-sniper-select,
 .hypercord-sniper-input,
 .hypercord-sniper-textarea {
     width: 100%;
-    background: rgba(0, 0, 0, 0.35);
+    background: rgba(6, 9, 15, 0.7);
     border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 8px;
-    padding: 10px 12px;
-    color: #fff;
+    border-radius: 10px;
+    padding: 11px 14px;
+    color: #f8fafc;
     font-size: 13px;
     outline: none;
     transition: all 0.2s ease;
@@ -285,12 +359,12 @@
 .hypercord-sniper-select:focus,
 .hypercord-sniper-input:focus,
 .hypercord-sniper-textarea:focus {
-    border-color: #00FF88;
-    box-shadow: 0 0 10px rgba(0, 255, 136, 0.25);
+    border-color: #8B5CF6;
+    box-shadow: 0 0 15px rgba(139, 92, 246, 0.35);
 }
 
 .hypercord-sniper-textarea {
-    height: 70px;
+    height: 80px;
     resize: vertical;
     font-family: monospace;
 }
@@ -300,7 +374,6 @@
     display: flex;
     gap: 12px;
     align-items: center;
-    margin-top: 10px;
 }
 
 .hypercord-sniper-btn {
@@ -309,73 +382,76 @@
     align-items: center;
     justify-content: center;
     gap: 8px;
-    padding: 12px 20px;
-    border-radius: 10px;
+    padding: 13px 22px;
+    border-radius: 12px;
     font-size: 14px;
     font-weight: 700;
     cursor: pointer;
     border: none;
-    transition: all 0.25s ease;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .hypercord-sniper-btn.start {
-    background: linear-gradient(135deg, #00FF88 0%, #00BD65 100%);
-    color: #000;
-    box-shadow: 0 0 20px rgba(0, 255, 136, 0.4);
+    background: linear-gradient(135deg, #8B5CF6 0%, #6D28D9 50%, #06B6D4 100%);
+    color: #ffffff;
+    box-shadow: 0 0 25px rgba(139, 92, 246, 0.45);
 }
 
 .hypercord-sniper-btn.start:hover {
     transform: translateY(-2px);
-    box-shadow: 0 0 30px rgba(0, 255, 136, 0.7);
+    box-shadow: 0 0 35px rgba(139, 92, 246, 0.7);
+    filter: brightness(1.1);
 }
 
 .hypercord-sniper-btn.stop {
-    background: linear-gradient(135deg, #FF4444 0%, #CC1111 100%);
-    color: #fff;
-    box-shadow: 0 0 20px rgba(255, 68, 68, 0.4);
+    background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
+    color: #ffffff;
+    box-shadow: 0 0 25px rgba(239, 68, 68, 0.45);
 }
 
 .hypercord-sniper-btn.stop:hover {
     transform: translateY(-2px);
-    box-shadow: 0 0 30px rgba(255, 68, 68, 0.7);
+    box-shadow: 0 0 35px rgba(239, 68, 68, 0.7);
 }
 
 .hypercord-sniper-btn.secondary {
-    background: rgba(255, 255, 255, 0.08);
-    color: #e0e6ed;
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.05);
+    color: #cbd5e1;
+    border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
 .hypercord-sniper-btn.secondary:hover {
-    background: rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
 }
 
 /* Available Found List */
 .hypercord-sniper-found-list {
-    background: rgba(0, 255, 136, 0.03);
-    border: 1px solid rgba(0, 255, 136, 0.2);
-    border-radius: 12px;
-    padding: 16px;
+    background: rgba(16, 185, 129, 0.05);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    border-radius: 14px;
+    padding: 18px;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 12px;
 }
 
 .hypercord-sniper-found-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: rgba(0, 0, 0, 0.35);
-    border: 1px solid rgba(0, 255, 136, 0.3);
-    border-radius: 8px;
-    padding: 10px 14px;
+    background: rgba(6, 9, 15, 0.6);
+    border: 1px solid rgba(16, 185, 129, 0.4);
+    border-radius: 10px;
+    padding: 12px 16px;
 }
 
 .hypercord-sniper-found-name {
-    font-size: 16px;
+    font-size: 17px;
     font-weight: 800;
-    color: #00FF88;
-    letter-spacing: 0.5px;
+    color: #10B981;
+    letter-spacing: 0.6px;
+    text-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
 }
 
 .hypercord-sniper-found-actions {
@@ -384,44 +460,46 @@
 }
 
 .hypercord-sniper-quick-claim-btn {
-    background: #00FF88;
+    background: linear-gradient(135deg, #10B981 0%, #059669 100%);
     color: #000;
     border: none;
-    border-radius: 6px;
-    padding: 6px 12px;
+    border-radius: 8px;
+    padding: 7px 14px;
     font-size: 12px;
-    font-weight: 700;
+    font-weight: 800;
     cursor: pointer;
     transition: all 0.2s ease;
+    box-shadow: 0 0 15px rgba(16, 185, 129, 0.35);
 }
 
 .hypercord-sniper-quick-claim-btn:hover {
-    box-shadow: 0 0 12px #00FF88;
+    transform: translateY(-1px);
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.6);
 }
 
 /* Modal Popup */
 .hypercord-sniper-modal-root {
-    padding: 24px;
+    padding: 28px;
     display: flex;
     flex-direction: column;
     align-items: center;
     text-align: center;
-    gap: 18px;
-    background: radial-gradient(circle at center, rgba(0, 255, 136, 0.15), #11141c 70%);
-    border-radius: 16px;
-    border: 2px solid #00FF88;
-    box-shadow: 0 0 50px rgba(0, 255, 136, 0.4);
+    gap: 20px;
+    background: radial-gradient(circle at center, rgba(139, 92, 246, 0.2), #0b0e17 75%);
+    border-radius: 20px;
+    border: 1px solid rgba(139, 92, 246, 0.5);
+    box-shadow: 0 0 60px rgba(139, 92, 246, 0.4);
     color: #fff;
 }
 
 .hypercord-sniper-modal-target-box {
-    background: rgba(0, 0, 0, 0.6);
-    border: 1px solid #00FF88;
-    border-radius: 12px;
-    padding: 14px 30px;
-    font-size: 32px;
+    background: rgba(0, 0, 0, 0.7);
+    border: 1px solid #10B981;
+    border-radius: 14px;
+    padding: 16px 36px;
+    font-size: 34px;
     font-weight: 900;
     letter-spacing: 2px;
-    color: #00FF88;
-    text-shadow: 0 0 20px rgba(0, 255, 136, 0.8);
+    color: #10B981;
+    text-shadow: 0 0 25px rgba(16, 185, 129, 0.9);
 }

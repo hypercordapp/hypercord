@@ -41,16 +41,6 @@ export default function SniperPanel() {
         sniperEngine.updateConfig(updated);
     };
 
-    const isModeDisabled = (mode: SniperMode): boolean => {
-        if (tier === "vip") return false;
-        if (tier === "supporter") {
-            // Supporter (100 TL) has access to all 4L modes
-            return mode.startsWith("3l") || mode === "custom_wordlist";
-        }
-        // Free tier has no active checking
-        return true;
-    };
-
     const handleToggleStart = () => {
         if (stats.isRunning) {
             sniperEngine.stop();
@@ -72,11 +62,13 @@ export default function SniperPanel() {
             {/* Header */}
             <div className="hypercord-sniper-header">
                 <div className="hypercord-sniper-title-group">
-                    <span className="hypercord-sniper-title-icon">⚡</span>
+                    <div className="hypercord-sniper-title-icon-wrapper">
+                        <span className="hypercord-sniper-title-icon">⚡</span>
+                    </div>
                     <div>
-                        <h1 className="hypercord-sniper-title">Pomelo Username Sniper & Checker</h1>
+                        <h1 className="hypercord-sniper-title">Hyper Username Sniper</h1>
                         <div className="hypercord-sniper-subtitle">
-                            Discord 3L & 4L Nadir Kullanıcı Adı Avcısı ve Otomatik Alıcısı
+                            Discord 3L & 4L Nadir Kullanıcı Adı Avcısı ve Otomatik Alma Stüdyosu
                         </div>
                     </div>
                 </div>
@@ -117,7 +109,7 @@ export default function SniperPanel() {
             {/* Found Usernames List */}
             {availableList.length > 0 && (
                 <div className="hypercord-sniper-found-list">
-                    <div style={{ fontWeight: 800, color: "#00FF88", fontSize: 14 }}>
+                    <div style={{ fontWeight: 800, color: "#10B981", fontSize: 14 }}>
                         🎉 BOŞTA TESPİT EDİLEN KULLANICI ADLARI ({availableList.length})
                     </div>
                     {availableList.map((item, idx) => (
@@ -139,7 +131,7 @@ export default function SniperPanel() {
                                         ⚡ Hesaba Al (Claim)
                                     </button>
                                 ) : (
-                                    <span style={{ color: "#00FF88", fontWeight: 700, fontSize: 12, padding: "6px 8px" }}>
+                                    <span style={{ color: "#10B981", fontWeight: 700, fontSize: 12, padding: "6px 8px" }}>
                                         ✓ Hesaba Alındı
                                     </span>
                                 )}
@@ -154,7 +146,7 @@ export default function SniperPanel() {
                 {/* Left Column: Mode & Claim Action */}
                 <div className="hypercord-sniper-control-card">
                     <div className="hypercord-sniper-control-title">
-                        <span>🎯</span> Tarama Modu ve Hedef
+                        <span>🎯</span> Tarama Modu ve Hedef Listesi
                     </div>
 
                     <div>
@@ -167,11 +159,11 @@ export default function SniperPanel() {
                         >
                             <option value="3l_letters">👑 3-Letter Sadece Harfler (aaa - zzz) [VIP 250 TL]</option>
                             <option value="3l_alphanumeric">👑 3-Letter Harf + Rakam (a-z, 0-9) [VIP 250 TL]</option>
-                            <option value="3l_repeating">👑 3-Letter Nadir & Tekrarlayan (777, aba) [VIP 250 TL]</option>
+                            <option value="3l_repeating">👑 3-Letter Nadir Desenler (777, aba) [VIP 250 TL]</option>
                             <option value="4l_letters">🌟 4-Letter Sadece Harfler (aaaa - zzzz) [100 TL Destekçi]</option>
                             <option value="4l_alphanumeric">🌟 4-Letter Harf + Rakam (a-z, 0-9) [100 TL Destekçi]</option>
                             <option value="4l_repeating">🌟 4-Letter Nadir Desenler (abab, aabb) [100 TL Destekçi]</option>
-                            <option value="custom_wordlist">👑 Özel Kelime Listesi (Wordlist) [VIP 250 TL]</option>
+                            <option value="custom_wordlist">👑 Özel İsim Listesi (Wordlist) [VIP 250 TL]</option>
                         </select>
                     </div>
 
@@ -180,7 +172,7 @@ export default function SniperPanel() {
                             <div className="hypercord-sniper-field-label">Özel Kelimeler (Virgül veya Satır Başı ile Ayrılmış)</div>
                             <textarea
                                 className="hypercord-sniper-textarea"
-                                placeholder="hyper, cool, shadow, toxic, ninja, blade..."
+                                placeholder="hyper, shadow, blade, valorant, viper, zero..."
                                 value={config.customWordlist}
                                 onChange={e => handleConfigChange("customWordlist", e.target.value)}
                                 disabled={stats.isRunning}
@@ -217,7 +209,7 @@ export default function SniperPanel() {
                             min={1200}
                             max={5000}
                             step={100}
-                            style={{ width: "100%", accentColor: "#00FF88" }}
+                            style={{ width: "100%", accentColor: "#8B5CF6" }}
                             value={config.delayMs}
                             onChange={e => handleConfigChange("delayMs", Number(e.target.value))}
                             disabled={stats.isRunning}
