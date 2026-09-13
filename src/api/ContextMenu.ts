@@ -174,23 +174,12 @@ function cloneMenuChildren(obj: any): any {
 
     if (React.isValidElement(obj)) {
         const rawChildren = (obj.props as any)?.children;
-        if (rawChildren == null) {
-            return React.cloneElement(obj);
-        }
-
-        // Submenu render functions or lazy functions must remain untouched
-        if (typeof rawChildren === "function") {
-            return React.cloneElement(obj);
-        }
-
-        if (obj.type !== Menu.MenuControlItem || (obj.type === Menu.MenuControlItem && (obj.props as any)?.control != null)) {
-            const clonedChildren = cloneMenuChildren(rawChildren);
+        if (Array.isArray(rawChildren)) {
             return React.cloneElement(obj as ReactElement<any>, {
-                children: clonedChildren
+                children: cloneMenuChildren(rawChildren)
             });
         }
-
-        return React.cloneElement(obj as ReactElement<any>);
+        return obj;
     }
 
     return obj;
