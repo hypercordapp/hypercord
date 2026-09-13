@@ -92,7 +92,13 @@ export function removeGlobalContextMenuPatch(patch: GlobalContextMenuPatchCallba
  * @param children The context menu children
  * @param matchSubstring Whether to check if the id is a substring of the child id
  */
-export function findGroupChildrenByChildId(id: string | string[], children: Array<ReactElement<any> | null | undefined>, matchSubstring = false): Array<ReactElement<any> | null | undefined> | null {
+export function findGroupChildrenByChildId(
+    id: string | string[],
+    children: Array<ReactElement<any> | null | undefined>,
+    matchSubstring = false
+): Array<ReactElement<any> | null | undefined> | null {
+    if (!children) return null;
+
     for (const child of children) {
         if (child == null || !React.isValidElement(child)) continue;
 
@@ -111,9 +117,13 @@ export function findGroupChildrenByChildId(id: string | string[], children: Arra
 
         const nextChildren = (child.props as any)?.children;
         if (nextChildren && typeof nextChildren !== "function") {
-            const arr = Array.isArray(nextChildren) ? nextChildren : [nextChildren];
-            const found = findGroupChildrenByChildId(id, arr, matchSubstring);
-            if (found !== null) return found;
+            if (Array.isArray(nextChildren)) {
+                const found = findGroupChildrenByChildId(id, nextChildren, matchSubstring);
+                if (found !== null) return found;
+            } else if (React.isValidElement(nextChildren)) {
+                const found = findGroupChildrenByChildId(id, [nextChildren], matchSubstring);
+                if (found !== null) return found;
+            }
         }
     }
 
@@ -132,15 +142,21 @@ interface ContextMenuProps {
 export function _usePatchContextMenu(props: ContextMenuProps) {
     if (!Menu.MenuItem) return props; // Prevent crashes in case we fail to acquire menu items for some reason
 
-    props = {
-        ...props,
-        children: cloneMenuChildren(props.children),
-    };
+    try {
+        props = {
+            ...props,
+            children: cloneMenuChildren(props.children),
+        };
+    } catch (err) {
+        ContextMenuLogger.error("Failed to clone menu children:", err);
+    }
 
     props.contextMenuAPIArguments ??= [];
     const contextMenuPatches = navPatches.get(props.navId);
 
-    if (!Array.isArray(props.children)) props.children = [props.children];
+    if (!Array.isArray(props.children)) {
+        props.children = props.children ? [props.children] : [];
+    }
 
     if (contextMenuPatches) {
         for (const patch of contextMenuPatches) {
@@ -177,9 +193,7 @@ function cloneMenuChildren(obj: any): any {
             typeof rawChildren !== "function" &&
             (obj.type !== Menu.MenuControlItem || (obj.type === Menu.MenuControlItem && (obj.props as any)?.control != null))
         ) {
-            return React.cloneElement(obj, {
-                children: cloneMenuChildren(rawChildren)
-            });
+            return React.cloneElement(obj, undefined, cloneMenuChildren(rawChildren));
         }
 
         return React.cloneElement(obj);
