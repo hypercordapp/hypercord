@@ -81,6 +81,7 @@ jobs:
                   DISCORD_CHANNEL_ID: ${{ secrets.DISCORD_DEVBUILD_CHANNEL_ID }}
               run: |
                   node -e "
+                  const { execSync } = require('child_process');
                   const token = process.env.DISCORD_BOT_TOKEN;
                   const channelId = process.env.DISCORD_CHANNEL_ID || '1529223931851182181';
                   if (!token) {
@@ -88,14 +89,47 @@ jobs:
                       process.exit(0);
                   }
                   const tag = process.env.release_tag || '${{ env.release_tag }}';
-                  const msg = '🚀 New devbuild published: \`DevBuild ' + tag + '\`\nChangelog: <https://hypercord.pro/changelog>\nDownload: <https://github.com/hypercordapp/hypercord/releases/tag/devbuild>';
+                  
+                  let bullets = [];
+                  try {
+                      const rawCommitMsg = execSync('git log -1 --pretty=%B', { encoding: 'utf-8' }).trim();
+                      const lines = rawCommitMsg.split('\n').map(l => l.trim()).filter(Boolean);
+                      const subject = lines[0] || 'Yeni güncellemeler ve hata düzeltmeleri';
+                      const bodyLines = lines.slice(1);
+                      if (bodyLines.length > 0) {
+                          for (const line of bodyLines) {
+                              if (line.startsWith('•') || line.startsWith('-') || line.startsWith('*')) {
+                                  bullets.push('• ' + line.replace(/^[•\-\*]\s*/, ''));
+                              } else if (line.length > 0) {
+                                  bullets.push('• ' + line);
+                              }
+                          }
+                      }
+                      if (bullets.length === 0) {
+                          const cleanSubject = subject.replace(/^[a-z]+(\([^\)]+\))?:\s*/i, '');
+                          bullets.push('• ' + cleanSubject);
+                      }
+                  } catch (e) {
+                      bullets.push('• Performans ve kararlılık iyileştirmeleri');
+                  }
+
+                  const roleId = '1540838002077605921';
+                  const content = '<@&' + roleId + '> 🚀 New devbuild published: \`DevBuild ' + tag + '\`\n\n' +
+                      '**Yenilikler / Düzeltmeler:**\n' +
+                      bullets.join('\n') + '\n\n' +
+                      'Changelog: <https://hypercord.pro/changelog>\n' +
+                      'Download: <https://github.com/hypercordapp/hypercord/releases/tag/devbuild>';
+
                   fetch('https://discord.com/api/v10/channels/' + channelId + '/messages', {
                       method: 'POST',
                       headers: {
                           'Authorization': 'Bot ' + token,
                           'Content-Type': 'application/json'
                       },
-                      body: JSON.stringify({ content: msg })
+                      body: JSON.stringify({
+                          content,
+                          allowed_mentions: { roles: [roleId] }
+                      })
                   }).then(r => {
                       console.log('Discord announcement status:', r.status);
                   }).catch(console.error);
