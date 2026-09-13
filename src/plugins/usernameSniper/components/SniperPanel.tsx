@@ -295,7 +295,7 @@ function SniperPanelContent() {
                                 ⚠️ Seçili tarama modu <strong>{selectedModeObj.requiredTier.toUpperCase()}</strong> paketi gerektirir.
                             </div>
                             <a
-                                href="https://shopier.com"
+                                href="https://www.shopier.com/hypercord"
                                 target="_blank"
                                 rel="noreferrer"
                                 className="hyper-sniper-shopier-link"
